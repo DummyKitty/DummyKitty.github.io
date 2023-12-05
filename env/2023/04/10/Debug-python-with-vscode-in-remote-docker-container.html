@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Debug python with vscode in remote docker container - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="假如我们需要调试某个 Docker container 中的 python 程序，并且这个 container 位于 VPS 上，这时候应该怎么配置呢？安装 vscode 插件： python、Remote-SSH。python 插件用于调试 python 脚本，Remote-SSH 用来连接到目标 VPS.源码...">
+<link rel="canonical" href="http://localhost:4000/env/2023/04/10/Debug-python-with-vscode-in-remote-docker-container.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,128 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html">Windows 提权（二）进程相关提权方式</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="%E5%B7%A5%E5%85%B7" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Jul 11</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html">代码审计工具 Semgrep</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="RMI" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 04</span><a itemprop="headline" class="item__header" href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>80 post articles, 5 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>Debug python with vscode in remote docker container</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-04-09-Debug-python-with-vscode-in-remote-docker-container.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="Debug python with vscode in remote docker container"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=python">python</a>
             </li><li>
-                <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
-              </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=docker">docker</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=debug">debug</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Apr 10, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-04-10T05:04:32+08:00">
+    <meta itemprop="keywords" content="python,docker,debug"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><p>假如我们需要调试某个 Docker container 中的 python 程序，并且这个 container 位于 VPS 上，这时候应该怎么配置呢？</p>
+
+<h2 id="安装-vscode-插件-pythonremote-ssh">安装 vscode 插件： python、Remote-SSH。</h2>
+<p>python 插件用于调试 python 脚本，Remote-SSH 用来连接到目标 VPS.</p>
+
+<h2 id="源码中引入-ptvsd-库">源码中引入 ptvsd 库</h2>
+<p>ptvsd 是一个用于 Python 的调试工具，允许使用调试器远程调试 Python 代码，支持 Visual Studio Code、PyCharm 等编辑器的集成。</p>
+
+<p>使用 ptvsd，我们可以在程序的任何位置设置断点，检查代码状态和变量值，并单步调试代码。这种调试方式可以帮助我们更快地诊断代码问题，提高开发效率。</p>
+
+<p>在待调试的脚本中添加如下的代码，其中端口设置为 4000,这表示程序在运行起来后会监听 4000 端口等待 IDE 的附加调试。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">ptvsd</span>
+
+<span class="n">ptvsd</span><span class="p">.</span><span class="nf">enable_attach</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="p">(</span><span class="sh">'</span><span class="s">0.0.0.0</span><span class="sh">'</span><span class="p">,</span> <span class="mi">4000</span><span class="p">),</span> <span class="n">redirect_output</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ptvsd</span><span class="p">.</span><span class="nf">wait_for_attach</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h2 id="vscode-添加调试配置">vscode 添加调试配置</h2>
+<p>在 vscode 中创建调试配置文件 launch.json。添加 Python Remote Attach 然后根据需要进行修改，例如连接目标 host 以及端口 port。</p>
+
+<p>这里的 host 需要设置为容器的 ip 地址，port 也就是上面使用 ptvsd 监听的端口。pathMappings 用于映射本地与容器中的脚本路径。</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Use</span><span class="w"> </span><span class="err">IntelliSense</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">learn</span><span class="w"> </span><span class="err">about</span><span class="w"> </span><span class="err">possible</span><span class="w"> </span><span class="err">attributes.</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Hover</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">descriptions</span><span class="w"> </span><span class="err">of</span><span class="w"> </span><span class="err">existing</span><span class="w"> </span><span class="err">attributes.</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">For</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="err">information</span><span class="p">,</span><span class="w"> </span><span class="err">visit:</span><span class="w"> </span><span class="err">https://go.microsoft.com/fwlink/?linkid=</span><span class="mi">830387</span><span class="w">
+    </span><span class="nl">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.2.0"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"configurations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Python: Remote Attach"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"attach"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"connect"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"host"</span><span class="p">:</span><span class="w"> </span><span class="s2">"172.22.0.3"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"port"</span><span class="p">:</span><span class="w"> </span><span class="mi">4000</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="nl">"pathMappings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                </span><span class="p">{</span><span class="w">
+                    </span><span class="nl">"localRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/root/ctf/damCTF_2023/thunderstruck/dist/src"</span><span class="p">,</span><span class="w">
+                    </span><span class="nl">"remoteRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/chal"</span><span class="w">
+                </span><span class="p">},</span><span class="w">
+                </span><span class="p">{</span><span class="w">
+                    </span><span class="nl">"localRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/usr/lib/python3/dist-packages"</span><span class="p">,</span><span class="w">
+                    </span><span class="nl">"remoteRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/usr/local/lib/python3.10/site-packages"</span><span class="w">
+                </span><span class="p">}</span><span class="w">
+            </span><span class="p">],</span><span class="w">
+            </span><span class="nl">"justMyCode"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<h2 id="运行">运行</h2>
+<p>在容器中运行脚本后会开启监听，在 vscode 中启动调试并设置断点，就可以开始调试了。</p>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-04-10T05:04:32+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/ctf/2023/04/09/DamCTF-2023-Writeup-Web.html">DamCTF 2023 Writeup-Web</a></div><div class="next"><span>NEXT</span><a href="/env/2023/04/18/Debug-TypeScript-project-with-vscode.html">Debug TypeScript project with vscode</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +954,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

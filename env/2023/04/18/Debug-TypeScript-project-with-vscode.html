@@ -1,0 +1,1541 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Debug TypeScript project with vscode - DumKiy's blog</title>
+
+<meta name="description" content="TypeScript 入门  TypeScript 入门教程React 框架入门  React 入门实例教程  React demo调试 Vite 部署的项目下面会以 plaidCTF_2023 中的 Davy Jones’ Putlocker Dubs 为示例说明如何进行本地调试。源码下载链接项目结构拿到项目的...">
+<link rel="canonical" href="http://localhost:4000/env/2023/04/18/Debug-TypeScript-project-with-vscode.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>Debug TypeScript project with vscode</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-04-18-Debug-TypeScript-project-with-vscode.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="Debug TypeScript project with vscode"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=nodejs">nodejs</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=TypeScript">TypeScript</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=React">React</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=debug">debug</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Apr 18, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-04-18T11:07:39+08:00">
+    <meta itemprop="keywords" content="nodejs,TypeScript,React,debug"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="typescript-入门">TypeScript 入门</h1>
+<ul>
+  <li><a href="https://ts.xcatliu.com/">TypeScript 入门教程</a></li>
+</ul>
+
+<h1 id="react-框架入门">React 框架入门</h1>
+<ul>
+  <li><a href="https://www.ruanyifeng.com/blog/2015/03/react.html">React 入门实例教程</a></li>
+  <li><a href="https://github.com/ruanyf/react-demos">React demo</a></li>
+</ul>
+
+<h1 id="调试-vite-部署的项目">调试 Vite 部署的项目</h1>
+<p>下面会以 plaidCTF_2023 中的 Davy Jones’ Putlocker Dubs 为示例说明如何进行本地调试。<a href="https://plaidctf.com/files/new-putlocker-Davy Jones' Putlocker Dubs.310fe268c77d9f240661fd2679ce2ed29c50bc39d4c9f69d1fd9e92f429d0502.tar.gz">源码下载链接</a></p>
+
+<h2 id="项目结构">项目结构</h2>
+<p>拿到项目的源码之后。首先应该查看源码目录结构。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>└─<span class="nv">$ </span>tree <span class="nt">-L</span> 2                                          
+<span class="nb">.</span>
+├── docker-compose.yml
+├── misc
+│   └── init.sql
+├── package.json
+├── packages
+│   ├── client
+│   └── server
+├── README.md
+├── tsconfig.base.json
+├── tsconfig.dom.json
+├── tsconfig.node.json
+├── turbo.json
+└── yarn.lock
+</code></pre></div></div>
+
+<p>该目录是一个典型的 react monorepo 项目结构，Monorepo 项目结构指的是将多个相关的项目放在一个仓库中管理的项目结构。具体来说，monorepo 项目结构通常包括一个顶级的仓库，该仓库包含多个子项目，每个子项目可能是一个库、一个应用程序、一个模块等等。通常，子项目之间会共享一些代码、工具和配置。我们可以打印出更加详细的目录结构，可以发现 client 和 server 是其下的子项目，有着各自的源码和配置文件。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">.</span>
+├── docker-compose.yml
+├── exp.py
+├── misc
+│   └── init.sql
+├── package.json
+├── packages
+│   ├── client
+│   │   ├── assets
+│   │   ├── Dockerfile
+│   │   ├── index.html
+│   │   ├── nginx.conf
+│   │   ├── package.json
+│   │   ├── public
+│   │   ├── src
+│   │   ├── tsconfig.json
+│   │   └── vite.config.mjs
+│   └── server
+│       ├── build.mjs
+│       ├── Dockerfile
+│       ├── package.json
+│       ├── README.md
+│       ├── src
+│       └── tsconfig.json
+├── README.md
+├── tsconfig.base.json
+├── tsconfig.dom.json
+├── tsconfig.node.json
+├── turbo.json
+└── yarn.lock
+</code></pre></div></div>
+
+<p>与简单的 react 项目结构有所不同。一个简单的 React 应用程序，其结构通常如下：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>├── package.json
+├── public
+│   ├── favicon.ico
+│   ├── index.html
+│   └── manifest.json
+├── src
+│   ├── App.css
+│   ├── App.js
+│   ├── App.test.js
+│   ├── index.css
+│   ├── index.js
+│   ├── logo.svg
+│   └── serviceWorker.js
+└── yarn.lock
+</code></pre></div></div>
+
+<p>两种类型的项目在编译时使用的命令也不相同：</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">yarn run build</code> 是针对传统单一的代码库。</li>
+  <li><code class="language-plaintext highlighter-rouge">yarn turbo run build</code> 针对 monorepo 结构的项目。</li>
+</ul>
+
+<h2 id="项目的编译与部署">项目的编译与部署</h2>
+<p>从 Dockerfile 的行为我们可以进一步分析这个题目是怎么编译部署起来的。</p>
+
+<ol>
+  <li>编译使用 <code class="language-plaintext highlighter-rouge">yarn turbo run build --scope=@davy/server</code> 或者 yarn build 命令进行 build。
+    <ul>
+      <li>该命令会在项目根目录下找到 package.json 文件中的 “scripts” 字段，在其中查找 “build” 命令，并执行相应的脚本。如果没有配置 “build” 命令，运行 yarn build 命令可能会报错。
+        <ul>
+          <li>通过观察可以发现 server 的 packeage.json 中 build 指令执行的是 <code class="language-plaintext highlighter-rouge">node build.mjs</code>,client 中执行的是 <code class="language-plaintext highlighter-rouge">vite build</code></li>
+        </ul>
+      </li>
+      <li>–scope 参数有什么用处？
+        <ul>
+          <li>–scope 选项用于指定需要执行的脚本所在的模块或子模块。在 monorepo 项目中，通常会存在多个模块或子模块，每个模块或子模块都有自己的依赖和脚本。如果不指定 –scope，则 yarn turbo run build 会在整个 monorepo 项目中查找符合条件的脚本并执行，这样可能会执行到其他不需要的模块或子模块的脚本</li>
+        </ul>
+      </li>
+      <li>什么是 vite?
+        <ul>
+          <li>Vite 是一个面向现代浏览器的构建工具，它利用了 ES modules 原生支持的特性，通过将代码拆分成更小的模块，从而实现了更快的热更新和更快的构建速度。</li>
+          <li>vite.config.js 或 vite.config.mjs 的文件，用于配置 Vite 的行为。</li>
+          <li>vite build 会在项目中查找 vite.config.js 或 vite.config.mjs 文件，并根据配置文件中的设置构建你的项目。</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>部署项目
+    <ul>
+      <li>在 server 中，tsconfig.json 指定了编译后输出的路径为 dist，build.mjs 指定了输出的文件为 dist/index.mjs，编译好 index.mjs 后就可以使用命令 <code class="language-plaintext highlighter-rouge">node index.mjs</code> 来运行了。</li>
+      <li>在 client 中，tsconfig.json 指定了编译后输出的路径为 dist, vite build 会根据 vite.config.mjs 生成编译好的文件。编译好的文件直接放到 nginx 站点根目录下既可以运行。</li>
+      <li>需要注意的是，client vite.config.mjs 里的配置项如下，意思是说 client 启动时会监听 7008 端口，proxy 表示访问 /grapql 时会转发到 http://localhost/graphql，由于 nginx 也作了反向代理的配置，因此最终会被转发到 server。
+        <div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code> 	<span class="nx">server</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nl">port</span><span class="p">:</span> <span class="mi">7008</span><span class="p">,</span>
+    <span class="nx">proxy</span><span class="p">:</span> <span class="p">{</span>
+      <span class="dl">"</span><span class="s2">/graphql</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nl">target</span><span class="p">:</span> <span class="dl">"</span><span class="s2">http://localhost</span><span class="dl">"</span><span class="p">,</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="本地部署并调试-davy-jones-putlocker-dubs">本地部署并调试 Davy Jones’ Putlocker Dubs</h2>
+<p>题目的 docker-compose.yaml 如下：</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">3.7"</span>
+<span class="na">services</span><span class="pi">:</span>
+  <span class="na">postgres</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">postgres:15</span>
+    <span class="na">restart</span><span class="pi">:</span> <span class="s">always</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">POSTGRES_PASSWORD</span><span class="pi">:</span> <span class="s">postgres</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">./misc/init.sql:/docker-entrypoint-initdb.d/init.sql</span>
+      <span class="c1"># uncomment this line to persist data</span>
+      <span class="c1"># - ./data:/var/lib/postgresql/data</span>
+
+  <span class="na">server</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">davy-jones-locker/server:latest</span>
+    <span class="na">build</span><span class="pi">:</span>
+      <span class="na">context</span><span class="pi">:</span> <span class="s">.</span>
+      <span class="na">dockerfile</span><span class="pi">:</span> <span class="s">packages/server/Dockerfile</span>
+    <span class="na">restart</span><span class="pi">:</span> <span class="s">always</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">PG_URL</span><span class="pi">:</span> <span class="s">postgres://postgres:postgres@postgres:5432/postgres</span>
+      <span class="na">PUBLIC_HOST</span><span class="pi">:</span> <span class="s">${HOST:-localhost}</span>
+      <span class="na">PUBLIC_PORT</span><span class="pi">:</span> <span class="s">${PORT:-80}</span>
+      <span class="na">JWT_SECRET</span><span class="pi">:</span> <span class="s">${JWT_SECRET:-secret}</span>
+      <span class="na">FLAG</span><span class="pi">:</span> <span class="s">${FLAG:-PCTF{fake_flag}}</span>
+
+  <span class="na">client</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">davy-jones-locker/client:latest</span>
+    <span class="na">build</span><span class="pi">:</span>
+      <span class="na">context</span><span class="pi">:</span> <span class="s">.</span>
+      <span class="na">dockerfile</span><span class="pi">:</span> <span class="s">packages/client/Dockerfile</span>
+    <span class="na">restart</span><span class="pi">:</span> <span class="s">always</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">${PORT:-80}:80</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">HOST=${HOST:-localhost}</span>
+
+</code></pre></div></div>
+<p>从 docker-compose.yaml 中可以看出，Davy Jones’ Putlocker Dubs 这道题包含了三个部分：</p>
+<ul>
+  <li>postgresql</li>
+  <li>server</li>
+  <li>client</li>
+</ul>
+
+<p>进一步分析源码可知，client 使用 React 框架进行开发，编译之后放在 nginx 中，用于前端展示内容，server 是一个使用 TypeScript 编写的 graphql API 服务器，client 需要获取内容时，会向 server 发送 graphql 请求，server 接收到请求之后，查询 postgresql 数据库后再进行响应。</p>
+
+<pre><code class="language-mermaid">graph LR
+    subgraph docker1 [Docker_Container]
+        client[Client&lt;br&gt;React + Nginx&lt;br&gt;]
+    end
+    subgraph docker2 [Docker_Container]
+        server[Server&lt;br&gt;TypeScript +&lt;br&gt; GraphQL]
+    end
+    subgraph docker3 [Docker_Container]
+        postgres[Postgres&lt;br&gt;Database]
+    end
+
+    client --&gt;|GraphQL &lt;br&gt; Request| server
+    server --&gt;|PSQL &lt;br&gt;Query| postgres
+
+    class client,server,postgres component
+    classDef component fill:#f9d3a3,stroke:#333,stroke-width:2px,font-size:14px;
+</code></pre>
+
+<p>从源码结构来看也可以知道 server 和 client 是以 monorepo 的结构组织的，本地调试时为了方便实际上可以将单个子项目分离出来分别进行调试。</p>
+
+<p>分开部署之后的架构图如下所示：</p>
+
+<pre><code class="language-mermaid">graph LR
+    subgraph "192.168.137.131:7008"
+        client[Client React&lt;br&gt;]
+    end
+    subgraph "192.168.137.131:8883"
+        server[Server&lt;br&gt;TypeScript +&lt;br&gt; GraphQL]
+    end
+    subgraph "192.168.137.131:5432"
+        postgres[Postgres&lt;br&gt;Database]
+    end
+
+    client --&gt;|GraphQL &lt;br&gt; Request| server
+    server --&gt;|PSQL &lt;br&gt;Query| postgres
+
+    class client,server,postgres component
+    classDef component fill:#f9d3a3,stroke:#333,stroke-width:2px,font-size:14px;
+</code></pre>
+
+<h3 id="本地部署-postgresql">本地部署 postgresql</h3>
+<p>（当然，直接使用 docker 也是可以的）
+在 ubuntu 中可以使用下面的命令安装 postgresql</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>apt-get <span class="nb">install </span>postgresql postgresql-contrib
+</code></pre></div></div>
+<p>使用 postgresql 时，可以先切换到 postgres 用户，然后执行 psql 即可进入命令行。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>su postgres
+psql
+</code></pre></div></div>
+<p>由于题目在 docker-compose.yaml 中设置了 postgresql 的密码以及数据库文件，因此我们需要对本地的 postgresql 也进行修改。</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">services</span><span class="pi">:</span>
+  <span class="na">postgres</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">postgres:15</span>
+    <span class="na">restart</span><span class="pi">:</span> <span class="s">always</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">POSTGRES_PASSWORD</span><span class="pi">:</span> <span class="s">postgres</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">./misc/init.sql:/docker-entrypoint-initdb.d/init.sql</span>
+</code></pre></div></div>
+<p>因此本地需要修改 postgres 密码为 postgres 并导入数据库。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>su postgres
+psql <span class="nt">-f</span> init.sql
+psql <span class="nt">-c</span> <span class="s2">"ALTER USER postgres PASSWORD 'postgres'"</span>
+</code></pre></div></div>
+
+<h3 id="部署-server">部署 server</h3>
+
+<p>为了调试分析 TypeScript，首先可以先使用 yarn 进行编译：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>yarn run build
+</code></pre></div></div>
+<p>编译后可在 dist/ 下看到生成的 index.mjs 和 index.mjs.map。</p>
+
+<p>vscode 需要添加对应的 lauch.json，lauch.json 中加入如下的内容：</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">{</span>
+    <span class="nv">// Use IntelliSense to learn about possible attributes.</span>
+    <span class="nv">// Hover to view descriptions of existing attributes.</span>
+    <span class="nv">// For more information</span><span class="pi">,</span> <span class="nv">visit</span><span class="pi">:</span> <span class="nv">https</span><span class="pi">:</span><span class="nv">//go.microsoft.com/fwlink/</span><span class="pi">?</span><span class="nv">linkid=830387</span>
+    <span class="nv">"version"</span><span class="pi">:</span> <span class="s2">"</span><span class="s">0.2.0"</span><span class="pi">,</span>
+    <span class="s2">"</span><span class="s">configurations"</span><span class="pi">:</span> <span class="pi">[</span>
+        <span class="pi">{</span>
+            <span class="s2">"</span><span class="s">type"</span><span class="pi">:</span> <span class="s2">"</span><span class="s">node"</span><span class="pi">,</span>
+            <span class="s2">"</span><span class="s">request"</span><span class="pi">:</span> <span class="s2">"</span><span class="s">launch"</span><span class="pi">,</span>
+            <span class="s2">"</span><span class="s">name"</span><span class="pi">:</span> <span class="s2">"</span><span class="s">Launch</span><span class="nv"> </span><span class="s">Program"</span><span class="pi">,</span>
+            <span class="s2">"</span><span class="s">skipFiles"</span><span class="pi">:</span> <span class="pi">[</span>
+                <span class="s2">"</span><span class="s">&lt;node_internals&gt;/**"</span>
+            <span class="pi">],</span>
+            <span class="s2">"</span><span class="s">program"</span><span class="pi">:</span> <span class="s2">"</span><span class="s">${workspaceFolder}/dist/index.mjs"</span><span class="pi">,</span>
+            <span class="s2">"</span><span class="s">sourceMaps"</span><span class="pi">:</span> <span class="nv">true</span>
+        <span class="pi">}</span>
+    <span class="pi">]</span>
+<span class="pi">}</span>
+</code></pre></div></div>
+<p>其中 program 需要指定为生成的 js 文件。</p>
+
+<p>docker-compose.yaml 中定义了 server 运行时需要的一些环境变量：</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">server</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">davy-jones-locker/server:latest</span>
+    <span class="na">build</span><span class="pi">:</span>
+      <span class="na">context</span><span class="pi">:</span> <span class="s">.</span>
+      <span class="na">dockerfile</span><span class="pi">:</span> <span class="s">packages/server/Dockerfile</span>
+    <span class="na">restart</span><span class="pi">:</span> <span class="s">always</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">PG_URL</span><span class="pi">:</span> <span class="s">postgres://postgres:postgres@postgres:5432/postgres</span>
+      <span class="na">PUBLIC_HOST</span><span class="pi">:</span> <span class="s">${HOST:-localhost}</span>
+      <span class="na">PUBLIC_PORT</span><span class="pi">:</span> <span class="s">${PORT:-80}</span>
+      <span class="na">JWT_SECRET</span><span class="pi">:</span> <span class="s">${JWT_SECRET:-secret}</span>
+      <span class="na">FLAG</span><span class="pi">:</span> <span class="s">${FLAG:-PCTF{fake_flag}}</span>
+</code></pre></div></div>
+<p>在 vscode 中调试时需要修改 PG_URL 指向本地。在 vscode 中可以通过 lauch.json configuration 中的 env 字典来添加环境变量：</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">  </span><span class="nl">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"PG_URL"</span><span class="p">:</span><span class="w"> </span><span class="s2">"postgres://postgres:postgres@127.0.0.1:5432/postgres"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"PUBLIC_HOST"</span><span class="p">:</span><span class="w"> </span><span class="s2">"192.168.137.131"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>另外，如果想要在 TypeScript 源码中进行调试，就还需要在 tsconfig.json 中加入 sourceMap</p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span>
+  <span class="dl">"</span><span class="s2">extends</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">../../tsconfig.node.json</span><span class="dl">"</span><span class="p">,</span>
+  <span class="dl">"</span><span class="s2">compilerOptions</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">outDir</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">dist</span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">sourceMap</span><span class="dl">"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">experimentalDecorators</span><span class="dl">"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">emitDecoratorMetadata</span><span class="dl">"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">strictPropertyInitialization</span><span class="dl">"</span><span class="p">:</span> <span class="kc">false</span>
+  <span class="p">},</span>
+  <span class="dl">"</span><span class="s2">include</span><span class="dl">"</span><span class="p">:</span> <span class="p">[</span><span class="dl">"</span><span class="s2">src</span><span class="dl">"</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>注意，由于 nginx 已经监听了 80 端口，因此需要将 graphql 监听的端口换一下，需要修改 index.mts 中的 port。</p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">startStandaloneServer</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span> <span class="p">{</span>
+	<span class="na">listen</span><span class="p">:</span> <span class="p">{</span>
+		<span class="na">port</span><span class="p">:</span> <span class="mi">8883</span>
+	<span class="p">},</span>
+	<span class="c1">// eslint-disable-next-line @typescript-eslint/require-await</span>
+	<span class="na">context</span><span class="p">:</span> <span class="k">async </span><span class="p">({</span> <span class="nx">req</span> <span class="p">}):</span> <span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">Context</span><span class="o">&gt;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+		<span class="kd">const</span> <span class="nx">token</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">headers</span><span class="p">.</span><span class="nx">authorization</span><span class="p">;</span>
+
+		<span class="k">if </span><span class="p">(</span><span class="nx">token</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="p">{};</span>
+		<span class="p">}</span>
+
+		<span class="k">try</span> <span class="p">{</span>
+			<span class="kd">const</span> <span class="nx">user</span> <span class="o">=</span> <span class="nf">verifyUserToken</span><span class="p">(</span><span class="nx">token</span><span class="p">);</span>
+			<span class="k">return</span> <span class="p">{</span> <span class="nx">user</span> <span class="p">};</span>
+		<span class="p">}</span> <span class="k">catch </span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="p">{};</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">});</span>
+
+</code></pre></div></div>
+<p>更换之后， 注意重新编译：<code class="language-plaintext highlighter-rouge">yarn build</code>.</p>
+
+<p>使用 f5 启动调试，此时 8883 端口已经开启了监听，直接使用浏览器访问会显示出 Apollo Server。通过 Apollo Server 可以很便捷地查看所有的 API 定义以及数据类型，直接在界面上操作即可发起请求。</p>
+
+<p>我们可以测试一下调试功能：在 index.mts 的 register 函数中下一个断点，然后使用 Apollo Server 发起一个注册请求，即可在 vscode 中断下。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230417092301.png" alt="20230417092301" /></p>
+
+<h3 id="部署-client">部署 client</h3>
+<p>创建一个空的文件夹，然后将 client 的源码放进去，使用 vscode 打开。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230417101147.png" alt="20230417101147" /></p>
+
+<p>使用 <code class="language-plaintext highlighter-rouge">yarn install</code> 安装需要的库。</p>
+
+<p>安装扩展：</p>
+<ul>
+  <li>JavaScript Debugger Companion Extension</li>
+</ul>
+
+<p>React 在运行时可以使用 –debug 开启调试信息以便于查看程序具体的运行状态，可以在 package.json 的 scripts 处将 dev 的命令进行修改，在 vite 命令后添加参数 –debug</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"typecheck"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tsc --noEmit"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vite build"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"clean"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rm -rf dist"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"dev"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vite --debug"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"dev:public"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vite --host 0.0.0.0"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"lint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eslint --fix --ext .tsx src"</span><span class="w">
+  </span><span class="p">}</span><span class="err">,</span><span class="w">
+</span></code></pre></div></div>
+
+<p>使用 <code class="language-plaintext highlighter-rouge">npm run dev</code> 即可运行该项目，但默认情况下监听 127.0.0.1，如果需要进行更改，可以在 vite.config.mjs 中进行修改，此时服务运行起来之后将会监听 0.0.0.0:7008 端口，访问 /graphql 时会转到 http://localhost/graphql:8883 (这里的 8883 端口为上一步配置的 graphql 服务器监听的端口)</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">server:</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="err">host:</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span><span class="w">
+  </span><span class="err">port:</span><span class="w"> </span><span class="mi">7008</span><span class="p">,</span><span class="w">
+  </span><span class="err">proxy:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"/graphql"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="err">target:</span><span class="w"> </span><span class="s2">"http://localhost:8883"</span><span class="p">,</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<p>项目运行起来之后，我们就需要在 vscode 中进行配置，在 lauch.json 中输入 chrome 以便弹出补全提示，最终的配置如下：</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Use</span><span class="w"> </span><span class="err">IntelliSense</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">learn</span><span class="w"> </span><span class="err">about</span><span class="w"> </span><span class="err">possible</span><span class="w"> </span><span class="err">attributes.</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Hover</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">descriptions</span><span class="w"> </span><span class="err">of</span><span class="w"> </span><span class="err">existing</span><span class="w"> </span><span class="err">attributes.</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">For</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="err">information</span><span class="p">,</span><span class="w"> </span><span class="err">visit:</span><span class="w"> </span><span class="err">https://go.microsoft.com/fwlink/?linkid=</span><span class="mi">830387</span><span class="w">
+    </span><span class="nl">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.2.0"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"configurations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Launch Chrome"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"launch"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"chrome"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://192.168.137.131:7008"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"webRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"${workspaceFolder}"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"sourceMaps"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"sourceMapPathOverrides"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"webpack:///src/*"</span><span class="p">:</span><span class="w"> </span><span class="s2">"${webRoot}/src/*"</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<p>需要注意的几个配置：</p>
+<ul>
+  <li>url：填写 React 服务的地址。</li>
+  <li>webRoot：定义 web 根目录。</li>
+  <li>sourceMaps：开启源码映射。</li>
+  <li>sourceMapPathOverrides：用于远程调试的最重要的一个配置，映射本地源码的路径信息。</li>
+</ul>
+
+<p>配置好之后就可以使用 f5 运行调试，可以尝试在 src/views/Home/Home.tsx 中下一个断点，然后在启动的 chrome 浏览器中访问对应的页面：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230417102835.png" alt="20230417102835" /></p>
+
+<p>放行之后能够正常得到页面：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230418030432.png" alt="20230418030432" /></p>
+
+<h1 id="调试-create-react-app-部署的项目">调试 create-react-app 部署的项目</h1>
+
+<p>MDBIN 是 redPwnCTF 2021 的一道 react 框架 web 题，这里将演示如何使用 vscode 对其进行调试。在我的环境中，使用 kali 的 vscode 远程连接（Remote-SSH 插件）到 ubuntu 虚拟机中，项目部署在 ubuntu 中。</p>
+
+<p>从项目结构上可以看出这是一个 React 项目，项目的结构如下：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">.</span>
+├── docker-compose.yaml
+├── Dockerfile
+├── nginx.conf
+├── package.json
+├── package-lock.json
+├── public
+├── README.md
+├── src
+</code></pre></div></div>
+
+<p>首先安装依赖包：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm <span class="nb">install</span>
+</code></pre></div></div>
+
+<p>然后看 package.json 中 script 部分的内容。</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts start"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts build"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"eject"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts eject"</span><span class="w">
+  </span><span class="p">}</span><span class="err">,</span><span class="w">
+</span></code></pre></div></div>
+<p>这个项目与 Davy Jones’ Putlocker 非常相似，区别在与后者使用了 Vite 进行创建，而前者使用 create-react-app 项目进行构建。</p>
+
+<blockquote>
+  <p>create-react-app 和 Vite 都是用于快速构建和开发 React 项目的工具，但它们在技术实现和特性上有所不同。</p>
+</blockquote>
+
+<ol>
+  <li>
+    <p>create-react-app：
+create-react-app 是一个用于创建单页 React 应用程序的脚手架工具。它提供了一套预先配置好的工具集，包括 Webpack、Babel 和 ESLint 等，帮助开发者快速启动新项目，无需自己进行繁琐的配置。它的主要优势在于开箱即用的特性，让开发者可以专注于编写应用程序代码。</p>
+  </li>
+  <li>
+    <p>Vite：
+ Vite 是由 Vue.js 作者尤雨溪创建的一个更现代、更快速的 Web 开发构建工具。Vite 使用了原生 ES 模块（ESM）作为开发服务器，允许浏览器直接加载模块，这样可以实现极快的开发环境启动和热更新。Vite 同样支持多种框架，包括 Vue、React 和 Svelte 等。Vite 使用 Rollup 进行生产环境的构建，可以获得高效的构建结果。</p>
+  </li>
+</ol>
+
+<p>在 Davy Jones’ Putlocker 的 client 中，我们在 vite 启动时加入了 –debug 参数，在 create-react-app 中，如果要开启调试，需要将 scripts 中的 start 进行更改：</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"node --inspect=0.0.0.0:9229 node_modules/react-scripts/bin/react-scripts.js start"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts build"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"eject"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts eject"</span><span class="w">
+  </span><span class="p">}</span><span class="err">,</span><span class="w">
+</span></code></pre></div></div>
+<p>添加 inspect 参数后可以在运行 <code class="language-plaintext highlighter-rouge">npm start</code> 时监听 9229 端口。</p>
+
+<p>此时我们可以在终端中运行 npm start 将项目运行起来。由于我是远程连接到 IP 地址为 192.168.137.131 的 ubuntu 中运行这个项目，项目运行起来之后会打印如下的信息，并自动开启本地（kali）的浏览器进行访问，访问的端口为 3001。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Compiled successfully!
+
+You can now view mdbin <span class="k">in </span>the browser.
+
+  Local:            http://localhost:3000
+  On Your Network:  http://192.168.137.131:3000
+
+Note that the development build is not optimized.
+To create a production build, use yarn build.
+</code></pre></div></div>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230419213834.png" alt="20230419213834" /></p>
+
+<p>自动启动的浏览器界面并不是 vscode 调试器启动的，因此可以直接关掉。</p>
+
+<p>接着在 vscode 中添加 launch.json 文件，在其中添加 chrome 浏览器调试配置。</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Use</span><span class="w"> </span><span class="err">IntelliSense</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">learn</span><span class="w"> </span><span class="err">about</span><span class="w"> </span><span class="err">possible</span><span class="w"> </span><span class="err">attributes.</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Hover</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">descriptions</span><span class="w"> </span><span class="err">of</span><span class="w"> </span><span class="err">existing</span><span class="w"> </span><span class="err">attributes.</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">For</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="err">information</span><span class="p">,</span><span class="w"> </span><span class="err">visit:</span><span class="w"> </span><span class="err">https://go.microsoft.com/fwlink/?linkid=</span><span class="mi">830387</span><span class="w">
+    </span><span class="nl">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.2.0"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"configurations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Launch Chrome"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"launch"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"chrome"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://192.168.137.131:3000"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"webRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"${workspaceFolder}/src"</span><span class="p">,</span><span class="w">
+            </span><span class="err">//</span><span class="w"> </span><span class="nl">"sourceMaps"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+            </span><span class="err">//</span><span class="w"> </span><span class="nl">"sourceMapPathOverrides"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+            </span><span class="err">//</span><span class="w">     </span><span class="nl">"webpack:///./*"</span><span class="p">:</span><span class="w">   </span><span class="s2">"${webRoot}/*"</span><span class="p">,</span><span class="w"> 
+            </span><span class="err">//</span><span class="w"> </span><span class="p">}</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<ul>
+  <li>url 为项目启动后的地址。</li>
+  <li>webRoot 是 web 项目源码的位置。</li>
+  <li>sourceMapPathOverrides 可以设置源码映射。</li>
+</ul>
+
+<p>其中 sourceMapPathOverrides 配置用于调整源映射路径的解析规则，将 Webpack、Meteor 等打包工具生成的路径，映射到本地实际的路径，以便更好地与实际文件路径匹配。
+一些示例如下：</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nl">"sourceMapPathOverrides"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"webpack:///./~/*"</span><span class="p">:</span><span class="w"> </span><span class="s2">"${webRoot}/node_modules/*"</span><span class="p">,</span><span class="w">       </span><span class="err">//</span><span class="w"> </span><span class="err">Example:</span><span class="w"> </span><span class="s2">"webpack:///./~/querystring/index.js"</span><span class="w"> </span><span class="err">-&gt;</span><span class="w"> </span><span class="s2">"/Users/me/project/node_modules/querystring/index.js"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>更具体的配置信息可以在 <a href="https://github.com/Microsoft/vscode-chrome-debug#other-optional-launch-config-fields">vscode-chrome-debug</a> 进行查看。</p>
+
+<p>实际上，使用 create-react-app 创建的 React 项目会自动处理源代码映射，无需手动配置 sourceMapPathOverrides。因此这里我将 sourceMapPathOverrides 进行了注释。</p>
+
+<p>配置完成之后，在源码中下断点，按 f5 开启调试，此时会开启一个浏览器窗口，在页面中点击响应的逻辑就可以触发断点了。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230419220420.png" alt="20230419220420" /></p>
+
+<h1 id="参考">参考：</h1>
+<ul>
+  <li><a href="https://ts.xcatliu.com/">TypeScript 入门教程</a></li>
+  <li><a href="https://www.ruanyifeng.com/blog/2015/03/react.html">React 入门实例教程</a></li>
+  <li><a href="https://github.com/ruanyf/react-demos">React demo</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-04-18T11:07:39+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/env/2023/04/10/Debug-python-with-vscode-in-remote-docker-container.html">Debug python with vscode in remote docker container</a></div><div class="next"><span>NEXT</span><a href="/ctf/2023/04/19/PlaidCTF-2023-Writeup-Web.html">PlaidCTF 2023 Writeup Web</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

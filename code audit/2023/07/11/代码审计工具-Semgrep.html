@@ -1,0 +1,1583 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>代码审计工具 Semgrep - DumKiy's blog</title>
+
+<meta name="description" content="文章首发于先知社区：轻量级代码审计工具: Semgrep - 先知社区Semgrep 介绍什么是 Semgrep？  Semgrep 是一个开源的静态代码分析工具，旨在帮助开发人员和安全专家发现和修复软件代码中的安全漏洞、代码质量问题和最佳实践违规等。Semgrep 支持多种编程语言，包括但不限于 Python、...">
+<link rel="canonical" href="http://localhost:4000/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root">
+<div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner">
+<div class="page__header d-print-none">
+<header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand">
+<?xml version="1.0" standalone="no"?>
+
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="512.000000pt" height="512.000000pt" viewbox="0 0 512.000000 512.000000" preserveaspectratio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"></path>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"></path>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"></path>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a>
+</div>
+<button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button>
+</div>
+<nav class="navigation">
+        <ul>
+<li class="navigation__item"><a href="/">Home</a></li>
+<li class="navigation__item"><a href="/categories.html">Categories</a></li>
+<li class="navigation__item"><a href="/tags.html">tags</a></li>
+<li class="navigation__item"><a href="/about.html">About</a></li>
+<li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li>
+<li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li>
+</ul>
+      </nav>
+</div>
+  </header>
+</div>
+<div class="page__content"><div class="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto">
+<!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header">
+<header><h1>代码审计工具 Semgrep</h1></header><span class="split-space"> </span>
+          <a class="edit-on-github" title="Edit on Github" href="https://github.com/user_name/repo_name/tree/master/_posts/2023-07-11-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.md">
+            <i class="far fa-edit"></i></a>
+</div>
+<meta itemprop="headline" content="代码审计工具 Semgrep">
+<div class="article__info clearfix">
+<ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm" href="/archive.html?tag=%E5%B7%A5%E5%85%B7">工具</a>
+            </li></ul>
+<ul class="right-col menu"><li>
+<i class="far fa-calendar-alt"></i> <span>Jul 11, 2023</span>
+            </li></ul>
+</div>
+<meta itemprop="author" content="DumKiy">
+<meta itemprop="datePublished" content="2023-07-11T13:34:21+08:00">
+    <meta itemprop="keywords" content="工具">
+<div class="js-article-content">
+<div class="layout--article">
+<!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody">
+<blockquote>
+  <p>文章首发于先知社区：<a href="https://xz.aliyun.com/t/12696">轻量级代码审计工具: Semgrep - 先知社区</a></p>
+</blockquote>
+
+<h1 id="semgrep-介绍">Semgrep 介绍</h1>
+
+<p>什么是 Semgrep？</p>
+<blockquote>
+  <p>Semgrep 是一个开源的静态代码分析工具，旨在帮助开发人员和安全专家发现和修复软件代码中的安全漏洞、代码质量问题和最佳实践违规等。Semgrep 支持多种编程语言，包括但不限于 Python、JavaScript、Go、Java、PHP 等。</p>
+
+  <p>以下是 Semgrep 的一些主要特点和优势：</p>
+  <ol>
+    <li>
+<strong>易于使用</strong>: Semgrep 的语法简单直观，使用 YAML 或者纯文本格式的规则定义，使得规则编写和理解变得容易。您可以根据特定的需求编写自定义规则，或者使用社区维护的规则库。</li>
+    <li>
+<strong>快速扫描</strong>: Semgrep 使用高效的静态分析算法，能够在大型代码库中进行快速扫描。它具有可扩展性，适用于小型项目和大型企业应用程序。</li>
+    <li>
+<strong>广泛的规则库</strong>: Semgrep 提供了一个丰富的规则库，涵盖了安全漏洞、常见的代码错误、最佳实践和性能问题等多个方面。您可以直接使用这些规则，也可以根据自己的需求进行定制和扩展。</li>
+    <li>
+<strong>多语言支持</strong>: Semgrep 支持多种流行的编程语言，如 Python、JavaScript、Go、Java 等。这使得它成为跨多个技术栈的团队或项目的理想选择。</li>
+    <li>
+<strong>集成和扩展性</strong>: Semgrep 可以与各种 CI/CD 工具和代码编辑器集成，例如 GitLab、GitHub Actions、Jenkins 等。此外，Semgrep 还提供了 API 和 CLI 接口，使您能够轻松集成到现有的工作流程中。</li>
+    <li>
+<strong>可定制性</strong>: Semgrep 允许您根据自己的需求创建自定义规则。您可以使用 Semgrep 提供的丰富的模式匹配语法来编写适合特定代码风格和规范的规则。</li>
+    <li>
+<strong>活跃的社区</strong>: Semgrep 拥有活跃的开源社区支持，社区维护了大量的规则库，并定期更新和改进 Semgrep 的功能和性能。</li>
+  </ol>
+</blockquote>
+
+<p>以上介绍来自于 ChatGPT <img class="emoji" title=":heart_eyes:" alt=":heart_eyes:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f60d.png" height="20" width="20">，本文的主要目的是讲解 Semgrep 使用方法以及注意事项。</p>
+
+<h1 id="semgrep-环境搭建">Semgrep 环境搭建</h1>
+<p>Semgrep 的官方文档提供了详细的安装教程 。可参考 <a href="https://semgrep.dev/docs/getting-started/">Semgrep Privacy Policy - Semgrep</a></p>
+
+<p>安装 semgrep</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python3 <span class="nt">-m</span> pip <span class="nb">install </span>semgrep
+semgrep <span class="nt">--version</span>
+</code></pre></div></div>
+<p>更新 semgrep</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python3 <span class="nt">-m</span> pip <span class="nb">install</span> <span class="nt">--upgrade</span> semgrep 
+</code></pre></div></div>
+<h1 id="semgrep-语法教程">Semgrep 语法教程</h1>
+<p>Semgrep 的语法非常简单，把官方的教程过一遍就可以入门了，学习成本比 CodeQL 要小很多。</p>
+<ul>
+  <li><a href="https://semgrep.dev/learn">Learn - Semgrep</a></li>
+</ul>
+
+<h1 id="semgrep-使用">Semgrep 使用</h1>
+
+<h2 id="在终端使用">在终端使用</h2>
+<p>使用 semgrep 命令行操作时，可以通过 –help 查看 semgrep 支持的功能。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>└─<span class="nv">$ </span>semgrep <span class="nt">--help</span>
+Usage: semgrep <span class="o">[</span>OPTIONS] COMMAND <span class="o">[</span>ARGS]...
+
+  To get started quickly, run <span class="sb">`</span>semgrep scan <span class="nt">--config</span> auto<span class="sb">`</span>
+
+  Run <span class="sb">`</span>semgrep SUBCOMMAND <span class="nt">--help</span><span class="sb">`</span> <span class="k">for </span>more information on each subcommand
+
+  If no subcommand is passed, will run <span class="sb">`</span>scan<span class="sb">`</span> subcommand by default
+
+Options:
+  <span class="nt">-h</span>, <span class="nt">--help</span>  Show this message and exit.
+
+Commands:
+  ci                   The recommended way to run semgrep <span class="k">in </span>CI
+  install-semgrep-pro  Install the Semgrep Pro Engine
+  login                Obtain and save credentials <span class="k">for </span>semgrep.dev
+  <span class="nb">logout               </span>Remove locally stored credentials to semgrep.dev
+  lsp                  <span class="o">[</span>EXPERIMENTAL] Start the Semgrep LSP server
+  publish              Upload rule to semgrep.dev
+  scan                 Run semgrep rules on files
+  shouldafound         Report a <span class="nb">false </span>negative <span class="k">in </span>this project.
+</code></pre></div></div>
+<p>每一种模式对应不同的功能，其中最重要的是 scan 功能，用于扫描指定的源码，其他功能会在后续进行介绍。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>└─<span class="nv">$ </span>semgrep scan <span class="nt">--help</span>                                                                             
+Usage: semgrep scan <span class="o">[</span>OPTIONS] <span class="o">[</span>TARGETS]...
+
+  Run semgrep rules on files
+
+  Searches TARGET paths <span class="k">for </span>matches to rules or patterns. Defaults to searching entire
+  current working directory.
+
+  To get started quickly, run
+
+      semgrep <span class="nt">--config</span> auto <span class="nb">.</span>
+
+  This will automatically fetch rules <span class="k">for </span>your project from the Semgrep Registry. NOTE:
+  Using <span class="sb">`</span><span class="nt">--config</span> auto<span class="sb">`</span> will log <span class="k">in </span>to the Semgrep Registry with your project URL.
+
+  For more information about Semgrep, go to https://semgrep.dev.
+
+  NOTE: By default, Semgrep will report pseudonymous usage metrics to its server <span class="k">if </span>you
+  pull your configuration from the Semgrep registry. To learn more about how and why
+  these metrics are collected, please see https://semgrep.dev/docs/metrics. To modify
+  this behavior, see the <span class="nt">--metrics</span> option below.
+
+Options:
+  <span class="nt">--replacement</span> TEXT              An autofix expression that will be applied to any
+                                  matches found with <span class="nt">--pattern</span><span class="nb">.</span> Only valid with a
+                                  command-line specified pattern.
+...
+</code></pre></div></div>
+
+<h3 id="使用官方规则库registry进行扫描">使用官方规则库（Registry）进行扫描</h3>
+<p>官方维护了一个规则库（Registry）以便用户提交、查找以及选择特定的规则去扫描项目：<a href="https://semgrep.dev/explore">Explore - Semgrep</a>。其中包含了社区规则以及专业规则（Pro），社区规则存储在 github 仓库中 <a href="https://github.com/returntocorp/semgrep-rules">returntocorp/semgrep-rules: Semgrep rules registry</a>。</p>
+
+<p>Registry，根据常见的扫描需求，定制了一些扫描集合，例如 OWASP-TOP-10、CWE-TOP-25 等。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710050409.png" alt="20230710050409"></p>
+
+<p>或是根据语言进行分类：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710050628.png" alt="20230710050628"></p>
+
+<p>假如我们需要扫描 PHP，可以在 Registry 中进行搜索，查找结果包括 PHP 相关的规则集合，以及其中的所有规则：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710050759.png" alt="20230710050759"></p>
+
+<p>可以看到官方为 PHP 归纳了三个规则集合，分别是 php、php-laravel、phpcs-security-audit。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>└─<span class="nv">$ </span>semgrep <span class="nt">--config</span> <span class="s2">"p/phpcs-security-audit"</span> /mnt/share/project/ctf_archives/test/baijiacms
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2787 files tracked by git with 10 Code rules:
+  Scanning 748 files with 10 php rules.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:03                                                                                                                     
+                    
+                    
+┌──────────────────┐
+│ 89 Code Findings │
+└──────────────────┘
+                           
+    /mnt/share/project/ctf_archives/test/baijiacms/includes/baijiacms/common.inc.php 
+       php.lang.security.exec-use.exec-use                          
+          Executing non-constant commands. This can lead to <span class="nb">command </span>injection.
+          Details: https://sg.run/5Q1j                                        
+                                                                              
+          654┆ system<span class="o">(</span><span class="s1">'convert'</span>.<span class="nv">$quality_command</span>.<span class="s1">' '</span>.<span class="nv">$file_full_path</span>.<span class="s1">' '</span>.<span class="nv">$file_full_path</span><span class="o">)</span><span class="p">;</span>
+            ⋮┆----------------------------------------
+       php.lang.security.weak-crypto.weak-crypto                             
+          Detected usage of weak crypto <span class="k">function</span><span class="nb">.</span> Consider using stronger alternatives.
+          Details: https://sg.run/KlBn                                                 
+                                                                                       
+          372┆ <span class="nv">$seed</span> <span class="o">=</span> base_convert<span class="o">(</span>md5<span class="o">(</span>microtime<span class="o">()</span> <span class="nb">.</span> <span class="nv">$_SERVER</span><span class="o">[</span><span class="s1">'DOCUMENT_ROOT'</span><span class="o">])</span>, 16, <span class="nv">$numeric</span> ? 10 : 35<span class="o">)</span><span class="p">;</span>
+            ⋮┆----------------------------------------
+         1049┆ <span class="nv">$package</span><span class="o">[</span><span class="s1">'sign'</span><span class="o">]</span> <span class="o">=</span> strtoupper<span class="o">(</span>md5<span class="o">(</span><span class="nv">$string1</span><span class="o">))</span><span class="p">;</span>
+...
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Some files were skipped or only partially analyzed.
+  Partially scanned: 2 files only partially analyzed due to parsing or internal Semgrep errors
+
+Ran 10 rules on 748 files: 89 findings.
+
+A new version of Semgrep is available. See https://semgrep.dev/docs/upgrading
+</code></pre></div></div>
+
+<h3 id="使用本地规则库进行扫描">使用本地规则库进行扫描</h3>
+<p>离线使用时，可以将 semgrep 官方维护的社区规则库下载到本地，使用 <code class="language-plaintext highlighter-rouge">--config</code> 参数指定规则库的路径进行扫描。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>└─<span class="nv">$ </span>semgrep <span class="nt">--config</span> /mnt/share/Tools/web/code_audit/semgrep-rules/php /mnt/share/project/ctf_archives/test/baijiacms
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2788 files tracked by git with 57 Code rules:
+  Scanning 748 files with 40 php rules.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:12                                                                                                                     
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Some files were skipped or only partially analyzed.
+  Partially scanned: 2 files only partially analyzed due to parsing or internal Semgrep errors
+  Scan skipped: 5 files larger than 1.0 MB, 195 files matching .semgrepignore patterns
+  For a full list of skipped files, run semgrep with the <span class="nt">--verbose</span> flag.
+
+Ran 57 rules on 748 files: 257 findings.
+
+A new version of Semgrep is available. See https://semgrep.dev/docs/upgrading
+
+</code></pre></div></div>
+
+<p>semgrep 提供了 -o 参数可以输出到文件，但无论是否加不加 <code class="language-plaintext highlighter-rouge">--force-color / --no-force-color</code> 参数，输出到文件中的内容都会带上颜色字符，导致在文件中查看并不方便，确实有点坑，但借助 sed 可以消除这些字符。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep scan <span class="nt">--config</span> /mnt/share/Tools/web/code_audit/semgrep-rules/php /mnt/share/project/ctf_archives/test/baijiacms <span class="nt">--no-force-color</span>  <span class="nt">--dataflow-traces</span> | <span class="nb">sed</span> <span class="s1">'s/\x1B\[[0-9;]*[mK]//g'</span> <span class="o">&gt;</span> result.txt
+</code></pre></div></div>
+
+<h2 id="在-vscode-中使用">在 vscode 中使用</h2>
+<p>vscode 中的 semgrep 插件主要用于配置规则文件路径、排除文件等，配置项如下：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710044056.png" alt="20230710044056"></p>
+
+<p>其中 configuration 可以配置规则文件路径用于离线场景下的扫描，如果没有指定， semgrep 会从官方社区获取规则文件内容。</p>
+
+<p>配置完后，vscode 会根据配置规则自动扫描当前 workspace，扫描结果会直接显示在 vscode 的 problem 窗口中，为了方便观察漏洞类型，可以切换树视图。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710043746.png" alt="20230710043746"></p>
+
+<p>树视图下的第一列显示了匹配的规则名：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710044004.png" alt="20230710044004"></p>
+
+<p>如果同时安装了对应语言的插件，Problem 窗口也会出现其他的错误信息，此时可以通过关键词过滤出 semgrep 条目。</p>
+
+<h2 id="在-semgrep-cloud-platform-scp-中使用">在 Semgrep Cloud Platform (SCP) 中使用</h2>
+<p>Semgrep 云平台提供了所有 semgrep 的支持，其良好的查询以及结果展示功能是终端以及 vscode 插件所不具备的，缺点在于必须在线使用。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710223609.png" alt="20230710223609"></p>
+
+<p>云平台支持 Locally 和 CI/CD 两种方式。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710235200.png" alt="20230710235200"></p>
+
+<p>Locally 方式可以直接在终端中执行扫描命令，然后将结果发送到云平台。需要注意的是，这种方式需要先将源码目录初始化为一个 git 项目，否则会报错，并且无法指定特定的扫描规则，默认使用所有的规则，如下所示，这一次扫描使用了所有的 1591 条规则，其中包含了 513 条 Pro 规则。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>─<span class="nv">$ </span>semgrep ci                                                                       
+
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2763 files tracked by git with 1591 Code rules, 513 Pro rules:
+                                                                                                                        
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  &lt;multilang&gt;      76    7689          Community    1078                                                                
+  php              60     748          Pro rules     513                                                                
+  js              242     273                                                                                           
+  html              1      72                                                                                           
+  yaml             27       2                                                                                           
+  bash              4       2                                                                                           
+  json              4       1                                                                                           
+                                                                                                                        
+Semgrep Pro Engine may be slower and show different results than Semgrep OSS.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸ 100% 0:23:45 
+  
+  ...
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Some files were skipped or only partially analyzed.
+  Scan was limited to files tracked by git.
+  Partially scanned: 8 files only partially analyzed due to parsing or internal Semgrep errors
+  Scan skipped: 196 files matching <span class="nt">--exclude</span> patterns, 4 files larger than 1.0 MB
+  For a full list of skipped files, run semgrep with the <span class="nt">--verbose</span> flag.
+
+CI scan completed successfully.
+  Found 502 findings <span class="o">(</span>0 blocking<span class="o">)</span> from 22014 rules.
+  Uploading scan results  
+  Finalizing scan                                                                                                                                 
+  View results <span class="k">in </span>Semgrep Cloud Platform:
+    https://semgrep.dev/orgs/dr34d/findings
+    https://semgrep.dev/orgs/dr34d/supply-chain
+  No blocking findings so exiting with code 0
+</code></pre></div></div>
+
+<p>扫描完成之后，就可以在云平台中查看到扫描结果：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230711031208.png" alt="20230711031208"></p>
+
+<p>云平台中的查找功能还是比较好用的。</p>
+
+<h2 id="pro-版本与社区版本">Pro 版本与社区版本</h2>
+<p>根据官方公告：<a href="https://semgrep.dev/blog/2023/unlocking-advanced-security-for-all-with-semgrep?utm_source=product&amp;utm_medium=app&amp;utm_campaign=june6launch#semgrep-code%E2%80%99s-pro-features-for-all">Unlocking advanced security for all: Semgrep’s latest update</a>， Semgrep 官方将对所有用户开放团队版功能，其中就包括了 Pro 引擎、规则的使用。</p>
+
+<blockquote>
+  <p>我们还将免费向每个由最多10个月度贡献者组成的团队提供 Semgrep Code 的团队版功能（请参阅常见问题解答）。这包括通过 Pro 引擎进行高级代码扫描，跨文件和函数边界查找漏洞，并使用由我们的安全研究团队编写的具有高可信度的 Pro 规则。我们认为这些功能对于运行现代安全程序至关重要。<a href="https://semgrep.dev/orgs/-/settings">现在在“设置”中打开 Pro 引擎 →</a></p>
+
+  <p>为了让供应链和Code的专业功能对所有人都可用，我们将所有账户升级到团队版，并停用社区版，以求简单明了。我们认为在不同等级之间划分功能或保留功能是不利的，并希望每个用户从一开始就体验到Semgrep的全部价值。此外，为了与我们的创业计划为小团队提供的定价保持一致，并且因为我们提供更多免费的产品和功能，我们还将贡献者限制降低到10个（从20个）。</p>
+
+  <p>对于我们现有的团队版用户，如果您的使用量在修改后的限制范围内，并且已经付费，我们将与您联系调整账单。如果您超过了新的限制，您将有时间到 2023 年 7 月 31 日调整使用量和/或购买额外的席位。我们希望确保每个人过渡顺利；您可以通过发送电子邮件至 support@semgrep.com 咨询或反馈问题，或阅读有关定价、计费或使用限制的文档。</p>
+</blockquote>
+
+<h3 id="pro-规则有什么不同">Pro 规则有什么不同？</h3>
+<p>Pro 规则是 Semgrep 官方维护的高可信度、专业的规则集合，仅在团队级别及以上的功能中可用，由于官方已经对所有用户开放的团队版功能，所以现在可以直接使用了。</p>
+
+<p>以 php 规则集合为例，该规则集合中有 29 条都是 Pro 规则。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710231558.png" alt="20230710231558"></p>
+
+<p>不登陆的情况下，使用该规则集合扫描会显示仅有 16 条规则。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep scan <span class="nt">--config</span> <span class="s2">"p/php"</span> /mnt/share/project/ctf_archives/test/baijiacms  | <span class="nb">sed</span> <span class="s1">'s/\x1B\[[0-9;]*[mK]//g'</span> <span class="o">&gt;</span> result.txt   
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2789 files tracked by git with 16 Code rules:
+  Scanning 748 files with 16 php rules.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00 
+</code></pre></div></div>
+<p>登陆之后再进行扫描就可以使用所有规则了：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep scan <span class="nt">--config</span> <span class="s2">"p/php"</span> /mnt/share/project/ctf_archives/test/baijiacms  | <span class="nb">sed</span> <span class="s1">'s/\x1B\[[0-9;]*[mK]//g'</span> <span class="o">&gt;</span> result.txt
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2789 files tracked by git with 45 Code rules, 29 Pro rules:
+  Scanning 748 files with 43 php rules.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:03
+</code></pre></div></div>
+
+<p>对比社区规则与 Pro 规则中对命令注入的匹配规则：</p>
+
+<p>社区规则：exec-use.yaml，仅仅只是匹配部分命令执行函数的调用，既不全面也没有使用污点分析。</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">patterns</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">$FUNC(...);</span>
+  <span class="pi">-</span> <span class="na">pattern-not</span><span class="pi">:</span> <span class="s">$FUNC('...', ...);</span>
+  <span class="pi">-</span> <span class="na">metavariable-regex</span><span class="pi">:</span>
+      <span class="na">metavariable</span><span class="pi">:</span> <span class="s">$FUNC</span>
+      <span class="na">regex</span><span class="pi">:</span> <span class="s">exec|passthru|proc_open|popen|shell_exec|system|pcntl_exec</span>
+</code></pre></div></div>
+
+<p>Pro 规则：tainted-command-injection，其中使用 pattern-sources 匹配来自 <code class="language-plaintext highlighter-rouge">$_REQUEST</code> 等输入源， pattern-sinks 配置了部分命令执行函数，但相比之下也并不是十分完备。</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="na">pattern-sources</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">patterns</span><span class="pi">:</span>
+          <span class="pi">-</span> <span class="na">pattern-either</span><span class="pi">:</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">$_REQUEST</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">$_GET</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">$_POST</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">$_FILES</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">$_COOKIE</span>
+    <span class="na">pattern-sinks</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">patterns</span><span class="pi">:</span>
+          <span class="pi">-</span> <span class="na">pattern-either</span><span class="pi">:</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">exec(...)</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">system(...)</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">passthru(...)</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">shell_exec(...)</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="pi">|</span>
+                  <span class="s">`...`</span>
+              <span class="pi">-</span> <span class="na">patterns</span><span class="pi">:</span>
+                  <span class="pi">-</span> <span class="na">focus-metavariable</span><span class="pi">:</span> <span class="s">$COMMAND</span>
+                  <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">proc_open($COMMAND, ...)</span>
+              <span class="pi">-</span> <span class="na">patterns</span><span class="pi">:</span>
+                  <span class="pi">-</span> <span class="na">focus-metavariable</span><span class="pi">:</span> <span class="s">$COMMAND</span>
+                  <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">popen($COMMAND, ...)</span>
+              <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s">pcntl_exec(...)</span>
+</code></pre></div></div>
+
+<h3 id="pro-引擎有什么不同">Pro 引擎有什么不同？</h3>
+<p>想要在云平台中使用 Pro 引擎，需要按照如下的步骤进行开启：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230710225638.png" alt="20230710225638"></p>
+
+<p>根据开启的提示，Pro 引擎引入了文件间分析可以消除误报、引入新的结果，并且可以增加扫描时间和内存使用量。但仅在完整扫描时启用，且仅在 Java 和 Javascript 文件上运行，但在实际测试时发现其他语言也同样有效。</p>
+
+<p>终端中使用 Pro 引擎需要先进行登陆：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep login
+</code></pre></div></div>
+<p>根据输出访问对应的链接进行登陆。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Login enables additional proprietary Semgrep Registry rules and running custom policies from Semgrep Cloud Platform.
+Login at: xxxx
+</code></pre></div></div>
+<p>终端获得 token 之后，就可以安装 pro 引擎了。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep install-semgrep-pro
+</code></pre></div></div>
+
+<p>安装完后可以使用 <code class="language-plaintext highlighter-rouge">--pro</code> 参数调用 pro 引擎。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep <span class="nt">--pro</span> <span class="nt">--config</span> <span class="s2">"p/default"</span> 
+</code></pre></div></div>
+
+<h2 id="pro-规则--pro-引擎扫描">Pro 规则 + Pro 引擎扫描</h2>
+<p>Pro 引擎具备跨文件分析能力，Pro 规则更为精准，所以同时使用 Pro 引擎与 Pro 规则进行扫描效果是最好的，实际测试时可以先进行登陆，扫描时添加 <code class="language-plaintext highlighter-rouge">--pro</code> 参数。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>semgrep scan <span class="nt">--config</span> <span class="s2">"p/php"</span> /mnt/share/project/ctf_archives/test/baijiacms <span class="nt">--pro</span> 
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2789 files tracked by git with 45 Code rules, 29 Pro rules:
+  Scanning 748 files with 43 php rules.
+Semgrep Pro Engine may be slower and show different results than Semgrep OSS.
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:15   
+</code></pre></div></div>
+<p>扫描到的结果确实相对更多，但输出的格式确实一言难尽，十分不方便查看，而 vscode 插件中也没有内置 pro 参数。为了良好的展示效果似乎只能通过 Semgrep 云平台了。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌──────────────────┐
+│ 16 Code Findings │
+└──────────────────┘
+                                                                                                    
+    /mnt/share/project/ctf_archives/test/baijiacms/includes/baijiacms/common.inc.php 
+       php.lang.security.injection.tainted-filename.tainted-filename
+          File name based on user input risks server-side request forgery.    
+          Details: https://sg.run/Ayqp                                        
+                                                                              
+          501┆ <span class="k">if</span><span class="o">(</span>is_uploaded_file<span class="o">(</span><span class="nv">$filename</span><span class="o">))</span> <span class="o">{</span>
+    
+            Taint comes from:
+            597┆ <span class="nv">$filename</span> <span class="o">=</span> random<span class="o">(</span>15<span class="o">)</span> <span class="nb">.</span> <span class="s2">".{</span><span class="nv">$extention</span><span class="s2">}"</span><span class="p">;</span>
+            Taint flows through these intermediate variables:
+            372┆ <span class="nv">$seed</span> <span class="o">=</span> base_convert<span class="o">(</span>md5<span class="o">(</span>microtime<span class="o">()</span> <span class="nb">.</span> <span class="nv">$_SERVER</span><span class="o">[</span><span class="s1">'DOCUMENT_ROOT'</span><span class="o">])</span>, 16, <span class="nv">$numeric</span> ? 10 :    
+  35<span class="o">)</span><span class="p">;</span>                                                                                                               
+            382┆ <span class="nv">$hash</span> .<span class="o">=</span> <span class="nv">$seed</span><span class="o">{</span>mt_rand<span class="o">(</span>0, <span class="nv">$max</span><span class="o">)}</span><span class="p">;</span>
+            <span class="k">then </span>reaches:
+            372┆ <span class="nv">$seed</span> <span class="o">=</span> base_convert<span class="o">(</span>md5<span class="o">(</span>microtime<span class="o">()</span> <span class="nb">.</span> <span class="nv">$_SERVER</span><span class="o">[</span><span class="s1">'DOCUMENT_ROOT'</span><span class="o">])</span>, 16, <span class="nv">$numeric</span> ? 10 :    
+  35<span class="o">)</span><span class="p">;</span>                                                                                                               
+    
+            Taint flows through these intermediate variables:
+            597┆ <span class="nv">$filename</span> <span class="o">=</span> random<span class="o">(</span>15<span class="o">)</span> <span class="nb">.</span> <span class="s2">".{</span><span class="nv">$extention</span><span class="s2">}"</span><span class="p">;</span>
+            602┆ <span class="nv">$file_tmp_name</span> <span class="o">=</span> SYSTEM_WEBROOT <span class="nb">.</span> <span class="nv">$path</span> <span class="nb">.</span> <span class="nv">$extpath</span><span class="nb">.</span> <span class="nv">$filename</span><span class="p">;</span>
+    
+            This is how taint reaches the sink:
+            609┆ <span class="k">return </span>file_save<span class="o">(</span><span class="nv">$file_tmp_name</span>,<span class="nv">$filename</span>,<span class="nv">$extention</span>,<span class="nv">$file_full_path</span>,<span class="nv">$file_relative_path</span><span class="o">)</span><span class="p">;</span>
+            Taint flows through these intermediate variables:
+            637┆ <span class="k">function                                                                                            
+  </span>file_save<span class="o">(</span><span class="nv">$file_tmp_name</span>,<span class="nv">$filename</span>,<span class="nv">$extention</span>,<span class="nv">$file_full_path</span>,<span class="nv">$file_relative_path</span>,<span class="nv">$allownet</span><span class="o">=</span><span class="nb">true</span><span class="o">)</span>        
+            <span class="k">then </span>call to:
+            642┆ <span class="k">if</span><span class="o">(!</span>file_move<span class="o">(</span><span class="nv">$file_tmp_name</span>, <span class="nv">$file_full_path</span><span class="o">))</span> <span class="o">{</span>
+            Taint flows through these intermediate variables:
+            499┆ <span class="k">function </span>file_move<span class="o">(</span><span class="nv">$filename</span>, <span class="nv">$dest</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">then </span>reaches:
+            501┆ <span class="k">if</span><span class="o">(</span>is_uploaded_file<span class="o">(</span><span class="nv">$filename</span><span class="o">))</span> <span class="o">{</span>
+    
+            ⋮┆----------------------------------------
+          506┆ <span class="k">return </span>is_file<span class="o">(</span><span class="nv">$dest</span><span class="o">)</span><span class="p">;</span>
+    
+            Taint comes from:
+            581┆ <span class="nv">$filename</span> <span class="o">=</span> random<span class="o">(</span>15<span class="o">)</span> <span class="nb">.</span> <span class="s2">".{</span><span class="nv">$extention</span><span class="s2">}"</span><span class="p">;</span>
+            Taint flows through these intermediate variables:
+            372┆ <span class="nv">$seed</span> <span class="o">=</span> base_convert<span class="o">(</span>md5<span class="o">(</span>microtime<span class="o">()</span> <span class="nb">.</span> <span class="nv">$_SERVER</span><span class="o">[</span><span class="s1">'DOCUMENT_ROOT'</span><span class="o">])</span>, 16, <span class="nv">$numeric</span> ? 10 :    
+  35<span class="o">)</span><span class="p">;</span>                                                                                                               
+            382┆ <span class="nv">$hash</span> .<span class="o">=</span> <span class="nv">$seed</span><span class="o">{</span>mt_rand<span class="o">(</span>0, <span class="nv">$max</span><span class="o">)}</span><span class="p">;</span>
+            <span class="k">then </span>reaches:
+            372┆ <span class="nv">$seed</span> <span class="o">=</span> base_convert<span class="o">(</span>md5<span class="o">(</span>microtime<span class="o">()</span> <span class="nb">.</span> <span class="nv">$_SERVER</span><span class="o">[</span><span class="s1">'DOCUMENT_ROOT'</span><span class="o">])</span>, 16, <span class="nv">$numeric</span> ? 10 :    
+  35<span class="o">)</span><span class="p">;</span>                                                                                                               
+    
+            Taint flows through these intermediate variables:
+            581┆ <span class="nv">$filename</span> <span class="o">=</span> random<span class="o">(</span>15<span class="o">)</span> <span class="nb">.</span> <span class="s2">".{</span><span class="nv">$extention</span><span class="s2">}"</span><span class="p">;</span>
+            584┆ <span class="nv">$file_full_path</span> <span class="o">=</span> WEB_ROOT <span class="nb">.</span> <span class="nv">$path</span> <span class="nb">.</span> <span class="nv">$extpath</span><span class="nb">.</span> <span class="nv">$filename</span><span class="p">;</span>
+    
+            This is how taint reaches the sink:
+            586┆ <span class="k">return                                                                                              
+  </span>file_save<span class="o">(</span><span class="nv">$file</span><span class="o">[</span><span class="s1">'tmp_name'</span><span class="o">]</span>,<span class="nv">$filename</span>,<span class="nv">$extention</span>,<span class="nv">$file_full_path</span>,<span class="nv">$file_relative_path</span><span class="o">)</span><span class="p">;</span>                   
+            Taint flows through these intermediate variables:
+            637┆ <span class="k">function                                                                                            
+  </span>file_save<span class="o">(</span><span class="nv">$file_tmp_name</span>,<span class="nv">$filename</span>,<span class="nv">$extention</span>,<span class="nv">$file_full_path</span>,<span class="nv">$file_relative_path</span>,<span class="nv">$allownet</span><span class="o">=</span><span class="nb">true</span><span class="o">)</span>        
+            <span class="k">then </span>call to:
+            642┆ <span class="k">if</span><span class="o">(!</span>file_move<span class="o">(</span><span class="nv">$file_tmp_name</span>, <span class="nv">$file_full_path</span><span class="o">))</span> <span class="o">{</span>
+            Taint flows through these intermediate variables:
+            499┆ <span class="k">function </span>file_move<span class="o">(</span><span class="nv">$filename</span>, <span class="nv">$dest</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">then </span>reaches:
+            506┆ <span class="k">return </span>is_file<span class="o">(</span><span class="nv">$dest</span><span class="o">)</span><span class="p">;</span>
+            ...
+</code></pre></div></div>
+
+<p>在等出的情况下使用 <code class="language-plaintext highlighter-rouge">--pro</code> 参数，semgrep 会提示要求登陆后使用，<strong>但扫描时间与扫描结果与不添加 <code class="language-plaintext highlighter-rouge">--pro</code> 参数时也不一样。</strong>，重新登陆之后再次扫描，发现结果居然与不登陆的时候一样（！！？）</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>└─<span class="nv">$ </span>semgrep scan <span class="nt">--config</span> /mnt/share/Tools/web/code_audit/semgrep-rules/php /mnt/share/project/ctf_archives/test/baijiacms <span class="nt">--pro</span> 
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 2767 files tracked by git with 57 Code rules:
+  Scanning 748 files with 40 php rules.
+<span class="o">!!!</span>This is a proprietary extension of semgrep.!!!
+<span class="o">!!!</span>You must be logged <span class="k">in </span>to access this extension!!!
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:30 
+</code></pre></div></div>
+<h1 id="注意隐私策略">注意：隐私策略</h1>
+<p>根据官方的隐私策略 <a href="https://semgrep.dev/docs/metrics/">Semgrep Privacy Policy - Semgrep</a> 的相关描述。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>semgrep <span class="nt">--config</span><span class="o">=</span>myrule.yaml  <span class="c"># → no metrics (loading rules from local file)</span>
+<span class="nv">$ </span>semgrep <span class="nt">--config</span><span class="o">=</span>p/python     <span class="c"># → metrics enabled (fetching Registry)</span>
+<span class="nv">$ </span>semgrep login <span class="o">&amp;&amp;</span> semgrep ci   <span class="c"># → metrics enabled (logged in to semgrep.dev)</span>
+</code></pre></div></div>
+<ol>
+  <li>当仅使用本地配置文件或命令行搜索模式运行时，官方不会收集相关信息。</li>
+  <li>当使用 Registry 中的规则时，官方会收集所需数据以帮助维护人员完善规则。</li>
+  <li>当使用云平台时，官方也会收集这些数据，并且将结果存放在云平台中。</li>
+</ol>
+
+<p>收集数据的具体内容可见：<a href="https://semgrep.dev/docs/metrics/#data-collected-as-metrics">Data collected as metrics</a></p>
+
+<p>用户也可以通过指定 <code class="language-plaintext highlighter-rouge">--metrics</code> 选项来控制数据的发送。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">--metrics</span> auto：（默认）每当从 Semgrep 注册表中提取规则时都会发送
+<span class="nt">--metrics</span> on：每次 Semgrep 运行时都会发送
+<span class="nt">--metrics</span> off：永远不会发送 
+</code></pre></div></div>
+<p>如果有隐私考虑的话，建议离线使用规则库，并添加 <code class="language-plaintext highlighter-rouge">--metrics off</code> 参数。</p>
+
+<h1 id="其他资源">其他资源</h1>
+
+<h2 id="在线测试">在线测试</h2>
+<p>官方提供了一个 Playground 来辅助规则的编写</p>
+<ul>
+  <li><a href="https://semgrep.dev/playground/new">Playground - Semgrep</a></li>
+</ul>
+
+<h2 id="一些开源规则库">一些开源规则库</h2>
+<p>github 中有一些开源出来的规则库可供参考。</p>
+<ul>
+  <li>
+<a href="https://github.com/0xdea/semgrep-rules">0xdea/semgrep-rules: A collection of my Semgrep rules to facilitate vulnerability research.</a>: C\C++</li>
+  <li><a href="https://github.com/federicodotta/semgrep-rules">federicodotta/semgrep-rules: A collection of my Semgrep rules</a></li>
+  <li>
+<a href="https://github.com/trailofbits/semgrep-rules">trailofbits/semgrep-rules: Semgrep queries developed by Trail of Bits.</a>: GO、JavaScript、Python、Rs</li>
+  <li>
+<a href="https://github.com/dgryski/semgrep-go">dgryski/semgrep-go: Go rules for semgrep and go-ruleguard</a>: GO</li>
+  <li>
+<a href="https://github.com/elttam/semgrep-rules">elttam/semgrep-rules</a>: C、C#、Java、Kotlin、Python、PHP</li>
+  <li><a href="https://github.com/frappe/semgrep-rules">frappe/semgrep-rules: Semgrep rules specific to Frappe Framework</a></li>
+  <li>
+<a href="https://github.com/Decurity/semgrep-smart-contracts">Decurity/semgrep-smart-contracts: Semgrep rules for smart contracts based on DeFi exploits</a>:Solidity</li>
+  <li>
+<a href="https://github.com/mindedsecurity/semgrep-rules-android-security">mindedsecurity/semgrep-rules-android-security: A collection of Semgrep rules derived from the OWASP MASTG specifically for Android applications.</a>: Java</li>
+  <li>
+<a href="https://github.com/vmnguyen/semgrep-rules">vmnguyen/semgrep-rules: My custom semgrep rules</a>：Java、Golang、Python、Javascript</li>
+</ul>
+
+<h1 id="结语">结语</h1>
+<p>本文对 semgrep 的基本使用以及注意事项进行了介绍，本人也是第一次使用，如有错误请及时指出。从结果来看，semgrep 优点在于轻量级，扫描速度快、规则定制简单，但污点分析能力并不算强，如果去定制一些规则去做危险函数匹配，配合 vscode 插件，对代码审计还是有帮助的。</p>
+
+<p>编写规则如果想省事也可以交给 chatGPT <img class="emoji" title=":heart_eyes:" alt=":heart_eyes:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f60d.png" height="20" width="20"></p>
+<blockquote>
+  <p>I want you to act as a code audit expert specializing in semgrep rules. Your role will involve helping me understand and utilize semgrep effectively for code review purposes. You should be proficient in semgrep’s syntax, rules, and patterns. Your tasks will include explaining the purpose and functionality of existing semgrep rules, assisting in the interpretation of semgrep scan results, and guiding me in the customization and creation of custom semgrep rules. Your expertise in code auditing and semgrep will be crucial in ensuring the thoroughness and accuracy of our code reviews, helping us identify and address potential security vulnerabilities, bugs, and best practice violations.</p>
+</blockquote>
+
+<p>prompt 取自：<a href="https://github.com/DummyKitty/Cyber-Security-chatGPT-prompt">DummyKitty/Cyber-Security-chatGPT-prompt: some prompt about cyber security</a></p>
+
+<h1 id="参考">参考</h1>
+<ul>
+  <li><a href="https://mp.weixin.qq.com/s?__biz=MzIzMjYzNTQwMA==&amp;mid=2247484260&amp;idx=1&amp;sn=d109621cc64576b631642c508537f7ef&amp;chksm=e890ae03dfe7271574b3d929629556ce535b3c725f0067f6b5f76d439dfb3fba5efb4b9a87a4&amp;scene=126&amp;sessionid=1648174256&amp;subscene=207&amp;key=c184f4d6bd516cbc00f9758355bacf18b4b94e6eea2a7952de3fccc8e44cd10a8a9c1762db8b923cd49976f85edd06fd6a0cb9489f007d16ee6ce88970f1be9e9e49b530d4a5b0cab8147199314bd3b3326c3904dff8dfcb97d4d8c1038f563d57bafa3ec4738815a7bcd36bde7433b04553086900c8e5f938840ce3404776b3&amp;ascene=0&amp;uin=NTY2NTA4NjQ%3D&amp;devicetype=Windows+Server+2016+x64&amp;version=6305002e&amp;lang=zh_CN&amp;exportkey=A5im">semgrep 分析log4j2</a></li>
+  <li><a href="http://blog.nsfocus.net/rsa-2023insights/">洞见RSA 2023：开发者应该知道的5个开源安全工具</a></li>
+  <li><a href="https://www.gushiciku.cn/pl/aRy2">Semgrep代码审计体验_明天的乌云 - MdEditor</a></li>
+  <li><a href="https://semgrep.dev/blog/2023/unlocking-advanced-security-for-all-with-semgrep?utm_source=product&amp;utm_medium=app&amp;utm_campaign=june6launch#semgrep-code%E2%80%99s-pro-features-for-all">为所有人解锁高级安全性：Semgrep 的最新更新</a></li>
+  <li><a href="https://github.com/ASTTeam/Semgrep">ASTTeam/Semgrep: 《深入理解Semgrep》Finding vulnerabilities with Semgrep.</a></li>
+</ul>
+</div>
+<section class="article__sharing d-print-none"></section><div class="d-print-none">
+<footer class="article__footer"><meta itemprop="dateModified" content="2023-07-11T13:34:21+08:00">
+<!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe">
+<div class="subscribe">
+<i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a>
+</div>
+</div>
+<div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png">
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix">
+<div class="previous">
+<span>PREVIOUS</span><a href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a>
+</div>
+<div class="next">
+<span>NEXT</span><a href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a>
+</div>
+</div>
+</div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div>
+<section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div>
+<div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main">
+<div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy">
+<meta itemprop="url" content="/">
+<meta itemprop="description" content="Watch And Learn.">
+<div class="footer__author-links">
+<div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon">
+<svg fill="#000000" width="24px" height="24px" viewbox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z"></path>
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div>
+<div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> &amp; <a title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div>
+</div>
+    </div>
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal">
+<script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text">
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div>
+</div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

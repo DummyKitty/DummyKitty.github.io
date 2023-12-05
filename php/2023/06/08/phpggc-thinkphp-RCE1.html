@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>phpggc thinkphp RCE1 - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="RCE1影响范围：  thinkphp 5.1.x-5.2.x使用phpggc ThinkPHP/RCE1 system id  -b分析整个调用链如下所示：think\process\pipes\Windows::__destruct()                                    |...">
+<link rel="canonical" href="http://localhost:4000/php/2023/06/08/phpggc-thinkphp-RCE1.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,167 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html">Windows 提权（二）进程相关提权方式</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="%E5%B7%A5%E5%85%B7" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Jul 11</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html">代码审计工具 Semgrep</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="RMI" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 04</span><a itemprop="headline" class="item__header" href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>80 post articles, 5 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>phpggc thinkphp RCE1</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-06-07-phpggc-thinkphp-RCE1.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="phpggc thinkphp RCE1"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Deserialization">Deserialization</a>
             </li><li>
-                <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
-              </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=thinkphp">thinkphp</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jun 08, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-06-08T06:21:03+08:00">
+    <meta itemprop="keywords" content="Deserialization,thinkphp"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h3 id="rce1">RCE1</h3>
+<p>影响范围：</p>
+<ul>
+  <li>thinkphp 5.1.x-5.2.x</li>
+</ul>
+
+<h4 id="使用">使用</h4>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>phpggc ThinkPHP/RCE1 system <span class="nb">id</span>  <span class="nt">-b</span>
+</code></pre></div></div>
+
+<h4 id="分析">分析</h4>
+<p>整个调用链如下所示：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">think\process\pipes\Windows</span><span class="o">::</span><span class="nf">__destruct</span><span class="p">()</span>                                
+    <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">removeFiles</span><span class="p">();</span>                                    
+    <span class="o">|</span> <span class="nb">file_exists</span><span class="p">()</span>                     
+    <span class="nc">think\model\concern\Conversion</span><span class="o">::</span><span class="nf">__toString</span><span class="p">()</span>
+        <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">toJson</span><span class="p">()</span>
+        <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">toArray</span><span class="p">()</span>
+        <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">getAttr</span><span class="p">()</span>
+        <span class="nc">think\model\concern\Attribute</span><span class="o">::</span><span class="nf">getAttr</span><span class="p">()</span>
+            <span class="o">|</span> <span class="nv">$closure</span><span class="p">(</span><span class="nv">$value</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>   <span class="o">*</span> <span class="o">&lt;----</span> 
+            <span class="c1">// 闭包</span>
+</code></pre></div></div>
+
+<p>这一条链的 sink 点比较有意思，通过利用闭包函数达成命令执行：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">function</span> <span class="n">getAttr</span><span class="p">(</span><span class="nv">$name</span><span class="p">,</span> <span class="o">&amp;</span><span class="nv">$item</span> <span class="o">=</span> <span class="kc">null</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="mf">...</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">isset</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">withAttr</span><span class="p">[</span><span class="nv">$fieldName</span><span class="p">]))</span> <span class="p">{</span>
+        <span class="mf">...</span>
+        <span class="nv">$closure</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">withAttr</span><span class="p">[</span><span class="nv">$fieldName</span><span class="p">];</span>
+        <span class="nv">$value</span>   <span class="o">=</span> <span class="nv">$closure</span><span class="p">(</span><span class="nv">$value</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>
+    <span class="p">}</span> 
+    <span class="mf">...</span>
+    <span class="k">return</span> <span class="nv">$value</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>根据 <code class="language-plaintext highlighter-rouge">$fieldName</code> 的值，从<code class="language-plaintext highlighter-rouge">$this-&gt;withAttr</code>这个数组中取值来赋值给 <code class="language-plaintext highlighter-rouge">$closure</code>，然后将<code class="language-plaintext highlighter-rouge">$closure</code> 当作函数来进行调用，因此只要控制了 <code class="language-plaintext highlighter-rouge">$closure</code> 就可以执行任意方法例如 system。</p>
+
+<p>这里在执行 system 方法时传入了两个参数，system 的第二个参数用于存储执行后的状态码。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cd">/**
+ * Execute an external program and display the output
+ * system() is just like the C version of the function in that it executes the given `command` and outputs the result.
+ *
+ * @param string $command The command that will be executed.
+ * @param int|null $result_code If the `result_code` argument is present, then the return status of the executed command will be written to this variable.
+ * @return bool|string Returns the last line of the command output on success, and `false` on failure.
+ */</span>
+<span class="k">function</span> <span class="n">system</span><span class="p">(</span><span class="nv">$command</span><span class="p">,</span> <span class="o">&amp;</span><span class="nv">$result_code</span> <span class="o">=</span> <span class="kc">null</span><span class="p">)</span><span class="o">:</span> <span class="n">bool</span><span class="o">|</span><span class="n">string</span> <span class="p">{</span> <span class="cm">/* function body is hidden */</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>向上查找 getAttr 函数，可以找到相当多的调用点。phpggc 使用的这条链可以追溯到<code class="language-plaintext highlighter-rouge">think\model\concern\Conversion::__toString()</code></p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">think\model\concern\Conversion</span><span class="o">::</span><span class="nf">__toString</span><span class="p">()</span>
+    <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">toJson</span><span class="p">()</span>
+    <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">toArray</span><span class="p">()</span>
+    <span class="o">|</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">getAttr</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>toString 方法的常用触发点有以下的几种：</p>
+<ul>
+  <li>echo (<code class="language-plaintext highlighter-rouge">$obj</code>) / print(<code class="language-plaintext highlighter-rouge">$obj</code>) 打印时会触发</li>
+  <li>反序列化对象与字符串连接时</li>
+  <li>反序列化对象参与格式化字符串时</li>
+  <li>反序列化对象与字符串进行==比较时（PHP进行==比较的时候会转换参数类型）</li>
+  <li>反序列化对象参与格式化SQL语句，绑定参数时</li>
+  <li>反序列化对象在经过php字符串函数，如 strlen()、addslashes()时</li>
+  <li>在in_array()方法中，第一个参数是反序列化对象，第二个参数的数组中有 toString返回的字符串的时候 toString 会被调用</li>
+  <li>反序列化的对象作为 class_exists() 的参数的时候</li>
+  <li>作为 <strong>file_exists()</strong> 函数时也会触发</li>
+</ul>
+
+<p>正好 <code class="language-plaintext highlighter-rouge">think\process\pipes\Windows::__destruct</code> 这个反序列化入口点会执行 removeFiles 函数，removeFiles 函数中就会调用 file_exists。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">private</span> <span class="k">function</span> <span class="n">removeFiles</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">files</span> <span class="k">as</span> <span class="nv">$filename</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$filename</span><span class="p">))</span> <span class="p">{</span>
+            <span class="o">@</span><span class="nb">unlink</span><span class="p">(</span><span class="nv">$filename</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">files</span> <span class="o">=</span> <span class="p">[];</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>整条链较为简单，但需要注意几个点，利用链中利用到的 <code class="language-plaintext highlighter-rouge">think\model\concern\Conversion</code> 和<code class="language-plaintext highlighter-rouge">think\model\concern\Attribute</code> 并不是一个类，而是 trait。从 PHP 的 5.4.0 版本开始,PHP 提供了一种全新的代码复用的概念,那就是Trait，简单来说就是把多个类中可能共用的方法或者属性都抽取出来，以实现代码的复用。在反序列化的利用中，trait 是无法进行反序列化的，因此在构造利用链时需要找到使用了这两个 trait 的类。</p>
+
+<p>搜索后发现只有 Model 使用了这两个 trait，但 Model 是一个抽象类，也无法直接序列化，因此只能使用其子类 Pivot</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">abstract</span> <span class="kd">class</span> <span class="nc">Model</span> <span class="kd">implements</span> <span class="nc">\JsonSerializable</span><span class="p">,</span> <span class="nc">\ArrayAccess</span>
+<span class="p">{</span>
+    <span class="kn">use</span> <span class="nc">model\concern\Attribute</span><span class="p">;</span>
+    <span class="kn">use</span> <span class="nc">model\concern\RelationShip</span><span class="p">;</span>
+    <span class="kn">use</span> <span class="nc">model\concern\ModelEvent</span><span class="p">;</span>
+    <span class="kn">use</span> <span class="nc">model\concern\TimeStamp</span><span class="p">;</span>
+    <span class="kn">use</span> <span class="nc">model\concern\Conversion</span><span class="p">;</span>
+
+</code></pre></div></div>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-06-08T06:21:03+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/php/2023/06/08/phpggc-thinkphp-%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90.html">phpggc thinkphp 利用链分析</a></div><div class="next"><span>NEXT</span><a href="/php/2023/06/08/phpggc-thinkphp-RCE2.html">phpggc thinkphp RCE2</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +993,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

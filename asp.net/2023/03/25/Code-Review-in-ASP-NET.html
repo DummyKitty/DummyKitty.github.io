@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>ASP.NET 代码审计 - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="Methodology of Code ReviewCode review is a systematic task that requires us to identify security vulnerabilities in existing code. We need to build a model t...">
+<link rel="canonical" href="http://localhost:4000/asp.net/2023/03/25/Code-Review-in-ASP-NET.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,498 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html">Windows 提权（二）进程相关提权方式</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="%E5%B7%A5%E5%85%B7" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Jul 11</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/07/11/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%B7%A5%E5%85%B7-Semgrep.html">代码审计工具 Semgrep</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="RMI" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 04</span><a itemprop="headline" class="item__header" href="/java/2023/07/04/Java-JNDI-%E5%AE%89%E5%85%A8%E7%AC%94%E8%AE%B0.html">Java JNDI 安全笔记</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>80 post articles, 5 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
-            </li><li>
-                <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-              </li><li>
-                <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
-              </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>ASP.NET 代码审计</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-03-24-Code-Review-in-ASP-NET.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="ASP.NET 代码审计"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=ASP.NET">ASP.NET</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Mar 25, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-03-25T07:15:11+08:00">
+    <meta itemprop="keywords" content="ASP.NET"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="methodology-of-code-review">Methodology of Code Review</h1>
+
+<p>Code review is a systematic task that requires us to identify security vulnerabilities in existing code. We need to build a model that can be used to guide the proccess of code reviewing.</p>
+
+<p>Below are some of my thoughts.</p>
+
+<ol>
+  <li>Network protocol</li>
+  <li>Sensitive information leak: include hard code credentials, public-private key, IP, URL and source code etc.</li>
+  <li>Risk of configuration</li>
+  <li>Risk of Component</li>
+  <li>
+    <p>Vulnerabilities of code</p>
+
+    <ol>
+      <li>Broken Access Control</li>
+      <li>Injection</li>
+      <li>etc</li>
+    </ol>
+  </li>
+</ol>
+
+<p>‍</p>
+
+<h1 id="learn-basic-of-aspnet">Learn Basic of ASP.NET</h1>
+
+<p>Learn from video is the fast way to improve you operation skill.</p>
+
+<ul>
+  <li><a href="https://www.bilibili.com/video/BV16X4y1V7qH/?p=6&amp;spm_id_from=pageDriver">使用ASP.NET开发Web应用程序</a></li>
+</ul>
+
+<p>‍</p>
+
+<h2 id="official-document">Official Document</h2>
+
+<ul>
+  <li><a href="https://learn.microsoft.com/en-us/aspnet/overview">ASP.NET overview</a></li>
+  <li><a href="https://learn.microsoft.com/en-us/iis/configuration/">IIS configuration</a></li>
+</ul>
+
+<p>‍</p>
+
+<h2 id="build-a-sample-application">Build a sample application</h2>
+
+<p>Create new web application in vs.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085115-d9391wd.png" alt="20230216085115-d9391wd" /></p>
+
+<p>The visual studio will automatically create a Web Form website</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085242-ffxi89c.png" alt="20230216085242-ffxi89c" /></p>
+
+<p>It cann be noticed that an aspx file is actually composed of two parts, the front-end .aspx file and the back-end .cs file.</p>
+
+<p>The “CodeFile” specified in the front-end .aspx file refers to the corresponding .cs file.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085442-479sxxe.png" alt="20230216085442-479sxxe" /></p>
+
+<p>All of .cs file are inherit from the Page class.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085347-js8o565.png" alt="20230216085347-js8o565" />
+‍</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085552-cxd53cv.png" alt="20230216085552-cxd53cv" /></p>
+
+<p>‍</p>
+<h2 id="empty-web-application">Empty web application</h2>
+
+<p>Ceate a empty website</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085659-4t5dfcw.png" alt="20230216085659-4t5dfcw" /></p>
+
+<p>Creat a Web Form</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085815-d667kw7.png" alt="20230216085815-d667kw7" /></p>
+
+<p>This will generate an aspx file.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216085857-z3p014w.png" alt="20230216085857-z3p014w" /></p>
+
+<p>点击下方的拆分可以同时看到 aspx 前端源码以及设计界面。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216090055-0wabacp.png" alt="20230216090055-0wabacp" /></p>
+
+<p>Open the tool box</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216090219-sqhhgee.png" alt="20230216090219-sqhhgee" /></p>
+
+<p>We can drag corresponding controls from the toolbox onto the design surface. Here is an TextBox and I modifyied its ID in the properties page.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216091014-ca4ft8t.png" alt="20230216091014-ca4ft8t" /></p>
+
+<p>Other controls are the same, such as the button below.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216093355-v1xkm7t.png" alt="20230216093355-v1xkm7t" /></p>
+
+<p>So as the following label.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216093554-mkm8nbo.png" alt="20230216093554-mkm8nbo" /></p>
+
+<p>Double-clicking on a control in the design surface will take you to the code editor. The <code class="language-plaintext highlighter-rouge">btnSure_Click</code>​​is the function that is executed when the button is click.</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/图片-20230216093706-t4lwssn.png" alt="20230216093706-t4lwssn" /></p>
+
+<p>We can code whatever within this function.</p>
+
+<p>‍</p>
+
+<h1 id="build-environment">Build Environment</h1>
+
+<h2 id="aspnet-environment">ASP.NET Environment</h2>
+
+<ul>
+  <li>
+    <p><a href="https://edi.wang/post/2010/7/18/setup-iis-in-windows7-both-asp-and-aspnet">Win7下利用IIS自建网站全攻略！包括ASP和ASP.NET动态网站！高手勿入</a></p>
+  </li>
+  <li>
+    <p><a href="https://developer.aliyun.com/article/343659">Asp.Net MVC3.0项目部署到Win7 64过程总结</a></p>
+  </li>
+</ul>
+
+<p>‍</p>
+
+<h3 id="sql-server">SQL Server</h3>
+
+<ul>
+  <li>
+    <p><a href="https://www.daktronics.com/en-us/support/kb/DD3400198">How to download and install Microsoft SQL Server Management Studio 2008 for SQL Server 2008</a></p>
+  </li>
+  <li>
+    <p><a href="https://www.microsoft.com/zh-TW/download/details.aspx?id=30438">Microsoft® SQL Server® 2008 R2 SP2 - Express Edition</a></p>
+  </li>
+  <li>
+    <p><a href="https://www.cnblogs.com/turnip/p/12145330.html">SQL Server Management Studio 教程一：设置sa用户登录</a></p>
+  </li>
+</ul>
+
+<p>‍</p>
+
+<h2 id="tools">Tools</h2>
+
+<h3 id="sast-tools">SAST tools</h3>
+
+<h4 id="fortify-sca">Fortify SCA</h4>
+
+<p>Fortify Static Code Analyzer (SCA) is a software security tool that is used to identify and fix vulnerabilities in software applications. It is designed to analyze the source code of an application and identify potential security flaws before the application is deployed. Fortify SCA provides developers with a comprehensive security analysis of their code, including identifying vulnerabilities, providing remediation guidance, and tracking progress over time. This helps organizations to build more secure applications and reduce the risk of security breaches.</p>
+
+<p>Download links:</p>
+
+<blockquote>
+  <p>version 22.1</p>
+</blockquote>
+
+<p>链接：https://pan.baidu.com/s/1K5QdQJCjzeW5_MVfcPR45g?pwd=4j0u<br />
+提取码：4j0u<br />
+–来自百度网盘超级会员V5的分享</p>
+
+<blockquote>
+  <p>version 20.1.1</p>
+</blockquote>
+
+<p>链接：https://pan.baidu.com/s/1jleP1gfHUfkqer2kAULYnA?pwd=wcmt<br />
+提取码：wcmt<br />
+–来自百度网盘超级会员V5的分享</p>
+
+<p>解压密码：shungg.cn</p>
+
+<p>‍</p>
+
+<h4 id="dnspy">dnSpy</h4>
+
+<p>dnSpy is a free and open-source .NET debugger and assembly editor. It is used by developers and security researchers to reverse engineer .NET applications and analyze their code. dnSpy can decompile .NET assmblies into C#,Visual Basic and IL code, allowing users to view and modify the code of an application. It also includes a debugger that allow users to stop through the code of an application, set breakpoints, and inpsect variables.</p>
+
+<p>dnSpy supports a wide range of .NET assemblies, including .NET core, .NET Standard, and .NET Framework.</p>
+
+<p>Download  link:</p>
+
+<ul>
+  <li>https://github.com/dnSpy/dnSpy</li>
+</ul>
+
+<p>‍</p>
+
+<h4 id="dotpeek">dotPeek</h4>
+
+<p>dotPeek is a free and lightweight .NET decompiler and code viewer developed by JetBrains. It is used by developers and software engineers to reverse engineer .NET applications and view their source code. dotPeek can decompile .NET assemblies into C#, VB.NET, and IL code, allowing users to easily view and analyze the code of an application.</p>
+
+<p>Download link:</p>
+
+<ul>
+  <li>https://www.jetbrains.com/decompiler/download/</li>
+</ul>
+
+<p>‍</p>
+
+<blockquote>
+  <p>Both dotPeek and dnSpy are .NET decompilers and code viewers, but they have some differences in terms of features and capabilities.</p>
+
+  <p>dotPeek is a lightweight and user-friendly tool that is well-suited for viewing and analyzing code, while dnSpy is a more advanced tool that includes a debugger and is better suited for reverse engineering and modifying code.</p>
+</blockquote>
+
+<p>‍</p>
+
+<h3 id="front-end-code-viewing-tool">Front-end code viewing tool.</h3>
+
+<h4 id="visual-studio">Visual Studio</h4>
+
+<p>Visual Studio provides a range of features and tools that make ASP.NET development easier and more efficient.</p>
+
+<ol>
+  <li>Visual Design: Visual Studio includes a visual design tool that allows developers to create ASP.NET web pages using drag-and-drop controls. This helps developers create visually appealing and responsive web pages quickly.</li>
+</ol>
+
+<p>In the work of code review, we often face the dilemma of having only .aspx files and binary files. Visual Studio can display front-end pages with only .aspx files, which is very helpful for our auditing of front-end forms and input parameters.</p>
+
+<p>It is recommended to use Visual Studio 2015 or later versions as they can intergrate better with Fortify SCA.</p>
+
+<p>‍</p>
+
+<h3 id="third-part-component-check">Third part component check</h3>
+
+<ul>
+  <li><a href="https://relevant.software/blog/dependency-check-guide-vulnerabilities-open-source-software/">Dependency Check Guide to Help You Find Vulnerabilities in Open-source Software Components</a></li>
+</ul>
+
+<p>‍</p>
+
+<h4 id="dependencycheck">DependencyCheck</h4>
+
+<p>Download link：<a href="https://github.com/jeremylong/DependencyCheck">DependencyCheck</a><em>**</em></p>
+
+<p><strong>Environment required：</strong></p>
+
+<blockquote>
+  <ol>
+    <li>
+      <p>To analyze .NET Assemblies the dotnet 6 run time or SDK must be installed.</p>
+
+      <ul>
+        <li>Assemblies targeting other run times can be analyzed - but 6 is required to run the analysis.</li>
+      </ul>
+    </li>
+  </ol>
+</blockquote>
+
+<p><strong>Usgae：</strong></p>
+
+<p>On *nix</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./bin/dependency-check.sh -h
+$ ./bin/dependency-check.sh --out . --scan [path to jar files to be scanned]
+</code></pre></div></div>
+
+<p>On Windows</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; .\bin\dependency-check.bat -h
+&gt; .\bin\dependency-check.bat --out . --scan [path to jar files to be scanned]
+</code></pre></div></div>
+
+<p>On Mac with <a href="http://brew.sh/">Homebrew</a> Note - homebrew users upgrading from 5.x to 6.0.0 will need to run <code class="language-plaintext highlighter-rouge">dependency-check.sh --purge</code>​.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ brew update &amp;&amp; brew install dependency-check
+$ dependency-check -h
+$ dependency-check --out . --scan [path to jar files to be scanned]
+</code></pre></div></div>
+
+<p>‍</p>
+
+<p>‍</p>
+
+<h3 id="other-tools">Other tools</h3>
+
+<h4 id="c-online">C# Online</h4>
+<ul>
+  <li><a href="http://cs.jsrun.net/">C#在线编译器 </a></li>
+</ul>
+
+<p>‍</p>
+
+<h4 id="sonarsource">SonarSource</h4>
+
+<p>‍</p>
+
+<h4 id="security-code-scan">Security Code Scan</h4>
+
+<p><a href="https://security-code-scan.github.io/#IntegrationwithContinuousIntegration(CI)buildsandthird-partytools">static code analyzer for .NET</a></p>
+
+<h5 id="installation">Installation</h5>
+
+<ul>
+  <li><a href="https://marketplace.visualstudio.com/items?itemName=JaroslavLobacevski.SecurityCodeScanVS2019">Visual Studio extension</a>. Use the link or open “Tools &gt; Extensions and Updates…” Select “Online” in the tree on the left and search for SecurityCodeScan in the right upper field. Click “Download” and install.</li>
+  <li>
+    <p><a href="https://www.nuget.org/packages/SecurityCodeScan.VS2019/">NuGet package</a>.</p>
+
+    <ul>
+      <li>Right-click on the root item in your solution. Select “Manage NuGet Packages for Solution…”. Select “Browse” on the top and search for SecurityCodeScan.VS2019. Select project you want to install into and click “Install”.</li>
+      <li>Another option is to install the package into all projects in a solution: use “Tools &gt; NuGet Package Manager &gt; Package Manager Console”. Run the command <code class="language-plaintext highlighter-rouge">Get-Project -All | Install-Package SecurityCodeScan.VS2019</code>​.</li>
+    </ul>
+  </li>
+  <li><a href="https://www.nuget.org/packages/security-scan/">Stand-alone runner</a>. Install with <code class="language-plaintext highlighter-rouge">dotnet tool install --global security-scan</code>​ and run <code class="language-plaintext highlighter-rouge">security-scan /your/solution.sln</code>​. For older .NET 4.x please use <code class="language-plaintext highlighter-rouge">security-scan4x.zip</code>​ from <a href="https://github.com/security-code-scan/security-code-scan/releases">GitHub Releases</a>.</li>
+</ul>
+
+<p>‍</p>
+
+<p>‍</p>
+
+<h4 id="reko">reko</h4>
+
+<ul>
+  <li><a href="https://www.dongchuanmin.com/net/4568.html">推荐一款采用 .NET 编写的 反编译到源码工具 Reko</a></li>
+</ul>
+
+<p>‍</p>
+
+<h4 id="resharper">ReSharper</h4>
+
+<ul>
+  <li><a href="https://www.jetbrains.com/zh-cn/resharper/">适用于.NET开发者的Visual Studio扩展</a></li>
+</ul>
+
+<p>‍</p>
+
+<h2 id="debug">Debug</h2>
+
+<p>dnSpy provides additional debugging functionality. When debugging .net framework projects, you need to drag the DLLs in the /bin directory into dnSpy. You can determine which DLLs are compiled from developer code, which are third-party libraries, and which are system libraries by observing the file names in the /bin directory.</p>
+
+<p>Here is an example: filenames like App_Web_xxx and App_Code are developer-written code in .net framework projects, App_Code.dll comes from the App_Code directory in the source code, App_Web_xxx comes from other directories, and log4net.dll is a third-party library. DLLs starting with “System” are generally system libraries.</p>
+
+<div class="language-c# highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">├──</span> <span class="n">ADO</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">AjaxControlToolkit</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">AntiXSSLibrary</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">Apmtech</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Browsers</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Code</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_global</span><span class="p">.</span><span class="n">asax</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_0pk0kvkf</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_0xkl5pmw</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_d4msxdcz</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_elxhpigl</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_fyo2axmt</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_jgcwvu0c</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_kcgcewvf</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_liiehwei</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_lond3s1y</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_lqvh1efk</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_o24jbtmm</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_oovjeiib</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_r3tukein</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_WebReferences</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_wcbicfv1</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_yjumwbb1</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">App_Web_yqwe0f2h</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">log4net</span><span class="p">.</span><span class="n">dll</span>
+<span class="err">├──</span> <span class="n">System</span><span class="p">.</span><span class="n">Web</span><span class="p">.</span><span class="n">Helpers</span><span class="p">.</span><span class="n">dll</span>
+<span class="p">...</span>
+</code></pre></div></div>
+
+<p>After dragging the dll into dnSpy, you can also identify the developer’s own code compiled in the .net framework project by version. The version of the developer’s own code is generally 0.0.0.0.</p>
+
+<p>You can perform additional debugging of the .net framework in dnSpy by following these steps:</p>
+
+<p>Debug –&gt; Attach to Process –&gt; w3wp.exe –&gt; Attach</p>
+
+<p>‍</p>
+
+<h3 id="cases-where-breakpoints-are-invalid">Cases where breakpoints are invalid</h3>
+
+<p>In some cases, breakpoints are set but appear to be invalid in dnSpy. This is often because the opened dll is not loaded into memory. The following steps can help resolve this issue:</p>
+
+<ol>
+  <li>Search for the class you want to debug in the Search window. Once found, double-click to enter the code page for the class.</li>
+  <li>Check the name of the dll where the class is located, such as App_Web_jgcwvu0c.dll.</li>
+  <li>In the Modules window, search for this dll and double-click to open it. Often, the opened dll is not the one you previously dragged into dnSpy. This newly opened dll is the one that has actually been loaded into memory.</li>
+  <li>Locate the section you want to debug in the newly opened dll, set breakpoints, and attach to debug again.</li>
+</ol>
+
+<p>‍</p>
+
+<h2 id="decompile">Decompile</h2>
+
+<p>You can drag all the dlls to be decompiled into dnSpy, then select all –&gt; Export to Project.</p>
+
+<p>You can also use the dnSpy terminal program to decompile in batches. Place the dlls to be decompiled in a directory, and use <code class="language-plaintext highlighter-rouge">dnSpy.Console.exe -o C:\out\path C:\some\path</code>​ to decompile them.</p>
+
+<p>‍</p>
+
+<h1 id="vulnerabilitis">Vulnerabilitis</h1>
+
+<h2 id="vulnerability-samples">Vulnerability Samples</h2>
+
+<ul>
+  <li><a href="https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/security-warnings">Security rules</a></li>
+  <li><a href="https://rules.sonarsource.com/csharp/RSPEC-6096">SonarQube C# static code analysis rules</a>
+‍</li>
+</ul>
+
+<h2 id="labs">Labs</h2>
+
+<ul>
+  <li><a href="https://github.com/jerryhoff/WebGoat.NET">WebGoat.NET</a> - OWASP WebGoat.NET</li>
+  <li><a href="https://github.com/secvulture/dvta">Damn Vulnerable Thick Client App</a> - DVTA is a Vulnerable Thick Client Application developed in C# .NET</li>
+  <li><a href="http://aspnet.testsparker.com/">ASP.NET Vulnerable Site</a> - Online .NET application that can be used to practice hacking.</li>
+</ul>
+
+<p>‍</p>
+
+<h2 id="blogs">Blogs</h2>
+
+<ul>
+  <li><a href="https://www.cnblogs.com/nice0e3/p/15236334.html">初识.Net审计 </a></li>
+  <li><a href="https://paper.seebug.org/1894/">卷入.NET WEB</a></li>
+  <li><a href="https://www.buaq.net/go-68477.html">记一次靠猜的.net代码审计拿下目标</a></li>
+  <li><a href="https://community.sonarsource.com/t/unable-to-trigger-injection-flaws-for-c-with-developer-edition/8619">Unable to trigger injection flaws for C# with Developer Edition</a></li>
+</ul>
+
+<p>‍</p>
+
+<h2 id="github-repo">github repo</h2>
+
+<ul>
+  <li><a href="https://github.com/guardrailsio/awesome-dotnet-security">awesome-dotnet-security</a></li>
+  <li><a href="https://github.com/Ivan1ee/NET-Deserialize/blob/master/.NET%E9%AB%98%E7%BA%A7%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%EF%BC%88%E7%AC%AC%E4%B9%9D%E8%AF%BE%EF%BC%89%20BinaryFormatter%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E.pdf">NET-Deserialize</a></li>
+  <li><a href="https://rules.sonarsource.com/csharp/RSPEC-6096">sonar rules C# static code analysis</a></li>
+</ul>
+
+<p>‍</p>
+
+<p>‍</p>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-03-25T07:15:11+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/env/2023/03/10/Debug-php-with-vscode-in-remote-docker-container.html">Debug php with vscode in remote docker container</a></div><div class="next"><span>NEXT</span><a href="/chatgpt/2023/03/31/ChatGPT-Cyber-Security-Prompts.html">ChatGPT: Cyber Security Prompts</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +1324,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

