@@ -1,10 +1,11 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Windows 提权（二）进程相关提权方式 - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
 
-<meta name="description" content="Windows 本地提权进程相关提权方式哪些进程在运行tasklist /vnet startsc queryGet-ServiceGet-ProcessGet-WmiObject -Query "Select * from Win32_Process" | where {$_.Name -notlike "sv...">
-<link rel="canonical" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-2-%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E6%8F%90%E6%9D%83%E6%96%B9%E5%BC%8F.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="Watch And Learn
+">
+<link rel="canonical" href="/page6/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -254,7 +255,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -293,120 +294,40 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
-</aside></div>
+              <div class="col-aside d-print-none js-col-aside"></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>Windows 提权（二）进程相关提权方式</h1></header><span class="split-space">&nbsp;</span>
-          <a class="edit-on-github"
-            title="Edit on Github"
-            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-11-22-Windows-提权-2-进程相关提权方式.md">
-            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="Windows 提权（二）进程相关提权方式"><div class="article__info clearfix">
-      <div class="right-col">
-         <ul class="menu"> <span style="font-size: 1.2em;">📂</span><li>
-              <a class="button button--secondary button--pill button--sm"
-                href="/categories.html?tag=Pentest">Pentest</a>
-            </li></ul>
-      </div>
-      <div class="right-col"><ul class="left-col menu"> <span style="font-size: 1.2em;">📌</span><li>
-              <a class="button button--secondary button--pill button--sm"
-                href="/tags.html?tag=windows">windows</a>
-            </li><li>
-              <a class="button button--secondary button--pill button--sm"
-                href="/tags.html?tag=LPE">LPE</a>
-            </li><li>
-              <a class="button button--secondary button--pill button--sm"
-                href="/tags.html?tag=Info+gathering">Info gathering</a>
-            </li></ul></div><ul class="left-col menu"><li><i class="far fa-calendar-alt"></i> <span>Nov 20, 2023</span>
-            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-11-20T13:34:21+08:00">
-    <meta itemprop="keywords" content="windows,LPE,Info gathering"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="rce,unserialize,prototype-pollution,float-number" data-categories="CTF">
+        <div class="item__content"><span class="item__meta">Aug 26</span><a itemprop="headline" class="item__header" href="/ctf/2020/08/26/CISCN-2020%E5%88%9D%E8%B5%9B-writeup-web%E9%83%A8%E5%88%86.html">【CISCN 2020初赛】writeup web部分</a></div>
+      </li></div>
+</div><div class="layout--home"><div class="pagination"><p>81 post articles, 6 pages.</p>
+    <div class="pagination__menu">
+      <ul class="menu menu--nowrap"><li><a class="button button--secondary button--circle" href="/page5">
+            <i class="fas fa-angle-left"></i>
+          </a></li><li>
+              <a class="button button--secondary button--circle" href="/"><span>1</span></a>
+            </li><li><span class="pagination__omit"><i class="fas fa-ellipsis-h"></i></span></li><li>
+                  <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
+                </li><li>
+                  <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
+                </li><li>
+                  <a class="button button--secondary button--circle" href="/page5"><span>5</span></a>
+                </li><li>
+              <div class="button button--primary button--circle focus"><span>6</span></div>
+            </li><li><div class="button button--secondary button--circle disabled">
+            <i class="fas fa-angle-right"></i>
+          </div></li></ul>
+    </div>
+  </div></div>
+<script>/*(function () {
 
-<!-- end custom article top snippet -->
-<div class="article__content" itemprop="articleBody"><h1 id="windows-本地提权">Windows 本地提权</h1>
-<h2 id="进程相关提权方式">进程相关提权方式</h2>
-<h3 id="哪些进程在运行">哪些进程在运行</h3>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tasklist /v
-net start
-sc query
-Get-Service
-Get-Process
-Get-WmiObject <span class="nt">-Query</span> <span class="s2">"Select * from Win32_Process"</span> | where <span class="o">{</span><span class="nv">$_</span>.Name <span class="nt">-notlike</span> <span class="s2">"svchost*"</span><span class="o">}</span> | Select Name, Handle, @<span class="o">{</span><span class="nv">Label</span><span class="o">=</span><span class="s2">"Owner"</span><span class="p">;</span><span class="nv">Expression</span><span class="o">={</span><span class="nv">$_</span>.GetOwner<span class="o">()</span>.User<span class="o">}}</span> | ft <span class="nt">-AutoSize</span>
-</code></pre></div></div>
-
-<h3 id="哪些进程以-system-权限运行">哪些进程以 system 权限运行</h3>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tasklist /v /fi <span class="s2">"username eq system"</span>
-</code></pre></div></div>
-<p>如果这些进程所在目录，或加载的 dll 所在目录可写的话，可利用 dll 劫持提权。</p>
-
-<h3 id="powershell-版本">Powershell 版本</h3>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>REG QUERY <span class="s2">"HKLM</span><span class="se">\S</span><span class="s2">OFTWARE</span><span class="se">\M</span><span class="s2">icrosoft</span><span class="se">\P</span><span class="s2">owerShell</span><span class="se">\1\P</span><span class="s2">owerShellEngine"</span> /v PowerShellVersion
-</code></pre></div></div>
-<h3 id="枚举已安装程序">枚举已安装程序</h3>
-<p>已安装程序可作为提权突破点。</p>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Get-ChildItem <span class="s1">'C:\Program Files'</span>, <span class="s1">'C:\Program Files (x86)'</span> | ft Parent,Name,LastWriteTime
-Get-ChildItem <span class="nt">-path</span> Registry::HKEY_LOCAL_MACHINE<span class="se">\S</span>OFTWARE | ft Name
-</code></pre></div></div>
-
-<h3 id="枚举已安装服务">枚举已安装服务</h3>
-<div class="language-bat highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">net</span> <span class="nb">start</span>
-<span class="nb">wmic</span> <span class="kd">service</span> <span class="kd">list</span> <span class="kd">brief</span>
-<span class="nb">tasklist</span> <span class="na">/SVC
-</span></code></pre></div></div>
-<h3 id="枚举计划任务">枚举计划任务</h3>
-<div class="language-bat highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">schtasks</span> <span class="na">/query /fo </span><span class="kd">LIST</span> <span class="m">2</span><span class="o">&gt;</span><span class="kr">nul</span> <span class="o">|</span> <span class="nb">findstr</span> <span class="kd">TaskName</span>
-<span class="nb">schtasks</span> <span class="na">/query /fo </span><span class="kd">LIST</span> <span class="na">/v </span><span class="o">&gt;</span> <span class="nb">schtasks</span>.txt<span class="o">;</span> <span class="kd">cat</span> <span class="kd">schtask</span>.txt <span class="o">|</span> <span class="kd">grep</span> <span class="s2">"SYSTEM\|Task To Run"</span> <span class="o">|</span> <span class="kd">grep</span> <span class="na">-B </span><span class="m">1</span> <span class="kd">SYSTEM</span>
-<span class="kd">Get</span><span class="na">-ScheduledTask </span><span class="o">|</span> <span class="nb">where</span> <span class="o">{</span>$_.TaskPath <span class="na">-notlike </span><span class="s2">"\Microsoft*"</span><span class="o">}</span> <span class="o">|</span> <span class="kd">ft</span> <span class="kd">TaskName</span><span class="o">,</span><span class="kd">TaskPath</span><span class="o">,</span><span class="kd">State</span>
-</code></pre></div></div>
-<h3 id="枚举自启动应用">枚举自启动应用</h3>
-<div class="language-bat highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">wmic</span> <span class="kd">startup</span> <span class="kd">get</span> <span class="kd">caption</span><span class="o">,</span><span class="kd">command</span>
-<span class="nb">reg</span> <span class="nb">query</span> <span class="kd">HKLM</span>\Software\Microsoft\Windows\CurrentVersion\R
-<span class="nb">reg</span> <span class="nb">query</span> <span class="kd">HKCU</span>\Software\Microsoft\Windows\CurrentVersion\Run
-<span class="nb">reg</span> <span class="nb">query</span> <span class="kd">HKCU</span>\Software\Microsoft\Windows\CurrentVersion\RunOnce
-<span class="nb">dir</span> <span class="s2">"C:\Documents and Settings\All Users\Start Menu\Programs\Startup"</span>
-<span class="nb">dir</span> <span class="s2">"C:\Documents and Settings\</span><span class="nv">%username%</span><span class="s2">\Start Menu\Programs\Startup"</span>
-</code></pre></div></div>
-</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-11-20T13:34:21+08:00"><!-- start custom article footer snippet -->
-
-<!-- end custom article footer snippet -->
-<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
-</div><div class="article__license"><div class="license">
-    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
-      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
-        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
-      </a>
-    </p>
-  </div></div></footer>
-<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-1-%E5%88%A9%E7%94%A8%E5%AF%BC%E5%87%BA%E6%88%96%E6%9F%A5%E6%89%BE%E5%AF%86%E7%A0%81%E6%8F%90%E6%9D%83.html">Windows 提权（一）利用导出或查找密码提权</a></div><div class="next"><span>NEXT</span><a href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83-3-%E5%88%A9%E7%94%A8%E6%9C%8D%E5%8A%A1%E6%9D%83%E9%99%90%E9%94%99%E8%AF%AF%E6%8F%90%E6%9D%83.html">Windows 提权（三）利用服务权限错误提权</a></div></div></div>
-
-</div>
-
-<script>(function() {
-  var SOURCES = window.TEXT_VARIABLES.sources;
-  window.Lazyload.js(SOURCES.jquery, function() {
-    $(function() {
-      var $this ,$scroll;
-      var $articleContent = $('.js-article-content');
-      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
-      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
-      $scroll = $(scroll);
-
-      $articleContent.find('.highlight').each(function() {
-        $this = $(this);
-        $this.attr('data-lang', $this.find('code').attr('data-lang'));
-      });
-      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
-        $this = $(this);
-        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
-      });
-      $articleContent.on('click', '.anchor', function() {
-        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
-      });
-    });
-  });
-})();
+})();*/
 </script>
+
+
+
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -951,68 +872,6 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
-</script><script>
-  /* toc must before affix, since affix need to konw toc' height. */(function() {
-  var SOURCES = window.TEXT_VARIABLES.sources;
-  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
-  window.Lazyload.js(SOURCES.jquery, function() {
-    var $window = $(window);
-    var $articleContent = $('.js-article-content');
-    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
-    var toc;
-    var tocDisabled = false;
-    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
-    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
-
-    function disabled() {
-      return $col2.css('display') === 'none' || !hasToc;
-    }
-
-    tocDisabled = disabled();
-
-    toc = $tocRoot.toc({
-      selectors: TOC_SELECTOR,
-      container: $articleContent,
-      scrollTarget: hasSidebar ? '.js-page-main' : null,
-      scroller: hasSidebar ? '.js-page-main' : null,
-      disabled: tocDisabled
-    });
-
-    $window.on('resize', window.throttle(function() {
-      tocDisabled = disabled();
-      toc && toc.setOptions({
-        disabled: tocDisabled
-      });
-    }, 100));
-
-  });
-})();
-(function() {
-  var SOURCES = window.TEXT_VARIABLES.sources;
-  window.Lazyload.js(SOURCES.jquery, function() {
-    var $window = $(window), $pageFooter = $('.js-page-footer');
-    var $pageAside = $('.js-page-aside');
-    var affix;
-    var tocDisabled = false;
-    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
-
-    affix = $pageAside.affix({
-      offsetBottom: $pageFooter.outerHeight(),
-      scrollTarget: hasSidebar ? '.js-page-main' : null,
-      scroller: hasSidebar ? '.js-page-main' : null,
-      scroll: hasSidebar ? $('.js-page-main').children() : null,
-      disabled: tocDisabled
-    });
-
-    $window.on('resize', window.throttle(function() {
-      affix && affix.setOptions({
-        disabled: tocDisabled
-      });
-    }, 100));
-
-    window.pageAsideAffix = affix;
-  });
-})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

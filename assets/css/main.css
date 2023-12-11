@@ -3199,6 +3199,8 @@ ul.toc {
   margin: 0;
   color: rgba(0, 0, 0, 0.85);
   list-style-type: none;
+  height: 600px;
+  overflow-y: auto;
 }
 ul.toc > li {
   margin: 0.125rem 0;
@@ -6138,7 +6140,7 @@ html,
 }
 .page__main .col-aside > aside {
   position: absolute;
-  width: 220px;
+  width: 300px;
   overflow: hidden;
 }
 
