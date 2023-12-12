@@ -759,11 +759,49 @@ done</span> | xxd <span class="o">&gt;</span> result
 </code></pre></div></div>
 <p>但在这道题的场景下，readarray 不太好用，如果用来读取连接中的 fd 的话，readarray 会被阻塞住，导致 zArray 无法被赋值，后面的 printf 也就读不出内容。</p>
 
+<h2 id="补充">补充：</h2>
+<p>参考了其他大佬的 writeup：</p>
+<ul>
+  <li><a href="https://github.com/mephi42/ctf/blob/43222e15e7cb74844b2c686c4f32cccf74e7909f/2023.12.09-0CTF_TCTF_2023/mathexam%20-%204/script">ctf/2023.12.09-0CTF_TCTF_2023/mathexam - 4/script at 43222e15e7cb74844b2c686c4f32cccf74e7909f · mephi42/ctf</a></li>
+</ul>
+
+<p>writeup 作者额外设置了 LC_ALL 环境变量为 C。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">LC_ALL</span><span class="o">=</span>C
+</code></pre></div></div>
+
+<p>LC_ALL 环境变量用于覆盖所有其他本地化设置，它通常用于确保在特定程序运行时使用特定的语言环境。C 语言环境是最简单的语言环境，其中字符是单字节的，字符集是 ASCII，排序顺序基于字节值。</p>
+
+<p>加入该环境变量之后，read 就不会将多个字符解析成一个特殊字符，从而解决上面 \x00 缺失的问题，测试脚本如下：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<span class="nb">echo</span> <span class="nt">-en</span> <span class="s2">"</span><span class="se">\x</span><span class="s2">f0</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">12</span><span class="se">\x</span><span class="s2">00"</span> | xxd
+
+<span class="nb">echo</span> <span class="nt">-en</span> <span class="s2">"</span><span class="se">\x</span><span class="s2">f0</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">12</span><span class="se">\x</span><span class="s2">00"</span> | <span class="k">while </span><span class="nv">LC_ALL</span><span class="o">=</span>C <span class="nv">IFS</span><span class="o">=</span> <span class="nb">read</span> <span class="nt">-r</span> <span class="nt">-d</span> <span class="s1">$'</span><span class="se">\0</span><span class="s1">'</span> <span class="nt">-n</span> 1 line<span class="p">;</span>
+<span class="k">do 
+</span><span class="nb">printf</span> <span class="s2">"%c"</span> <span class="s2">"</span><span class="nv">$line</span><span class="s2">"</span>
+<span class="k">done</span> | xxd
+
+
+<span class="nb">echo</span> <span class="nt">-en</span> <span class="s2">"</span><span class="se">\x</span><span class="s2">f0</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">00</span><span class="se">\x</span><span class="s2">12</span><span class="se">\x</span><span class="s2">00"</span> | <span class="k">while </span><span class="nv">LC_ALL</span><span class="o">=</span>C <span class="nv">IFS</span><span class="o">=</span> <span class="nb">read</span> <span class="nt">-r</span> <span class="nt">-d</span> <span class="s1">$'</span><span class="se">\0</span><span class="s1">'</span> <span class="nt">-n</span> 1 line<span class="p">;</span>
+<span class="k">do 
+if</span> <span class="o">[[</span> <span class="nt">-z</span> <span class="nv">$line</span> <span class="o">]]</span> <span class="k">then
+    </span><span class="nb">echo</span> <span class="nt">-ne</span> <span class="s2">"</span><span class="se">\x</span><span class="s2">00"</span>
+<span class="k">else
+    </span><span class="nb">echo</span> <span class="nt">-ne</span> <span class="s2">"</span><span class="nv">$line</span><span class="s2">"</span>
+<span class="k">fi
+done</span> | xxd
+</code></pre></div></div>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20231211201433.png" alt="20231211201433" /></p>
+
+<p>使用二进制文件来测试也可以完全一致，可以说具备通用性了！</p>
+
 <h1 id="参考">参考</h1>
 <ul>
   <li><a href="https://0xdf.gitlab.io/2023/05/13/htb-interface.html">HTB: Interface - 0xdf hacks stuff</a></li>
   <li><a href="https://dev.to/greymd/eq-can-be-critically-vulnerable-338m">Arithmetic operation in shell script can be exploited - DEV Community</a></li>
   <li><a href="https://unix.stackexchange.com/questions/347390/bash-cant-store-hexvalue-0x00-in-variable">linux - bash can’t store hexvalue 0x00 in variable - Unix &amp; Linux Stack Exchange</a></li>
+  <li><a href="https://github.com/mephi42/ctf/blob/43222e15e7cb74844b2c686c4f32cccf74e7909f/2023.12.09-0CTF_TCTF_2023/mathexam%20-%204/script">ctf/2023.12.09-0CTF_TCTF_2023/mathexam - 4/script at 43222e15e7cb74844b2c686c4f32cccf74e7909f · mephi42/ctf</a></li>
 </ul>
 </div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-12-11T18:29:48+08:00"><!-- start custom article footer snippet -->
 
