@@ -558,15 +558,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 
 <p>以上列举的只是<code class="language-plaintext highlighter-rouge">ast</code>模块中一部分的节点类型，还有很多其他类型的节点。更详细的列表可以在Python官方文档的<code class="language-plaintext highlighter-rouge">ast</code>模块部分找到。</p>
 
-<table>
-  <tbody>
-    <tr>
-      <td>一些 CTF 题目就采用了检查 AST 节点构建沙箱, 下面是一个示例. 在这个示例中, verify_secure 函数对 compile 之后的代码进行校验, 禁止 ast.Import</td>
-      <td>ast.ImportFrom</td>
-      <td>ast.Call 这三类操作, 这样一来就无法导入模块和执行函数.</td>
-    </tr>
-  </tbody>
-</table>
+<p>一些 CTF 题目就采用了检查 AST 节点构建沙箱, 下面是一个示例. 在这个示例中, verify_secure 函数对 compile 之后的代码进行校验, 禁止 <code class="language-plaintext highlighter-rouge">ast.Import|ast.ImportFrom|ast.Call</code> 这三类操作, 这样一来就无法导入模块和执行函数.</p>
 
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">ast</span>
 <span class="kn">import</span> <span class="n">sys</span>
@@ -1286,16 +1278,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
   <li><a href="https://zhuanlan.zhihu.com/p/579057932">[PyJail] python沙箱逃逸探究·中（HNCTF题解 - WEEK2）</a></li>
   <li><a href="https://zhuanlan.zhihu.com/p/579183067">[PyJail] python沙箱逃逸探究·下（HNCTF题解 - WEEK3）</a></li>
   <li><a href="https://ctftime.org/writeup/31883">audited2</a></li>
-  <li>
-    <table>
-      <tbody>
-        <tr>
-          <td>[[GCTF 2022] Treebox</td>
-          <td>/dev/ur4ndom - Robin Jadoul](https://ur4ndom.dev/posts/2022-07-04-gctf-treebox/)</td>
-        </tr>
-      </tbody>
-    </table>
-  </li>
+  <li><a href="https://ur4ndom.dev/posts/2022-07-04-gctf-treebox/">[GCTF 2022] Treebox - /dev/ur4ndom - Robin Jadoul</a></li>
 </ul>
 </div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-05-29T13:04:02+08:00"><!-- start custom article footer snippet -->
 

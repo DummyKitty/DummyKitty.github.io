@@ -351,7 +351,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
   <span class="n">compiled</span> <span class="o">=</span> <span class="nf">compile</span><span class="p">(</span><span class="n">source_code</span><span class="p">,</span> <span class="sh">"</span><span class="s">input.py</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">exec</span><span class="sh">'</span><span class="p">)</span>
   <span class="nf">exec</span><span class="p">(</span><span class="n">compiled</span><span class="p">)</span>
 </code></pre></div></div>
-<p>下面的几种利用方式来源于 hacktricks</p>
+<p>下面的 without call 来源于 hacktricks</p>
 <h3 id="without-call">without call</h3>
 <p>如果基于 AST 的沙箱限制了执行函数,那么就需要找到一种不需要执行函数的方式执行系统命令.</p>
 <h4 id="装饰器">装饰器</h4>
@@ -717,6 +717,46 @@ list<span class="o">(</span>dict<span class="o">(</span><span class="nv">bash</s
 <p>fitler 中使用 match/case 和 if 来进行过滤。</p>
 
 <p>除了使用 filter 函数外，还可以使用 iter 和 next 函数来遍历列表，但题目 BUILTINS 中没有给出这两个函数。</p>
+
+<h3 id="打印-ast">打印 AST</h3>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">ast</span> 
+
+<span class="n">BAD_ATS</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Attribute</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">AST</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Subscript</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">comprehension</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Delete</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Try</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">For</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">ExceptHandler</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">With</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Import</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">ImportFrom</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Assign</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">AnnAssign</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Constant</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">ClassDef</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">AsyncFunctionDef</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="sh">'''</span><span class="s">
+[
+    system:=111,
+    bash:=222
+]
+</span><span class="sh">'''</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">ast</span><span class="p">.</span><span class="nf">dump</span><span class="p">(</span><span class="n">ast</span><span class="p">.</span><span class="nf">parse</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="sh">'</span><span class="s">exec</span><span class="sh">'</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+
+
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ast</span><span class="p">.</span><span class="nf">walk</span><span class="p">(</span><span class="nf">compile</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="sh">"</span><span class="s">&lt;QWB7th&gt;</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">exec</span><span class="sh">"</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">ast</span><span class="p">.</span><span class="n">PyCF_ONLY_AST</span><span class="p">)):</span>
+  <span class="k">if</span> <span class="nf">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">BAD_ATS</span><span class="p">:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">type</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="nf">exit</span><span class="p">()</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">[+] OK</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
 
 <h2 id="参考资料">参考资料</h2>
 <ul>
