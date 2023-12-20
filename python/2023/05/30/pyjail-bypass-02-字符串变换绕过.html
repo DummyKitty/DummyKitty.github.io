@@ -435,7 +435,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 <span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">59</span><span class="p">].</span><span class="n">__init__</span><span class="p">.</span><span class="nf">__getattribute__</span><span class="p">(</span><span class="sh">"</span><span class="s">__glo</span><span class="sh">"</span><span class="o">+</span><span class="sh">"</span><span class="s">bals__</span><span class="sh">"</span><span class="p">)</span>
 </code></pre></div></div>
 
-<h4 id="__mro____bases____base__互换"><code class="language-plaintext highlighter-rouge">__mro__、__bases__、__base__</code>互换</h4>
+<h4 id="__mro____bases____base__互换"><code class="language-plaintext highlighter-rouge">__mro__</code>、<code class="language-plaintext highlighter-rouge">__bases__</code>、<code class="language-plaintext highlighter-rouge">__base__</code>互换</h4>
 
 <p>三者之间可以相互替换</p>
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__mro__</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
@@ -516,7 +516,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 <span class="sh">'</span><span class="s">dddddddddddddddddddddddddddddddddddddddd</span><span class="sh">'</span>
 </code></pre></div></div>
 
-<h4 id="list--dict">list + dict</h4>
+<h4 id="list--dict-构造任意字符串">list + dict 构造任意字符串</h4>
 <p>使用 dict 和 list 进行配合可以将变量名转化为字符串，但这种方式的弊端在于字符串中不能有空格等。</p>
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">whoami</span><span class="o">=</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div></div>

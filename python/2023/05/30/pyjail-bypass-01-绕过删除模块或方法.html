@@ -347,6 +347,15 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </code></pre></div></div>
 <p>在 Python 3 中，reload() 函数被移动到 importlib 模块中，所以如果要使用 reload() 函数，需要先导入 importlib 模块。</p>
 
+<p>貌似新版本的 python 即使运行了 importlib.reload 也无法恢复了。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">importlib</span><span class="p">.</span><span class="nf">reload</span><span class="p">(</span><span class="n">__builtins__</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">module</span> <span class="sh">'</span><span class="s">builtins</span><span class="sh">'</span> <span class="p">(</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">__builtins__</span><span class="p">.</span><span class="n">__dict__</span><span class="p">[</span><span class="sh">'</span><span class="s">eval</span><span class="sh">'</span><span class="p">]</span>
+<span class="nc">Traceback </span><span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+  <span class="n">File</span> <span class="sh">"</span><span class="s">&lt;stdin&gt;</span><span class="sh">"</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="nb">KeyError</span><span class="p">:</span> <span class="sh">'</span><span class="s">eval</span><span class="sh">'</span>
+</code></pre></div></div>
+
 <h3 id="恢复-sysmodules">恢复 sys.modules</h3>
 <p>一些过滤中可能将 <code class="language-plaintext highlighter-rouge">sys.modules['os']</code> 进行修改. 这个时候即使将 os 模块导入进来,也是无法使用的.</p>
 <div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">sys</span><span class="p">.</span><span class="n">modules</span><span class="p">[</span><span class="sh">'</span><span class="s">os</span><span class="sh">'</span><span class="p">]</span> <span class="o">=</span> <span class="sh">'</span><span class="s">not allowed</span><span class="sh">'</span>
@@ -379,6 +388,27 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </span><span class="o">&gt;&gt;&gt;</span> <span class="p">().</span><span class="n">__class__</span><span class="p">.</span><span class="n">__base__</span><span class="p">.</span><span class="nf">__subclasses__</span><span class="p">()[</span><span class="mi">5</span><span class="p">]</span>
 <span class="o">&lt;</span><span class="k">class</span> <span class="err">'</span><span class="nc">bytes</span><span class="sh">'</span><span class="s">&gt;
 </span></code></pre></div></div>
+
+<h3 id="使用-globals-获取-builtins-方法">使用 globals() 获取 builtins 方法</h3>
+<p>在一些题目中，可能通过覆盖内置的函数来限制我们使用。例如下面的代码：</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">blacklist_fun_callback</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Player! It</span><span class="sh">'</span><span class="s">s already banned!</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="nb">vars</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">attr</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">dir</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">getattr</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="k">exec</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">__import__</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="nb">compile</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+<span class="n">breakpoint</span> <span class="o">=</span> <span class="n">blacklist_fun_callback</span>
+</code></pre></div></div>
+<p>但 builtins 模块是一个不可变的模块对象，这样修改仅能够在当前的作用域中生效，而 globals() 中存放了 builtins 模块的索引，因此可以通过下面的方式获取到原始的方法。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">globals</span><span class="p">()[</span><span class="sh">"</span><span class="s">__builtins__</span><span class="sh">"</span><span class="p">][</span><span class="sh">'</span><span class="s">breakpoint</span><span class="sh">'</span><span class="p">]</span>
+</code></pre></div></div>
+<p>但如果题目直接通过下面的方式来删除，那就没有办法了，即使 reload 重新导入 builtins 模块，较新版本的 python 中也无法恢复。</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">del</span> <span class="nf">globals</span><span class="p">()[</span><span class="sh">"</span><span class="s">__builtins__</span><span class="sh">"</span><span class="p">].</span><span class="n">breakpoint</span>
+</code></pre></div></div>
 
 <h2 id="参考资料">参考资料</h2>
 <ul>
