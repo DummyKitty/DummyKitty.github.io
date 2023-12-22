@@ -3,7 +3,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>CTF Pyjail 沙箱逃逸绕过合集 - DumKiy's blog</title>
 
-<meta name="description" content="文章首发于先知社区：CTF Pyjail 沙箱逃逸绕过合集 - 先知社区承接上一篇CTF Pyjail 沙箱逃逸原理合集，本文主要来谈谈绕过手法，Pyjail 绕过过滤的手法千奇百怪, 本文在复现经典历史赛题的基础上，针对不同的沙箱类型对绕过手法进行了分类，篇幅较长敬请理解。  绕过删除模块或方法  绕过基于字符...">
+<meta name="description" content="文章首发于先知社区：CTF Pyjail 沙箱逃逸绕过合集 - 先知社区承接上一篇CTF Pyjail 沙箱逃逸原理合集，本文主要来谈谈绕过手法，Pyjail 绕过过滤的手法千奇百怪, 本文在复现经典历史赛题的基础上，针对不同的沙箱类型对绕过手法进行了分类以便建立体系化的认识。  绕过删除模块或方法  绕过基于字...">
 <link rel="canonical" href="/python/2023/05/30/python-%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8%E7%BB%95%E8%BF%87.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
@@ -322,7 +322,7 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
   <p>文章首发于先知社区：<a href="https://xz.aliyun.com/t/12647">CTF Pyjail 沙箱逃逸绕过合集 - 先知社区</a></p>
 </blockquote>
 
-<p>承接上一篇CTF Pyjail 沙箱逃逸原理合集，本文主要来谈谈绕过手法，Pyjail 绕过过滤的手法千奇百怪, 本文在复现经典历史赛题的基础上，针对不同的沙箱类型对绕过手法进行了分类，篇幅较长敬请理解。</p>
+<p>承接上一篇CTF Pyjail 沙箱逃逸原理合集，本文主要来谈谈绕过手法，Pyjail 绕过过滤的手法千奇百怪, 本文在复现经典历史赛题的基础上，针对不同的沙箱类型对绕过手法进行了分类以便建立体系化的认识。</p>
 <ol>
   <li>绕过删除模块或方法</li>
   <li>绕过基于字符串匹配的过滤</li>
@@ -332,41 +332,23 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
   <li>变量覆盖与函数篡改</li>
   <li>绕过 audit hook</li>
   <li>绕过 AST 沙箱</li>
+  <li>绕过输出限制</li>
 </ol>
 
 <blockquote>
   <p>原文太长了，为了方便编辑和及时补充，我将各个部分进行了切分。</p>
+  <ul>
+    <li><a href="/python/2023/05/30/pyjail-bypass-01-绕过删除模块或方法.html">绕过删除模块或方法</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-02-字符串变换绕过.html">绕过基于字符串匹配的过滤</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-03-绕过命名空间限制.html">绕过命名空间限制</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-05-绕过长度限制.html">绕过多行限制</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-04-绕过多行限制.html">绕过长度限制</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-06-变量覆盖与函数篡改.html">变量覆盖与函数篡改</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-07-绕过-audit-hook.html">绕过 audit hook</a></li>
+    <li><a href="/python/2023/05/30/pyjail-bypass-08-绕过-AST-沙箱.html">绕过 AST 沙箱</a></li>
+    <li><a href="/python/2023/08/03/pyjail-bypass-09-绕过输出限制.html">绕过输出限制</a></li>
+  </ul>
 </blockquote>
-
-<h2 id="绕过删除模块或方法">绕过删除模块或方法</h2>
-<p><a href="/python/2023/05/30/pyjail-bypass-01-绕过删除模块或方法.html">redirect</a></p>
-
-<h2 id="绕过基于字符串匹配的过滤">绕过基于字符串匹配的过滤</h2>
-
-<p><a href="/python/2023/05/30/pyjail-bypass-02-字符串变换绕过.html">redirect</a></p>
-
-<h2 id="绕过命名空间限制">绕过命名空间限制</h2>
-
-<p><a href="/python/2023/05/30/pyjail-bypass-03-绕过命名空间限制.html">redirect</a></p>
-
-<h2 id="绕过多行限制">绕过多行限制</h2>
-<p><a href="/python/2023/05/30/pyjail-bypass-05-绕过长度限制.html">redirect</a></p>
-
-<h2 id="绕过长度限制">绕过长度限制</h2>
-
-<p><a href="/python/2023/05/30/pyjail-bypass-04-绕过多行限制.html">redirect</a></p>
-
-<h2 id="变量覆盖与函数篡改">变量覆盖与函数篡改</h2>
-
-<p><a href="/python/2023/05/30/pyjail-bypass-06-变量覆盖与函数篡改.html">redirect</a></p>
-
-<h2 id="绕过-audit-hook">绕过 audit hook</h2>
-
-<p><a href="/python/2023/05/30/pyjail-bypass-07-绕过-audit-hook.html">redirect</a></p>
-
-<h2 id="绕过-ast-沙箱">绕过 AST 沙箱</h2>
-
-<p><a href="/python/2023/05/30/pyjail-bypass-08-绕过-AST-沙箱.html">redirect</a></p>
 
 <h2 id="其他技巧">其他技巧</h2>
 

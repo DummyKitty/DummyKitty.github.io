@@ -3,7 +3,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>pyjail bypass-02 绕过基于字符串匹配的过滤 - DumKiy's blog</title>
 
-<meta name="description" content="绕过基于字符串匹配的过滤字符串变换字符串拼接在我们的 payload 中，例如如下的 payload，__builtins__ file 这些字符串如果被过滤了，就可以使用字符串变换的方式进行绕过。''.__class__.__mro__[2].__subclasses__()[59].__init__.__gl...">
+<meta name="description" content="pyjail 沙箱逃逸原理    pyjail 沙箱逃逸绕过              绕过删除模块或方法        绕过基于字符串匹配的过滤        绕过命名空间限制        绕过多行限制        绕过长度限制        变量覆盖与函数篡改        绕过 audit hook  ...">
 <link rel="canonical" href="/python/2023/05/30/pyjail-bypass-02-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8F%98%E6%8D%A2%E7%BB%95%E8%BF%87.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
@@ -318,7 +318,26 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
     <meta itemprop="keywords" content="pyjail"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
 <!-- end custom article top snippet -->
-<div class="article__content" itemprop="articleBody"><h2 id="绕过基于字符串匹配的过滤">绕过基于字符串匹配的过滤</h2>
+<div class="article__content" itemprop="articleBody"><blockquote>
+  <ul>
+    <li><a href="/python/2023/05/29/python-沙箱逃逸原理.html">pyjail 沙箱逃逸原理</a></li>
+    <li><a href="/python/2023/05/30/python-沙箱逃逸绕过.html">pyjail 沙箱逃逸绕过</a>
+      <ul>
+        <li><a href="/python/2023/05/30/pyjail-bypass-01-绕过删除模块或方法.html">绕过删除模块或方法</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-02-字符串变换绕过.html">绕过基于字符串匹配的过滤</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-03-绕过命名空间限制.html">绕过命名空间限制</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-05-绕过长度限制.html">绕过多行限制</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-04-绕过多行限制.html">绕过长度限制</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-06-变量覆盖与函数篡改.html">变量覆盖与函数篡改</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-07-绕过-audit-hook.html">绕过 audit hook</a></li>
+        <li><a href="/python/2023/05/30/pyjail-bypass-08-绕过-AST-沙箱.html">绕过 AST 沙箱</a></li>
+        <li><a href="/python/2023/08/03/pyjail-bypass-09-绕过输出限制.html">绕过输出限制</a>
+          <h2 id="绕过基于字符串匹配的过滤">绕过基于字符串匹配的过滤</h2>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</blockquote>
 
 <h3 id="字符串变换">字符串变换</h3>
 
