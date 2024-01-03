@@ -1,11 +1,10 @@
 <!DOCTYPE html><html lang="en">
   <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>Home - DumKiy's blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>将 gitbook 迁移到 mkdocs - DumKiy's blog</title>
 
-<meta name="description" content="Watch And Learn
-">
-<link rel="canonical" href="/"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="description" content="将 gitbook 项目迁移到 mkdocs很多参考文档使用 gitbook 搭建，例如 hacktricks-cloud，由于 gitbook 不开源，如果想要将文档离线部署，就不得不更换其他文档生成工具，如 mkdocs、teedocs、docksify 等。尝试了 teedoc 和 mkdocs，都存在部分...">
+<link rel="canonical" href="/env/2024/01/02/Migrate-gitbook-to-mkdocs.html"><link rel="alternate" type="application/rss+xml" title="DumKiy's blog" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -255,7 +254,7 @@
 </head>
   <body>
     <div class="root" data-is-touch="false">
-      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport cell cell--auto">
+      <div class="layout--page js-page-root"><div class="page__main js-page-main page__viewport has-aside cell cell--auto">
 
       <div class="page__main-inner"><div class="page__header d-print-none"><header class="header"><div class="main">
       <div class="header__title">
@@ -289,75 +288,178 @@ l2 -1365 29 -70 c58 -141 151 -240 280 -299 110 -51 50 -49 1941 -48 1722 0
 </svg>
 <a title="Watch And Learn
 " href="/">DumKiy's blog</a></div><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></div><nav class="navigation">
-        <ul><li class="navigation__item navigation__item--active"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="/Resources.html">Resources</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
+        <ul><li class="navigation__item"><a href="/">Home</a></li><li class="navigation__item"><a href="/categories.html">Categories</a></li><li class="navigation__item"><a href="/tags.html">tags</a></li><li class="navigation__item"><a href="/about.html">About</a></li><li class="navigation__item"><a href="/Resources.html">Resources</a></li><li class="navigation__item"><a href="https://github.com/DummyKitty">GitHub</a></li><li><button class="button button--secondary button--circle search-button js-search-toggle"><i class="fas fa-search"></i></button></li></ul>
       </nav></div>
   </header>
 </div><div class="page__content"><div class ="main"><div class="grid grid--reverse">
 
-              <div class="col-aside d-print-none js-col-aside"></div>
+              <div class="col-aside d-print-none js-col-aside"><aside class="page__aside js-page-aside"><div class="toc-aside js-toc-root"></div>
+</aside></div>
 
               <div class="col-main cell cell--auto"><!-- start custom main top snippet -->
 
 <!-- end custom main top snippet -->
-<article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>Home</h1></header><meta itemprop="headline" content="Home"><meta itemprop="author" content="DumKiy"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items"><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="gitbook,mkdocs" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jan 02</span><a itemprop="headline" class="item__header" href="/env/2024/01/02/Migrate-gitbook-to-mkdocs.html">将 gitbook 迁移到 mkdocs</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="HTB,MS17-010,LPE" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Jan 02</span><a itemprop="headline" class="item__header" href="/pentest/2024/01/02/HTB-Prolab-Dante.html">HTB Prolab Dante walkthrough</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="thinkphp,php,spring,qwb,pyjail" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Dec 19</span><a itemprop="headline" class="item__header" href="/ctf/2023/12/19/QWB-2023-writeup.html">QWB 2023 Writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CSS,0ctf+2023" data-categories="CSS">
-        <div class="item__content"><span class="item__meta">Dec 12</span><a itemprop="headline" class="item__header" href="/css/2023/12/12/CSS-injection.html">前端安全：CSS 注入</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="bash,ssh,tunnel,0ctf+2023" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Dec 11</span><a itemprop="headline" class="item__header" href="/ctf/2023/12/11/0CTF-2023-Mathexam-Writeup.html">0CTF/TCTF 2023 Mathexam Writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="GOAD,Active+Directory" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 28</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/28/GOAD-%E9%9D%B6%E5%9C%BA%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html">GOAD 靶场环境搭建</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="nodejs,vega" data-categories="CTF">
-        <div class="item__content"><span class="item__meta">Nov 27</span><a itemprop="headline" class="item__header" href="/ctf/2023/11/27/TPCTF2023-%E9%83%A8%E5%88%86-web-Writeup.html">TPCTF 2023 graphoid writeup</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="windows,LPE,Info+gathering" data-categories="Pentest">
-        <div class="item__content"><span class="item__meta">Nov 20</span><a itemprop="headline" class="item__header" href="/pentest/2023/11/20/Windows-%E6%8F%90%E6%9D%83%E7%9F%A5%E8%AF%86%E7%82%B9.html">Windows 提权知识点</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="CMS" data-categories="code+audit">
-        <div class="item__content"><span class="item__meta">Aug 09</span><a itemprop="headline" class="item__header" href="/code%20audit/2023/08/09/DirCMS-%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1.html">DirCMS 审计</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="pyjail" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Aug 03</span><a itemprop="headline" class="item__header" href="/python/2023/08/03/pyjail-bypass-09-%E7%BB%95%E8%BF%87%E8%BE%93%E5%87%BA%E9%99%90%E5%88%B6.html">pyjail bypass-09 绕过输出限制</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Jekyll" data-categories="ENV">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/env/2023/07/30/jeklly-theme-chirpy-%E5%A2%9E%E5%8A%A0%E7%9B%AE%E5%BD%95%E6%98%BE%E7%A4%BA%E7%BA%A7%E5%88%AB.html">Jekyll-theme-chirpy 主题增加目录展示级别</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="xss" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 30</span><a itemprop="headline" class="item__header" href="/python/2023/07/30/python-Flask-%E4%B8%AD%E7%9A%84-XSS.html">Flask 中的 XSS</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="inf" data-categories="Python">
-        <div class="item__content"><span class="item__meta">Jul 27</span><a itemprop="headline" class="item__header" href="/python/2023/07/27/python-inf-tricks.html">Python inf 特性</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Deserialization" data-categories="Java">
-        <div class="item__content"><span class="item__meta">Jul 24</span><a itemprop="headline" class="item__header" href="/java/2023/07/24/Java-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%BB%95%E8%BF%87-resolveClass.html">Java 反序列化绕过 resolvClass</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="Exchange" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/Exchange-PowerShell-Remoting.html">Exchange PowerShell Remoting</a></div>
-      </li><li class="item" itemscope itemtype="http://schema.org/BlogPosting" data-tags="NTLM" data-categories="Exchange">
-        <div class="item__content"><span class="item__meta">Jul 14</span><a itemprop="headline" class="item__header" href="/exchange/2023/07/14/BurpSuite-NTLM-%E6%8A%93%E5%8C%85%E9%97%AE%E9%A2%98.html">BurpSuite NTLM 抓包问题</a></div>
-      </li></div>
-</div><div class="layout--home"><div class="pagination"><p>82 post articles, 6 pages.</p>
-    <div class="pagination__menu">
-      <ul class="menu menu--nowrap"><li><div class="button button--secondary button--circle disabled">
-            <i class="fas fa-angle-left"></i>
-          </div></li><li>
-              <div class="button button--primary button--circle focus"><span>1</span></div>
+<article itemscope itemtype="http://schema.org/Article"><div class="article__header"><header><h1>将 gitbook 迁移到 mkdocs</h1></header><span class="split-space">&nbsp;</span>
+          <a class="edit-on-github"
+            title="Edit on Github"
+            href="https://github.com/user_name/repo_name/tree/master/_posts/2024-01-03-Migrate-gitbook-to-mkdocs.md">
+            <i class="far fa-edit"></i></a></div><meta itemprop="headline" content="将 gitbook 迁移到 mkdocs"><div class="article__info clearfix">
+      <div class="right-col">
+         <ul class="menu"> <span style="font-size: 1.2em;">📂</span><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/categories.html?tag=ENV">ENV</a>
+            </li></ul>
+      </div>
+      <div class="right-col"><ul class="left-col menu"> <span style="font-size: 1.2em;">📌</span><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=gitbook">gitbook</a>
             </li><li>
-                  <a class="button button--secondary button--circle" href="/page2"><span>2</span></a>
-                </li><li>
-                  <a class="button button--secondary button--circle" href="/page3"><span>3</span></a>
-                </li><li>
-                  <a class="button button--secondary button--circle" href="/page4"><span>4</span></a>
-                </li><li><span class="pagination__omit"><i class="fas fa-ellipsis-h"></i></span></li><li>
-                  <a class="button button--secondary button--circle" href="/page6"><span>6</span></a>
-                </li><li><a class="button button--secondary button--circle" href="/page2">
-            <i class="fas fa-angle-right"></i>
-          </a></li></ul>
-    </div>
-  </div></div>
-<script>/*(function () {
+              <a class="button button--secondary button--pill button--sm"
+                href="/tags.html?tag=mkdocs">mkdocs</a>
+            </li></ul></div><ul class="left-col menu"><li><i class="far fa-calendar-alt"></i> <span>Jan 02, 2024</span>
+            </li></ul></div><meta itemprop="author" content="DumKiy"/><meta itemprop="datePublished" content="2024-01-02T20:29:48+08:00">
+    <meta itemprop="keywords" content="gitbook,mkdocs"><div class="js-article-content"><div class="layout--article"><!-- start custom article top snippet -->
 
-})();*/
+<!-- end custom article top snippet -->
+<div class="article__content" itemprop="articleBody"><h1 id="将-gitbook-项目迁移到-mkdocs">将 gitbook 项目迁移到 mkdocs</h1>
+<p>很多参考文档使用 gitbook 搭建，例如 <a href="https://cloud.hacktricks.xyz/welcome/readme">hacktricks-cloud</a>，由于 gitbook 不开源，如果想要将文档离线部署，就不得不更换其他文档生成工具，如 mkdocs、teedocs、docksify 等。</p>
+
+<p>尝试了 teedoc 和 mkdocs，都存在部分问题：</p>
+<ol>
+  <li>teedoc 对于 markdown 图片链接的解析还存在问题，如果图片名包含空格，则链接中需要包含 <code class="language-plaintext highlighter-rouge">&lt;&gt;</code> 才能够被 markdown 解析，例如：
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="o">![](</span>&lt;../.gitbook/assets/image <span class="o">(</span>193<span class="o">)</span>.png&gt;<span class="o">)</span>
+</code></pre></div>    </div>
+    <p>但 teedoc 无法将这种链接转化为图片链接。
+ <img src="https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/20240102224306.png" alt="20240102224306" /></p>
+  </li>
+  <li>gitbook 项目的结构通常在 SUMMARY.md 中定义，原始的 mkdocs 仅能够根据目录结构来定义文档结构，生成的文档结构往往是乱的。</li>
+  <li>
+    <p>gitbook 有着很多自身专用的语法，其他文档生成工具无法解析。例如：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> {% content-ref url="pentesting-kubernetes-services.md" %}
+</code></pre></div>    </div>
+  </li>
+  <li>gitbook 静态资源存储在 .gitbook/assets 中。mkdocs 在 build 时不会自动将 .gitbook 文件夹拷贝过去。</li>
+</ol>
+
+<p>通过查询资料，第二个问题可以通过 mkdocs-literate-nav 插件来解决，第三、四个问题可以通过 gitbook2mkdocs 部分解决。</p>
+
+<h2 id="mkdocs-literate-nav-插件">mkdocs-literate-nav 插件</h2>
+<p>安装 mkdocs-literate-nav 插件</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>proxychains python <span class="nt">-m</span> pip <span class="nb">install </span>mkdocs-section-index mkdocs-literate-nav
+</code></pre></div></div>
+<p>原生的 mkdocs 仅支持 yaml 格式来定义导航列表，例如：</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">nav</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">Frob</span><span class="pi">:</span> <span class="s">index.md</span>
+  <span class="pi">-</span> <span class="na">Baz</span><span class="pi">:</span> <span class="s">baz.md</span>
+  <span class="pi">-</span> <span class="na">Borgs</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">Bar</span><span class="pi">:</span> <span class="s">borgs/bar.md</span>
+    <span class="pi">-</span> <span class="na">Foo</span><span class="pi">:</span> <span class="s">borgs/foo.md</span>
+</code></pre></div></div>
+<p>安装 mkdocs-literate-nav 插件后，可以直接使用 SUMMARY.md 来定义。只需要在 plugins 中添加 literate-nav。</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">plugins</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">search</span>
+  <span class="pi">-</span> <span class="na">literate-nav</span><span class="pi">:</span>
+      <span class="na">nav_file</span><span class="pi">:</span> <span class="s">SUMMARY.md</span>
+      <span class="na">tab_length</span><span class="pi">:</span> <span class="m">2</span>
+</code></pre></div></div>
+<p>但需要注意的是 mkdocs 中 SUMMARY.md 语法相对 gitbook 还有不同，不支持 <code class="language-plaintext highlighter-rouge">##</code> 这样的 markdown 标题，同级目录之间不能出现空行。</p>
+
+<p>例如，gitbook 中原始的 SUMMARY.md 如下：</p>
+<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gu">## 👽 Welcome!</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">HackTricks Cloud</span><span class="p">](</span><span class="sx">README.md</span><span class="p">)</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">About the Author</span><span class="p">](</span><span class="sx">https://book.hacktricks.xyz/welcome/about-the-author</span><span class="p">)</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">HackTricks Values &amp; faq</span><span class="p">](</span><span class="sx">https://book.hacktricks.xyz/welcome/hacktricks-values-and-faq</span><span class="p">)</span>
+
+<span class="gu">## 🏭 Pentesting CI/CD</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">Pentesting CI/CD Methodology</span><span class="p">](</span><span class="sx">pentesting-ci-cd/pentesting-ci-cd-methodology.md</span><span class="p">)</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">Github Security</span><span class="p">](</span><span class="sx">pentesting-ci-cd/github-security/README.md</span><span class="p">)</span>
+</code></pre></div></div>
+<p>更改为 mkdocs 中的 SUMMARY.md：</p>
+<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">*</span> 👽 Welcome!
+<span class="p">  *</span> <span class="p">[</span><span class="nv">HackTricks Cloud</span><span class="p">](</span><span class="sx">README.md</span><span class="p">)</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">About the Author</span><span class="p">](</span><span class="sx">https://book.hacktricks.xyz/welcome/about-the-author</span><span class="p">)</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">HackTricks Values &amp; faq</span><span class="p">](</span><span class="sx">https://book.hacktricks.xyz/welcome/hacktricks-values-and-faq</span><span class="p">)</span>
+<span class="p">*</span> 🏭 Pentesting CI/CD
+<span class="p">  *</span> <span class="p">[</span><span class="nv">Pentesting CI/CD Methodology</span><span class="p">](</span><span class="sx">pentesting-ci-cd/pentesting-ci-cd-methodology.md</span><span class="p">)</span>
+<span class="p">  *</span> <span class="p">[</span><span class="nv">Github Security</span><span class="p">](</span><span class="sx">pentesting-ci-cd/github-security/README.md</span><span class="p">)</span>
+<span class="p">    *</span> <span class="p">[</span><span class="nv">Abusing Github Actions</span><span class="p">](</span><span class="sx">pentesting-ci-cd/github-security/</span>
+</code></pre></div></div>
+<p>另外，<code class="language-plaintext highlighter-rouge">tab_length: 2</code> 表示缩进 2 个空格，默认情况下为 4 个，可以根据原始 SUMMARY.md 格式进行修改。</p>
+
+<h2 id="gitbook2mkdocs-插件">gitbook2mkdocs 插件</h2>
+<ul>
+  <li><a href="https://github.com/pledra/gitbook2mkdocs">pledra/gitbook2mkdocs</a></li>
+</ul>
+
+<p>gitbook2mkdocs 插件并不是特别完善，主要功能有两个：</p>
+<ol>
+  <li>转换部分 gitbook 中的专用语法。</li>
+  <li>创建 .gitbook/assets 文件夹的 link：gbassets，并将生成的 html 中的图片连接进行替换。</li>
+</ol>
+
+<p>安装：</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip3 <span class="nb">install </span>git+https://github.com/pledra/gitbook2mkdocs
+</code></pre></div></div>
+
+<p>使用方法：只需要在 plugins 中进行添加即可</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">plugins</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">gitbook2mkdocs</span>
+</code></pre></div></div>
+
+<p>注意：</p>
+<ol>
+  <li>windows 下创建 symlink 需要管理员权限，执行 mkdocs build 前需要切换到管理员。</li>
+  <li>gitbook2mkdocs 仅会对 docs/.gitbook/assets 文件夹进行操作，也就是项目文档直接放在 docs 目录下，如果多了一层目录，例如：docs/hacktricks/.gitbook/assets，那么该插件不会对目录进行复制（可以修改考虑源码或者手动将文件夹复制过去）。</li>
+</ol>
+
+<h1 id="参考资料">参考资料</h1>
+<ul>
+  <li><a href="https://ibm.github.io/workshop-setup/MKDOCS/">MkDocs - Workshop Setup</a></li>
+  <li><a href="https://pypi.org/project/mkdocs-literate-nav/">mkdocs-literate-nav · PyPI</a></li>
+  <li><a href="https://oprypin.github.io/mkdocs-literate-nav/reference.html#wildcards">参考 - mkdocs-literate-nav</a></li>
+  <li><a href="https://github.com/pledra/gitbook2mkdocs">pledra/gitbook2mkdocs</a></li>
+</ul>
+</div><section class="article__sharing d-print-none"></section><div class="d-print-none"><footer class="article__footer"><meta itemprop="dateModified" content="2024-01-02T20:29:48+08:00"><!-- start custom article footer snippet -->
+
+<!-- end custom article footer snippet -->
+<div class="article__subscribe"><div class="subscribe"><i class="fas fa-rss"></i> <a type="application/rss+xml" href="/feed.xml">Subscribe</a></div>
+</div><div class="article__license"><div class="license">
+    <p>This work is licensed under a <a itemprop="license" rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution-NonCommercial 4.0 International</a> license.
+      <a rel="license" href="https://creativecommons.org/licenses/by-nc/4.0/">
+        <img alt="Attribution-NonCommercial 4.0 International" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" />
+      </a>
+    </p>
+  </div></div></footer>
+<div class="article__section-navigator clearfix"><div class="previous"><span>PREVIOUS</span><a href="/pentest/2024/01/02/HTB-Prolab-Dante.html">HTB Prolab Dante walkthrough</a></div></div></div>
+
+</div>
+
+<script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    $(function() {
+      var $this ,$scroll;
+      var $articleContent = $('.js-article-content');
+      var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+      var scroll = hasSidebar ? '.js-page-main' : 'html, body';
+      $scroll = $(scroll);
+
+      $articleContent.find('.highlight').each(function() {
+        $this = $(this);
+        $this.attr('data-lang', $this.find('code').attr('data-lang'));
+      });
+      $articleContent.find('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').each(function() {
+        $this = $(this);
+        $this.append($('<a class="anchor d-print-none" aria-hidden="true"></a>').html('<i class="fas fa-anchor"></i>'));
+      });
+      $articleContent.on('click', '.anchor', function() {
+        $scroll.scrollToAnchor('#' + $(this).parent().attr('id'), 400);
+      });
+    });
+  });
+})();
 </script>
-
-
-
 </div><section class="page__comments d-print-none"></section></article><!-- start custom main bottom snippet -->
 
 <!-- end custom main bottom snippet -->
@@ -902,6 +1004,68 @@ window.Lazyload.js([SOURCES.jquery, PAHTS.search_js], function() {
 /*(function () {
 
 })();*/
+</script><script>
+  /* toc must before affix, since affix need to konw toc' height. */(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $articleContent = $('.js-article-content');
+    var $tocRoot = $('.js-toc-root'), $col2 = $('.js-col-aside');
+    var toc;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    tocDisabled = disabled();
+
+    toc = $tocRoot.toc({
+      selectors: TOC_SELECTOR,
+      container: $articleContent,
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+  });
+})();
+(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $pageFooter = $('.js-page-footer');
+    var $pageAside = $('.js-page-aside');
+    var affix;
+    var tocDisabled = false;
+    var hasSidebar = $('.js-page-root').hasClass('layout--page--sidebar');
+
+    affix = $pageAside.affix({
+      offsetBottom: $pageFooter.outerHeight(),
+      scrollTarget: hasSidebar ? '.js-page-main' : null,
+      scroller: hasSidebar ? '.js-page-main' : null,
+      scroll: hasSidebar ? $('.js-page-main').children() : null,
+      disabled: tocDisabled
+    });
+
+    $window.on('resize', window.throttle(function() {
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    window.pageAsideAffix = affix;
+  });
+})();
 </script><script>
   window.Lazyload.js(['https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js', 'https://cdn.bootcss.com/Chart.js/2.7.2/Chart.bundle.min.js'], function() {
     var $canvas = null, $this = null, _ctx = null, _text = '';

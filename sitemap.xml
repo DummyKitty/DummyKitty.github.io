@@ -321,6 +321,14 @@
 <lastmod>2023-12-19T18:29:48+08:00</lastmod>
 </url>
 <url>
+<loc>/pentest/2024/01/02/HTB-Prolab-Dante.html</loc>
+<lastmod>2024-01-02T18:29:48+08:00</lastmod>
+</url>
+<url>
+<loc>/env/2024/01/02/Migrate-gitbook-to-mkdocs.html</loc>
+<lastmod>2024-01-02T20:29:48+08:00</lastmod>
+</url>
+<url>
 <loc>/Resources.html</loc>
 </url>
 <url>
@@ -346,5 +354,8 @@
 </url>
 <url>
 <loc>/page5/</loc>
+</url>
+<url>
+<loc>/page6/</loc>
 </url>
 </urlset>
