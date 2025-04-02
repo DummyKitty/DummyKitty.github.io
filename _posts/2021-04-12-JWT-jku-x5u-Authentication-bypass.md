@@ -116,37 +116,37 @@ jku使用的场景如下：
 
 #### Step1 用户携带JWS（带有签名的JWT）访问应用
 
-![image-20210331160635996](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331160635996.png)
+![image-20210331160635996](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331160635996.png)
 
 
 
 #### Step2 应用程序解码JWS得到jku字段
 
-![image-20210331161005669](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161005669.png)
+![image-20210331161005669](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161005669.png)
 
 
 
 #### Step3 应用根据jku访问返回JWK的服务器
 
-![image-20210331161234593](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161234593.png)
+![image-20210331161234593](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161234593.png)
 
 
 
 #### Step4 应用程序得到JWK
 
-![image-20210331161400400](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161400400.png)
+![image-20210331161400400](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161400400.png)
 
 
 
 #### Step5 使用JWK验证用户JWS
 
-![image-20210331161528304](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161528304.png)
+![image-20210331161528304](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161528304.png)
 
 
 
 #### step6 验证通过则正常响应
 
-![image-20210331161546646](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161546646.png)
+![image-20210331161546646](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161546646.png)
 
 
 
@@ -154,7 +154,7 @@ jku使用的场景如下：
 
 攻击场景如下：
 
-![image-20210331161633860](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161633860.png)
+![image-20210331161633860](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331161633860.png)
 
 1. 攻击者使用伪造的JWS访问应用，jku字段指向自己控制的服务器。
 2. 应用程序得到jku后对恶意服务器进行访问，得到伪造的JWK。
@@ -194,12 +194,12 @@ https://trusted  => http://trusted@malicious.com
 
 重定向漏洞的利用方式可以参考下图：
 
-![image-20210331193633292](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331193633292.png)
+![image-20210331193633292](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331193633292.png)
 
 1. 攻击者使用恶意JWS访问应用程序，应用程序向得到jku，并访问jku指向的链接
 2. 此时可信服务器返回一个重定向，使得应用程序从恶意服务器中获取JWK
 
-![image-20210331194200328](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331194200328.png)
+![image-20210331194200328](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331194200328.png)
 
 
 
@@ -209,7 +209,7 @@ https://trusted  => http://trusted@malicious.com
 
 CRLF注入的利用场景如下：
 
-![image-20210331194353507](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331194353507.png)
+![image-20210331194353507](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331194353507.png)
 
 
 
@@ -242,7 +242,7 @@ curl http://192.170.138.3:8080/issue
 
 使用得到的JWS到[https://jwt.io](https://jwt.io/)网站上解码
 
-![image-20210331200027003](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331200027003.png)
+![image-20210331200027003](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331200027003.png)
 
 
 
@@ -260,7 +260,7 @@ http://witrap.com:8000/jwks.json
  curl http://witrap.com:8000/jwks.json
 ```
 
-![image-20210331200408236](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331200408236.png)
+![image-20210331200408236](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331200408236.png)
 
 
 
@@ -326,13 +326,13 @@ YwIDAQAB
 
 将产生的public key完整得粘贴到公钥处
 
-![image-20210331203210960](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331203210960.png)
+![image-20210331203210960](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331203210960.png)
 
 
 
 私钥也是一样
 
-![image-20210331203427137](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331203427137.png)
+![image-20210331203427137](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331203427137.png)
 
 
 
@@ -350,7 +350,7 @@ http://192.170.138.2:8080/issue
 
 根据jwks.json文件的格式：
 
-![0_G13gj8l5elTJGins](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/0_G13gj8l5elTJGins.png)
+![0_G13gj8l5elTJGins](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/0_G13gj8l5elTJGins.png)
 
 我们需要修改n和e
 
@@ -367,7 +367,7 @@ print "n:", hex(key.n)
 print "e:", hex(key.e)
 ```
 
-![0_tqSIayaT5cADfUX3](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/0_tqSIayaT5cADfUX3.png)
+![0_tqSIayaT5cADfUX3](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/0_tqSIayaT5cADfUX3.png)
 
 
 
@@ -381,7 +381,7 @@ print "e:", hex(key.e)
 python -m SimpleHTTPServer 8080
 ```
 
-![image-20210331204337815](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331204337815.png)
+![image-20210331204337815](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210331204337815.png)
 
 
 
@@ -420,13 +420,13 @@ SimpleHTTPServer可以快速构建一个web服务，并且将当前目录作为w
 
 
 
-![1e91c1baed437897e9133](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1e91c1baed437897e9133.png)
+![1e91c1baed437897e9133](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/1e91c1baed437897e9133.png)
 
 返回JWS，可以看到里面的jku，指向`http://localhost:5001/vuln/JWK`
 
 访问`http://localhost:5001/vuln/JWK`得到JWK
 
-![cc1a02c9ac95a93a582dc](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/cc1a02c9ac95a93a582dc.png)
+![cc1a02c9ac95a93a582dc](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/cc1a02c9ac95a93a582dc.png)
 
 但是这里的jku被白名单限定在了localhost域，无法直接修改jku指向我们自己的服务器
 
@@ -573,7 +573,7 @@ if __name__ == '__main__':
 
 ### [jwt_tool](https://github.com/ticarpi/jwt_tool)
 
-![标识](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/100555535-18598280-3294-11eb-80ed-ca5a0c3455d6.png)
+![标识](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/100555535-18598280-3294-11eb-80ed-ca5a0c3455d6.png)
 
 **其目前的功能包括：**
 

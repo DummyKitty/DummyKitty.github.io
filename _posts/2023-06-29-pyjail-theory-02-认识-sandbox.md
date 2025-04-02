@@ -1,5 +1,5 @@
 ---
-title: CTF Pyjail 沙箱逃逸原理合集
+title: pyjail theory-02 认识 sandbox
 date: 2023-05-29 05:04:02
 categories:
 - Python
@@ -9,6 +9,10 @@ image:
   path: /assets/images/pyjail.jpg
 toc: true
 ---
+
+> - [内省机制](/posts/pyjail-theory-01-内省机制/)
+> - [认识 sandbox](/posts/pyjail-theory-02-认识-sandbox/)
+> - [逃逸目标](/posts/pyjail-theory-03-逃逸目标/)
 
 沙箱是一种安全机制，用于在受限制的环境中运行未信任的程序或代码。它的主要目的是防止这些程序或代码影响宿主系统或者访问非授权的数据。
 

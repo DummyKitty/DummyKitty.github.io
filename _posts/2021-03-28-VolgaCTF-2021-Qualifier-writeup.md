@@ -77,7 +77,7 @@ http://192.46.237.106:3000/
 
 
 
-![image-20210328130218506](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328130218506.png)
+![image-20210328130218506](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328130218506.png)
 
 查看报错回显发现是axios0.21.0版本，经查找此版本存在[CVE-2020-28168 ](https://nvd.nist.gov/vuln/detail/CVE-2020-28168)ssrf漏洞。
 
@@ -130,13 +130,13 @@ header("Location: http://127.0.0.1/admin");
 
 这里直接访问admin是因为dirsearch扫描到3000端口的admin目录
 
-![image-20210328130144488](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328130144488.png)
+![image-20210328130144488](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328130144488.png)
 
 但是重定向到/admin。
 
 
 
-![image-20210328135622676](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328135622676.png)
+![image-20210328135622676](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328135622676.png)
 
 
 两者都尝试后发现直接访问80端口的/admin可以读取到目录下的index.html
@@ -144,7 +144,7 @@ header("Location: http://127.0.0.1/admin");
 所以获取http://127.0.0.1/admin
 
 
-![image-20210328135312565](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328135312565.png)
+![image-20210328135312565](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328135312565.png)
 
 
 
@@ -248,19 +248,19 @@ systeminformation 漏洞查找：https://systeminformation.io/security.html
 
 参照上述的方法，我们可以在vps上准备一个sh脚本
 
-![image-20210328144538017](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328144538017.png)
+![image-20210328144538017](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328144538017.png)
 
 
 
 302.php
 
-![image-20210328144525032](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328144525032.png)
+![image-20210328144525032](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328144525032.png)
 
 
 
 反弹shell：
 
-![image-20210328144511049](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328144511049.png)
+![image-20210328144511049](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328144511049.png)
 
 
 
@@ -270,7 +270,7 @@ systeminformation 漏洞查找：https://systeminformation.io/security.html
 
 
 
-![image-20210328141848404](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328141848404.png)
+![image-20210328141848404](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328141848404.png)
 
 
 
@@ -288,13 +288,13 @@ http://172.105.68.62:8080/
 
 root:root直接登录
 
-![image-20210328102220788](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328102220788.png)
+![image-20210328102220788](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328102220788.png)
 
 
 
 抓包发现jwt，到https://jwt.io/#debugger-io解码一下
 
-![image-20210328102340226](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328102340226.png)
+![image-20210328102340226](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328102340226.png)
 
 
 
@@ -304,7 +304,7 @@ root改成admin就行了，缺一个私钥
 
 再到上面页面构造即可：
 
-![image-20210328102256473](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328102256473.png)
+![image-20210328102256473](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328102256473.png)
 
 
 
@@ -388,7 +388,7 @@ http://172.105.84.156:5000/
 
 拿到flag的条件是以admin身份登录，最开始我们想的是通过session伪造的方式，但是拿不到key，题目给的是flask-admin，想必是flask-admin的问题。
 
-![image-20210330213957979](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210330213957979.png)
+![image-20210330213957979](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210330213957979.png)
 
 其中对于flask-admin页面的路由写的很奇怪
 
@@ -445,7 +445,7 @@ flask-admin内置的功能页面：
 
 访问/admin/user/edit?id=1，得到如下页面
 
-![](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/112758387-bf6ee080-9020-11eb-81b3-92b1597b18f5.png)
+![](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/112758387-bf6ee080-9020-11eb-81b3-92b1597b18f5.png)
 
 
 
@@ -467,7 +467,7 @@ flask中用户的密码使用werkzeug的generate_password_hash,check_password_ha
 
 本地生成Hash即可伪造：
 
-![image-20210330214658991](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210330214658991.png)
+![image-20210330214658991](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210330214658991.png)
 
 
 
@@ -541,7 +541,7 @@ https://static-site.volgactf-task.ru/
 
 但是题目没有太难，考察nginx $uri错误使用导致的CRLF，配合proxy_pass造成重定向，控制返回内容利用xss读取cookie。
 
-![](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/112757165-2ab5b400-901b-11eb-93e4-da002018580e.png)
+![](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/112757165-2ab5b400-901b-11eb-93e4-da002018580e.png)
 
 nginx 配置文件
 
@@ -635,7 +635,7 @@ https://wallet.volgactf-task.ru/
 
 [app.js](https://q.2021.volgactf.ru/files/2fa643120c4a5a62284a40600bab6e55/app.js)
 
-![image-20210328160532080](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328160532080.png)
+![image-20210328160532080](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210328160532080.png)
 
 题目描述：
 
@@ -683,11 +683,11 @@ await db.awaitQuery("UPDATE `wallets`, `transactions` SET `balance` = `balance` 
 
 由于余额检查发生在node上，但是在MySQL中执行事务。
 
-![image-20210406222930509](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210406222930509.png)
+![image-20210406222930509](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210406222930509.png)
 
 
 
-![image-20210406222939014](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210406222939014.png)
+![image-20210406222939014](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210406222939014.png)
 
 
 ps：这得跑到啥时候才能出flag，有人是用条件竞争做的：https://github.com/aszx87410/ctf-writeups/issues/32，不过也不是很清楚条件竞争漏洞出现的机理。
@@ -745,7 +745,7 @@ https://wallet.volgactf-task.ru/
 <script src="https://volgactf-wallet.s3-us-west-1.amazonaws.com/locale_ru.js"></script>
 ```
 
-![image-20210329224015553](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210329224015553.png)
+![image-20210329224015553](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20210329224015553.png)
 
 
 
@@ -980,7 +980,7 @@ f.src = "https://wallet.volgactf-task.ru/wallet?lang=/../deparam&a[0]=2&a[__prot
 
 [Untrusted Types for DevTools](https://github.com/filedescriptor/untrusted-types) 
 
-![yF8wnAF](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/yF8wnAF.png)
+![yF8wnAF](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/yF8wnAF.png)
 
 
 

@@ -1,5 +1,5 @@
 ---
-title: CTF Pyjail 沙箱逃逸原理合集
+title: pyjail theory-03 逃逸目标
 date: 2023-05-29 05:04:02
 categories:
 - Python
@@ -10,6 +10,9 @@ image:
 toc: true
 ---
 
+> - [内省机制](/posts/pyjail-theory-01-内省机制/)
+> - [认识 sandbox](/posts/pyjail-theory-02-认识-sandbox/)
+> - [逃逸目标](/posts/pyjail-theory-03-逃逸目标/)
 
 ## 逃逸目标
 了解沙箱逃逸的目标才能有的放矢，沙箱逃逸的目标是执行 shell 、读写文件或者获取环境信息如环境变量等.

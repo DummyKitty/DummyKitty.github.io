@@ -11,19 +11,19 @@ image:
   path: /assets/images/php.png
 ---
 
-> - [php-反序列化格式基础](/php/2023/06/08/php-反序列化格式基础.html)
-- [php-反序列化绕过](/php/2023/06/08/php-反序列化绕过.html)
-- [php-反序列化字符逃逸](/php/2023/06/08/php-反序列化字符逃逸.html)
-- [php-phar-反序列化](/php/2023/06/08/php-phar-反序列化利用.html)
-- [php-反序列化原生类利用](/php/2023/06/08/php-反序列化原生类利用.html)
-- [phpggc-利用链分析](/php/2023/06/08/phpggc-thinkphp-利用链分析.html)
-  - ThinkPHP
-    - [phpggc-thinkphp-RCE1](/php/2023/06/08/phpggc-thinkphp-RCE1.html)
-    - [phpggc-thinkphp-RCE2](/php/2023/06/08/phpggc-thinkphp-RCE2.html)
-    - [phpggc-thinkphp-RCE3](/php/2023/06/08/phpggc-thinkphp-RCE3.html)
-    - [phpggc-thinkphp-RCE4](/php/2023/06/08/phpggc-thinkphp-RCE4.html)
-    - [phpggc-thinkphp-FW1](/php/2023/06/08/phpggc-thinkphp-FW1.html)
-    - [phpggc-thinkphp-FW2](/php/2023/06/08/phpggc-thinkphp-FW2.html)
+> - [php-反序列化格式基础](/posts/php-反序列化格式基础.html)
+- [php-反序列化绕过](/posts/php-反序列化绕过.html)
+- [php-反序列化字符逃逸](/posts/php-反序列化字符逃逸.html)
+- [php-phar-反序列化](/posts/php-phar-反序列化利用.html)
+- [php-反序列化原生类利用](/posts/php-反序列化原生类利用.html)
+- [phpggc-利用链分析](/posts/phpggc-thinkphp-利用链分析.html)
+  - thinkphp
+    - [phpggc-thinkphp-RCE1](/posts/phpggc-thinkphp-RCE1.html)
+    - [phpggc-thinkphp-RCE2](/posts/phpggc-thinkphp-RCE2.html)
+    - [phpggc-thinkphp-RCE3](/posts/phpggc-thinkphp-RCE3.html)
+    - [phpggc-thinkphp-RCE4](/posts/phpggc-thinkphp-RCE4.html)
+    - [phpggc-thinkphp-FW1](/posts/phpggc-thinkphp-FW1.html)
+    - [phpggc-thinkphp-FW2](/posts/phpggc-thinkphp-FW2.html)
 
 
 ## RCE2

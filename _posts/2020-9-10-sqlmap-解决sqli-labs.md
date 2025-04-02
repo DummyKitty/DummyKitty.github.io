@@ -473,7 +473,7 @@ Parameter: passwd (POST)
 sqlmap -u http://192.168.133.162/sql/Less-18/index.php --data "uname=admin&passwd=admin&submit=Submit" --dbs --thread 10  -p "user-agent"  --batch
 ```
 
-![image-20200517191226342](http://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20200517191226342.png)
+![image-20200517191226342](https://de34dnotespics.oss-cn-beijing.aliyuncs.com/img/image-20200517191226342.png)
 
 
 

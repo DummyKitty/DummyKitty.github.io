@@ -10,9 +10,9 @@ image:
   path: /assets/images/java.png
 ---
 
-> - [Java-反序列化绕过-SerialKiller](/java/2023/06/15/Java-反序列化绕过-SerialKiller.html)
-- [Java-反序列化绕过非原生反序列化器](/java/2023/06/15/Java-反序列化绕过非原生反序列化器.html)
-- [Java-反序列化绕过-RASP](/java/2023/06/15/Java-反序列化绕过-RASP.html)
+> - [Java-反序列化绕过-SerialKiller](/posts/Java-反序列化绕过-SerialKiller.html)
+- [Java-反序列化绕过非原生反序列化器](/posts/Java-反序列化绕过非原生反序列化器.html)
+- [Java-反序列化绕过-RASP](/posts/Java-反序列化绕过-RASP.html)
 
 ## SerialKiller
 SerialKiller 是一个用于防御 java 反序列化攻击的库，允许使用配置文件来指定黑白名单。使用 SerialKiller 时只需要用 SerialKiller 替代标准库 java.io.ObjectInputStream

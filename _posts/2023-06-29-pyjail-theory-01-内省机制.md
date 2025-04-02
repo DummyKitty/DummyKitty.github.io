@@ -1,5 +1,5 @@
 ---
-title: CTF Pyjail 沙箱逃逸原理合集
+title: pyjail theory-01 内省机制
 date: 2023-05-29 05:04:02
 categories:
 - Python
@@ -9,6 +9,10 @@ image:
   path: /assets/images/pyjail.jpg
 toc: true
 ---
+
+> - [内省机制](/posts/pyjail-theory-01-内省机制/)
+> - [认识 sandbox](/posts/pyjail-theory-02-认识-sandbox/)
+> - [逃逸目标](/posts/pyjail-theory-03-逃逸目标/)
 
 ## 认识 builtins
 在 Python中，builtins 模块是一个特殊的模块，它包含了所有 Python 内置的函数、异常、常量和其他内置对象。

