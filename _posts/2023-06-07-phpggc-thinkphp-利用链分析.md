@@ -12,11 +12,11 @@ image:
 notshow: true
 ---
 
-> - [phpggc-thinkphp-RCE1](/posts/phpggc-thinkphp-RCE1.html)
-- [phpggc-thinkphp-RCE2](/posts/phpggc-thinkphp-RCE2.html)
-- [phpggc-thinkphp-RCE3](/posts/phpggc-thinkphp-RCE3.html)
-- [phpggc-thinkphp-RCE4](/posts/phpggc-thinkphp-RCE4.html)
-- [phpggc-thinkphp-FW1](/posts/phpggc-thinkphp-FW1.html)
-- [phpggc-thinkphp-FW2](/posts/phpggc-thinkphp-FW2.html)
+- [phpggc-thinkphp-RCE1](/posts/phpggc-thinkphp-RCE1/)
+- [phpggc-thinkphp-RCE2](/posts/phpggc-thinkphp-RCE2/)
+- [phpggc-thinkphp-RCE3](/posts/phpggc-thinkphp-RCE3/)
+- [phpggc-thinkphp-RCE4](/posts/phpggc-thinkphp-RCE4/)
+- [phpggc-thinkphp-FW1](/posts/phpggc-thinkphp-FW1/)
+- [phpggc-thinkphp-FW2](/posts/phpggc-thinkphp-FW2/)
 
 
