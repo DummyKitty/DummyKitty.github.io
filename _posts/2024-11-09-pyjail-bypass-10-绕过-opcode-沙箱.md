@@ -162,9 +162,9 @@ print("code: ", code.co_code.hex())
 LOAD_ATTR 对应操作码 6a，IMPORT_FROM 对应字节码为 6d，当我将 6a 直接替换为 6d 时，居然能够正常执行！
 
 ### LACTF 2023 Pycjail
-- [LA CTF 2023 – Pycjail | Project SEKAI](https://sekai.team/blog/lactf-2023/pycjail)
-- [TI-1337 Plus CE: Abusing CPython internals | kmh's blog](https://kmh.zone/blog/2021/02/07/ti1337-plus-ce/#another-way-to-leak)
+- [LA CTF 2023 – Pycjail - Project SEKAI](https://sekai.team/blog/lactf-2023/pycjail)
+- [TI-1337 Plus CE: Abusing CPython internals - kmh's blog](https://kmh.zone/blog/2021/02/07/ti1337-plus-ce/#another-way-to-leak)
 
 ## 参考
-- [LA CTF 2023 – Pycjail | Project SEKAI](https://sekai.team/blog/lactf-2023/pycjail)
-- [TI-1337 Plus CE: Abusing CPython internals | kmh's blog](https://kmh.zone/blog/2021/02/07/ti1337-plus-ce/#another-way-to-leak)
+- [LA CTF 2023 – Pycjail - Project SEKAI](https://sekai.team/blog/lactf-2023/pycjail)
+- [TI-1337 Plus CE: Abusing CPython internals - kmh's blog](https://kmh.zone/blog/2021/02/07/ti1337-plus-ce/#another-way-to-leak)

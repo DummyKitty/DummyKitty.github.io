@@ -362,4 +362,4 @@ exec(
 ### CSICN 2024 mossfern
 
 ## 参考资料
-- [利用生成器栈帧逃逸 Pyjail | CISCN 2024 mossfern 题解](https://pid-blog.com/article/frame-escape-pyjail#%E9%A2%98%E8%A7%A3%EF%BC%9Amossfern)
+- [利用生成器栈帧逃逸 Pyjail - CISCN 2024 mossfern 题解](https://pid-blog.com/article/frame-escape-pyjail#%E9%A2%98%E8%A7%A3%EF%BC%9Amossfern)
