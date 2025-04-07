@@ -6,6 +6,7 @@ categories:
 tags:
 - Werkzeug
 toc: true
+mermaid: true
 image:
   path: /assets/images/Werkzeug.png
 ---

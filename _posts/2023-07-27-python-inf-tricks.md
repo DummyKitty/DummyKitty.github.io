@@ -5,6 +5,7 @@ categories:
 - Python
 tags:
 - inf
+mermaid: true
 image:
   path: /assets/images/python.png
 toc: true

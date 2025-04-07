@@ -6,6 +6,7 @@ tags: [web, confusion attack, csrf, xss, ruby, grpc]
 pin: false
 math: true
 mermaid: true
+mermaid: true
 image:
   path: /assets/images/Cyber-Apocalypse-CTF-2025.jpg
   alt: Cyber-Apocalypse-CTF-2025

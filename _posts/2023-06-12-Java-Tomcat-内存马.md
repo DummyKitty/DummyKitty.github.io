@@ -6,6 +6,7 @@ categories:
 tags:
 - Memoryshell
 - Tomcat
+mermaid: true
 image:
   path: /assets/images/java.png
 toc: true

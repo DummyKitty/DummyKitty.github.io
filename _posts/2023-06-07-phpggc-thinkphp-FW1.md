@@ -7,6 +7,7 @@ tags:
 - Deserialization
 - thinkphp
 toc: true
+mermaid: true
 image:
   path: /assets/images/php.png
 notshow: true

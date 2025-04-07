@@ -8,6 +8,7 @@ tags:
 - cortex
 - storm injection
 toc: true
+mermaid: true
 image:
   path: /assets/images/DamCTF_2023.png
 ---

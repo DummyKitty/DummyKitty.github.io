@@ -6,6 +6,7 @@ categories:
 tags:
 - gitbook
 - mkdocs
+mermaid: true
 image:
   path: /assets/images/mkdocs.svg
 

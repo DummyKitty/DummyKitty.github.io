@@ -6,6 +6,7 @@ categories:
 tags:
 - Jekyll
 toc: true
+mermaid: true
 image:
   path: /assets/images/Jekyll-theme-chirpy.jpg
 ---

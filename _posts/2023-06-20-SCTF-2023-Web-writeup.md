@@ -9,6 +9,7 @@ tags:
 - ssh
 - zip slip
 - request smuggling
+mermaid: true
 image:
   path: /assets/images/SCTF_2023.png
 toc: true

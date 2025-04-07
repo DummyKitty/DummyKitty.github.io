@@ -7,6 +7,7 @@ tags:
 - xss
 - React
 toc: true
+mermaid: true
 image:
   path: /assets/images/PlaidCTF_2023.png
 ---

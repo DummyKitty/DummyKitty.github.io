@@ -5,6 +5,7 @@ categories:
 - Python
 tags:
 - xss
+mermaid: true
 image:
   path: /assets/images/flask.png
 toc: true

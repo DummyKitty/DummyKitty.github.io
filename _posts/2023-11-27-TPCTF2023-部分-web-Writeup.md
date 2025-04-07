@@ -6,6 +6,7 @@ categories:
 tags:
 - nodejs
 - vega
+mermaid: true
 image:
   path: /assets/images/tpctf-2023.jpg
 

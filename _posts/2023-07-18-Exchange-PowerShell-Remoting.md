@@ -5,6 +5,7 @@ categories:
 - Exchange
 tags:
 - Exchange
+mermaid: true
 image:
   path: /assets/images/exchange.jpg
 toc: true

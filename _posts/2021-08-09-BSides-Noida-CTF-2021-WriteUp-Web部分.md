@@ -8,6 +8,7 @@ tags:
 - xss
 - csp-bypass
 - command-execute
+mermaid: true
 image:
   path: /assets/images/BSides_Noida_CTF_2021.png
 toc: true

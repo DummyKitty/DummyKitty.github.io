@@ -1,10 +1,12 @@
 ---
 title: DiceCTF 2025 Quals Writeup
 date: 2025-04-03
+last_modified_at: 2025-04-7 9:30:00 +0800
 categories: [CTF]
 tags: [web, xss, nodejs, share storage]
 pin: false
 math: true
+mermaid: true
 mermaid: true
 image:
   path: /assets/images/DiceCTF-Quals-2025.png
@@ -1226,6 +1228,8 @@ async function leakInformation() {
 leakInformation();
 ```
 期间也想过使用二分或者调用 webhook 的 api 来完成全自动，但为了尽快解题还是使用笨拙一点的办法。
+
+阅读 [DiceCTF 2025 Quals Writeups | 廢文集中區](https://blog.maple3142.net/2025/03/31/dicectf-2025-quals-writeups/en/#nobin) 发现作者利用加密算法耗时的差异来构建侧信道，更为巧妙。
 
 ## bad-chess-challenge (unsolved)
 

@@ -5,6 +5,7 @@ categories:
 - Exchange
 tags:
 - NTLM
+mermaid: true
 image:
   path: /assets/images/burpsuite.png
 toc: true

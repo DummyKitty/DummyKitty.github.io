@@ -6,6 +6,7 @@ categories:
 - Python
 tags:
 - pyjail
+mermaid: true
 image:
   path: /assets/images/pyjail.jpg
 toc: true

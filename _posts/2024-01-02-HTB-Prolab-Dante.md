@@ -7,6 +7,7 @@ tags:
 - HTB
 - MS17-010
 - LPE
+mermaid: true
 image:
   path: /assets/images/htb-pro-donat.png
 

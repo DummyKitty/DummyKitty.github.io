@@ -6,6 +6,7 @@ categories:
 tags:
 - sql-injection
 - sqlmap
+mermaid: true
 image:
   path: /assets/img/sql_injection_index.png
 

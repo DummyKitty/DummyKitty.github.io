@@ -6,6 +6,7 @@ categories:
 tags:
 - CSS
 - 0ctf 2023
+mermaid: true
 image:
   path: /assets/images/css-injection.webp
 toc: true

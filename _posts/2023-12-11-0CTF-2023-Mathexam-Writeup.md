@@ -8,6 +8,7 @@ tags:
 - ssh
 - tunnel
 - 0ctf 2023
+mermaid: true
 image:
   path: /assets/images/0ctf-2023.png
 
