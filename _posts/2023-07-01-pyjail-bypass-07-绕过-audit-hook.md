@@ -15,15 +15,14 @@ toc: true
 > - [绕过删除模块或方法](/posts/pyjail-bypass-01-绕过删除模块或方法/)
 - [绕过基于字符串匹配的过滤](/posts/pyjail-bypass-02-字符串变换绕过/)
 - [绕过命名空间限制](/posts/pyjail-bypass-03-绕过命名空间限制/)
-- [绕过多行限制](/posts/pyjail-bypass-05-绕过长度限制/)
 - [绕过长度限制](/posts/pyjail-bypass-04-绕过多行限制/)
+- [绕过多行限制](/posts/pyjail-bypass-05-绕过长度限制/)
 - [变量覆盖与函数篡改](/posts/pyjail-bypass-06-变量覆盖与函数篡改/)
 - [绕过 audit hook](/posts/pyjail-bypass-07-绕过-audit-hook/)
 - [绕过 AST 沙箱](/posts/pyjail-bypass-08-绕过-AST-沙箱/)
 - [绕过输出限制](/posts/pyjail-bypass-09-绕过输出限制/)
 - [绕过 opcode 沙箱](/posts/pyjail-bypass-10-绕过-opcode-沙箱/)
 - [利用生成器栈](/posts/pyjail-bypass-11-利用生成器栈/)
-
 
 
 ## 绕过基于 sys.addaudithook 的 audit hook 

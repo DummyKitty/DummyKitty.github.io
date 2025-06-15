@@ -1229,12 +1229,22 @@ leakInformation();
 ```
 期间也想过使用二分或者调用 webhook 的 api 来完成全自动，但为了尽快解题还是使用笨拙一点的办法。
 
-阅读 [DiceCTF 2025 Quals Writeups | 廢文集中區](https://blog.maple3142.net/2025/03/31/dicectf-2025-quals-writeups/en/#nobin) 发现作者利用加密算法耗时的差异来构建侧信道，更为巧妙。
+阅读 [DiceCTF 2025 Quals Writeups - 廢文集中區](https://blog.maple3142.net/2025/03/31/dicectf-2025-quals-writeups/en/#nobin) 发现作者利用加密算法耗时的差异来构建侧信道，更为巧妙。
 
 ## bad-chess-challenge (unsolved)
 
 ## old-site-b-side (unsolved)
+可参考：[Bfcache CSS injection, Next.js image cache and LLM Severance agents - DiceCTF Quals](https://adragos.ro/dice-ctf-2025-quals/#miscdiceon)
 
 ## dicepass (unsolved)
+可参考: [DiceCTF 2025 Quals Writeups | 廢文集中區](https://blog.maple3142.net/2025/03/31/dicectf-2025-quals-writeups/en/#dicepass)
+
 
 ## safestnote (unsolved)
+可参考：[Bfcache CSS injection, Next.js image cache and LLM Severance agents - DiceCTF Quals](https://adragos.ro/dice-ctf-2025-quals/#websafestnote)
+
+## diceon (unsolved)
+可参考：[Bfcache CSS injection, Next.js image cache and LLM Severance agents - DiceCTF Quals](https://adragos.ro/dice-ctf-2025-quals/#miscdiceon)
+
+## glail (unsolved)
+

