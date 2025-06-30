@@ -254,7 +254,7 @@ g.gi_frame  # <frame at 0x102bd4880, file '/code.py', line 1, code <genexpr>>
 - gi_frame: gi_frame 就是生成器的栈帧，生成器每次执行，栈帧的地址保持不变。
 
 ### 生成器栈帧逃逸 payload
-下面是博客 [利用生成器栈帧逃逸 Pyjail | CISCN 2024 mossfern 题解](https://pid-blog.com/article/frame-escape-pyjail#%E7%94%9F%E6%88%90%E5%99%A8%E7%9A%84%E6%A0%88%E5%B8%A7) 给出的一段抽象逻辑：
+下面是博客 [利用生成器栈帧逃逸 Pyjail - CISCN 2024 mossfern 题解](https://pid-blog.com/article/frame-escape-pyjail#%E7%94%9F%E6%88%90%E5%99%A8%E7%9A%84%E6%A0%88%E5%B8%A7) 给出的一段抽象逻辑：
 
 ```py
 flag = "flag{12345}"
@@ -272,7 +272,7 @@ exec(
 用户的代码被丢进exec中执行。经过严格的过滤后，import、魔术方法、builtins 等沙箱逃逸的常用思路都会被堵死。这时候想要逃逸到 exec 环境之外拿到flag，甚至是 RCE，就需要通过栈帧回溯来实现。
 
 #### payload1
-文章 [利用生成器栈帧逃逸 Pyjail | CISCN 2024 mossfern 题解](https://pid-blog.com/article/frame-escape-pyjail#%E7%94%9F%E6%88%90%E5%99%A8%E7%9A%84%E6%A0%88%E5%B8%A7) 给出的 payload 如下：
+文章 [利用生成器栈帧逃逸 Pyjail - CISCN 2024 mossfern 题解](https://pid-blog.com/article/frame-escape-pyjail#%E7%94%9F%E6%88%90%E5%99%A8%E7%9A%84%E6%A0%88%E5%B8%A7) 给出的 payload 如下：
 
 ```py
 q = (q.gi_frame.f_back.f_back.f_globals for _ in [1])

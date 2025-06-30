@@ -26,5 +26,8 @@
   // Run tasks in macOS
   "terminal.integrated.profiles.osx": {
     "zsh": { "path": "/bin/zsh", "args": ["-l", "-i"] }
-  }
+  },
+  // Paste Image 配置
+  "pasteImage.path": "${projectRoot}/assets/images/docs",
+  "pasteImage.autoRenameTimestamp": "YYYY-MM-DD-HH-mm-ss"
 }
