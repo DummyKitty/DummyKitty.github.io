@@ -2,7 +2,7 @@
 title: GoogleCTF 2025 Internship Writeup
 date: 2025-06-30
 last_modified_at: 2025-06-30 9:30:00 +0800
-categories: [CTF,Python]
+categories: [CTF]
 tags: [pyjail]
 pin: false
 math: true
